@@ -1,0 +1,10 @@
+Theorem Name:Contrapositive Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state a \implies b = (\not b) \implies (\not a);
+}
+Demonstration { 
+
+    (\not b) \implies (\not a) = (\not (\not b)) \or (\not a) = b \or (\not a) = a \implies b;
+
+}

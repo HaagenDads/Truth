@@ -1,0 +1,14 @@
+Theorem Name:TrivialAnd2 Package:Logic{
+\let a \in \boolean;
+\state \false \and a = \false;
+}
+Demonstration { 
+    \startcase a
+    \case a = \false {
+        \false \and a = \false \and \false = \false;
+    }
+    \case a = \true {
+        \false \and a = \false \and \true = \false;
+    }
+    \endcase a
+}

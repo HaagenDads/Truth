@@ -1,0 +1,4 @@
+Theorem Name:Contradiction Package:Logic{
+\let p \in \boolean;
+\state p \and (\not p) = \false;
+}

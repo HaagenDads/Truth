@@ -1,0 +1,14 @@
+Theorem Name:TrivialOr Package:Logic{
+\let a \in \boolean;
+\state \false \or a = a;
+}
+Demonstration { 
+    \startcase a
+    \case a = \false {
+        \false \or a = \false \or \false = \false = a;
+    }
+    \case a = \true {
+        \false \or a = \false \or \true = \true = a;
+    }
+    \endcase a
+}

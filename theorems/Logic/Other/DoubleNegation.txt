@@ -1,0 +1,14 @@
+Theorem Name:DoubleNegation Package:Logic{
+\let a \in \boolean;
+\state \not (\not a) = a;
+}
+Demonstration { 
+    \startcase a
+    \case a = \false {
+        \not (\not a) = \not (\not \false) = \false = a;
+    }
+    \case a = \true {
+        \not (\not a) = \not (\not \true) = \true = a;
+    }
+    \endcase a
+}

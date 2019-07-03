@@ -1,0 +1,19 @@
+Theorem Name:DeMorgan Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state \not (a \and b) = (\not a) \or (\not b);
+}
+Demonstration { 
+    \startcase a
+    \case a = \false {
+        \not (a \and b) = \not (\false \and b) = \not \false = \true;
+        (\not a) \or (\not b) = (\not \false) \or (\not b) = \true \or (\not b) = \true;
+        \not (a \and b) = \true = (\not a) \or (\not b);
+    }
+    \case a = \true {
+        \not (a \and b) = \not (\true \and b) = \not b;
+        (\not a) \or (\not b) = (\not \true) \or (\not b) = \false \or (\not b) = \not b;
+        \not (a \and b) = \not b = (\not a) \or (\not b);
+    }
+    \endcase
+}

@@ -1,0 +1,6 @@
+Theorem Name:Distributivity Package:Logic{
+\let p \in \boolean;
+\let q \in \boolean;
+\let r \in \boolean;
+\state p \and (q \or r) = (p \and q) \or (p \and r);
+}

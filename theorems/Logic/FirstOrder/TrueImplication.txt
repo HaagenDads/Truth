@@ -1,0 +1,8 @@
+Theorem Name:TrueImplication Package:Logic{
+
+\let r \in \boolean;
+\state \true \implies r = r;
+}
+Demonstration { 
+    \true \implies r = (\not \true) \or r = \false \or r = r;
+}

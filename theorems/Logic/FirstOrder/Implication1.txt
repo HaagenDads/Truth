@@ -1,0 +1,9 @@
+Theorem Name:Implication Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state a \implies (b \implies a) = \true;
+}
+Demonstration { 
+    a \implies (b \implies a) = a \implies ((\not b) \or a) = (\not a) \or ((\not b) \or a)
+    = ((\not a) \or a) \or (\not b) = \true \or (\not b) = \true;
+}

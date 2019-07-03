@@ -1,0 +1,14 @@
+Theorem Name:LawOfNonContradiction Package:Logic{
+\let a \in \boolean;
+\state (\not a) \and a = \false;
+}
+Demonstration { 
+    \startcase a
+    \case a = \false {
+        (\not a) \and a = (\not a) \and \false = \false;
+    }
+    \case a = \true {
+        (\not a) \and a = (\not \true) \and a = \false \and a = \false;
+    }
+    \endcase a
+}

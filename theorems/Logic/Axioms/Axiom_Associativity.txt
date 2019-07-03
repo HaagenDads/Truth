@@ -1,0 +1,6 @@
+Theorem Name:Associativity Package:Logic{
+\let p \in \boolean;
+\let q \in \boolean;
+\let r \in \boolean;
+\state p \and (q \and r) = (p \and q) \and r;
+}

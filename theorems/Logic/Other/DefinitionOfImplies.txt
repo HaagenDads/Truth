@@ -1,0 +1,5 @@
+Theorem Name:DefinitionOfImplies Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state a \implies b = (\not a) \or b;
+}

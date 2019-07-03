@@ -1,0 +1,7 @@
+Theorem Name:SelfImplication Package:Logic{
+\let a \in \boolean;
+\state a \implies a = \true;
+}
+Demonstration { 
+    a \implies a = (\not a) \or a = \true;
+}

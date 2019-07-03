@@ -1,0 +1,4 @@
+Theorem Name:OrSimplification Package:Logic{
+\let p \in \boolean;
+\state p \or \true = \true;
+}

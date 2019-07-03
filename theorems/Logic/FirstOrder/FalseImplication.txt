@@ -1,0 +1,8 @@
+Theorem Name:FalseImplication Package:Logic{
+
+\let r \in \boolean;
+\state \false \implies r = \true;
+}
+Demonstration { 
+    \false \implies r = (\not \false) \or r = \true \or r = \true;
+}

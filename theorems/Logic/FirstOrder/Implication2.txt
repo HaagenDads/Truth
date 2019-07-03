@@ -1,0 +1,25 @@
+Theorem Name:Implication Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\let c \in \boolean;
+\state (a \implies (b \implies c)) \implies ((a \implies b) \implies (a \implies c)) = \true;
+}
+Demonstration { 
+
+    ((a \implies b) \implies (a \implies c)) = (((\not a) \or b) \implies (a \implies c))
+    = ((\not a) \or b) \implies ((\not a) \or c) = (\not ((\not a) \or b)) \or ((\not a) \or c)
+    = (((\not (\not a)) \and (\not b))) \or ((\not a) \or c)
+    = (a \and (\not b)) \or ((\not a) \or c)
+    = (a \or ((\not a) \or c)) \and ((\not b) \or ((\not a) \or c))
+    = ((a \or (\not a)) \or c) \and ((\not b) \or ((\not a) \or c))
+    = (\true \or c) \and ((\not b) \or ((\not a) \or c))
+    = \true \and ((\not b) \or ((\not a) \or c))
+    = (\not b) \or ((\not a) \or c);
+
+    (a \implies (b \implies c)) = a \implies ((\not b) \or c) = (\not a) \or ((\not b) \or c)
+    = (\not b) \or ((\not a) \or c) = ((a \implies b) \implies (a \implies c));
+    
+    (a \implies (b \implies c)) \implies ((a \implies b) \implies (a \implies c))
+    = (a \implies (b \implies c)) \implies (a \implies (b \implies c)) = \true;
+
+}

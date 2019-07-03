@@ -1,0 +1,14 @@
+
+dont identify thms by name but rather by ID
+--> go back in the demonstration code and append a smarter justification than a name
+--> make sure to give an ID. 
+--> later steps would involve stocking more information in the justification
+
+Quick fixes: 
+==> skip les parenthèses autout de (¬b)
+==> Barre de fichiers
+==> Espacement
+==> Lorsqu'on clique sur les justifications d'assomptions, mettre un background 
+    autour de où on a démontrer ça
+
+ Love baking, walking around the city and enjoying a good glass of wine with friends.
