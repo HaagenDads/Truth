@@ -1,5 +1,5 @@
 Theorem Name:Commutativity Package:Logic{
 \let p \in \boolean;
 \let q \in \boolean;
-\state (p \or q) = (q \or p);
+\state (p \or q) \eq (q \or p);
 }

@@ -8,8 +8,8 @@ public class Main {
         frame.setLocation(250, 50);
         frame.setSize(900, 650); 
         frame.setVisible(true);
-        frame.loadTheorem("Logic/OrImplication.txt");
-        //frame.loadTheorem("DeMorgan.txt");
+        //frame.loadTheorem("Logic/FirstOrder/OrImplication.txt");
+        frame.loadTheorem("AndImpliesOrTautology.txt");
         //frame.loadTheorem("TrivialAnd.txt");
 	}
 	

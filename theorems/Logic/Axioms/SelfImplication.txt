@@ -1,7 +1,7 @@
 Theorem Name:SelfImplication Package:Logic{
 \let a \in \boolean;
-\state a \implies a = \true;
+\state a \implies a \eq \true;
 }
 Demonstration { 
-    a \implies a = (\not a) \or a = \true;
+    a \implies a \eq (\not a) \or a \eq \true;
 }

@@ -1,5 +1,5 @@
 Theorem Name:DeMorgan Package:Logic{
 \let p \in \boolean;
 \let q \in \boolean;
-\state \not (p \and q) = (\not p) \or (\not q);
+\state \not (p \and q) \eq (\not p) \or (\not q);
 }

@@ -1,8 +1,14 @@
 Theorem Name:FalseImplication Package:Logic{
 
-\let r \in \boolean;
-\state \false \implies r = \true;
+
+	\let r \in \boolean;
+
+	\state \false \implies r \eq \true;
+
 }
-Demonstration { 
-    \false \implies r = (\not \false) \or r = \true \or r = \true;
+
+Demonstration {
+ 
+    \false \implies r \eq (\not \false) \or r \eq \true \or r \eq \true;
+
 }

@@ -1,4 +1,4 @@
 Theorem Name:OrSimplification Package:Logic{
 \let p \in \boolean;
-\state p \or p = p;
+\state p \or p \eq p;
 }

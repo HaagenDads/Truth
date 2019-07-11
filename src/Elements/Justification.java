@@ -24,13 +24,16 @@ public class Justification {
 	
 	public Justification(String str) {
 		this.thm = null;
-		if (str.equals("error")) assump = new Assump(new Statement("error", "", ""), "0");
-		else assump = new Assump(new Statement("", str, ""), "0");
+		if (str.equals("error")) assump = new Assump(new Statement(new Link("error"), "", ""), "0");
+		// TODO: When does this str=BooleanLogic happen...
+		else {
+			assump = new Assump(new Statement(new Link(), str, ""), "0");
+		}
 		isTheorem = false;
 	}
 	
 	public boolean isError() {
-		return (!isTheorem && assump.st.link.equalsIgnoreCase("error"));
+		return (!isTheorem && assump.st.link.isError());
 	}
 	
 	public String getName() {

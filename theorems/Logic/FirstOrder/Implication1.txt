@@ -1,9 +1,9 @@
 Theorem Name:Implication Package:Logic{
 \let a \in \boolean;
 \let b \in \boolean;
-\state a \implies (b \implies a) = \true;
+\state a \implies (b \implies a) \eq \true;
 }
 Demonstration { 
-    a \implies (b \implies a) = a \implies ((\not b) \or a) = (\not a) \or ((\not b) \or a)
-    = ((\not a) \or a) \or (\not b) = \true \or (\not b) = \true;
+    a \implies (b \implies a) \eq a \implies ((\not b) \or a) \eq (\not a) \or ((\not b) \or a)
+    \eq ((\not a) \or a) \or (\not b) \eq \true \or (\not b) \eq \true;
 }

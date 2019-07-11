@@ -233,7 +233,7 @@ public class Term {
 		tprop.flatten();
 		
 		if (tthm.isShallow()) {
-			result.add(new Statement("=", tthm, tprop));
+			result.add(new Statement(new Link("="), tthm, tprop));
 		}
 		else {
 			if (tthm.size != tprop.size) throw new ExceptionTheoremNotApplicable();
@@ -263,20 +263,45 @@ public class Term {
 		}
 	}
 	
-	static public DifferencesLedger extractDiff(Term t1, Term t2) {
+	/*
+	 * If our link is "=", then we need to prove that a = b or that f(a) = f(b)
+	 * If our link is propositional, we need to prove that a = b, f(a) = f(b) (( when different names mean the same thing ))
+	 *     or that a <=> b (( since  (a <==> b) <==> (a v c <==> a v b)  ))
+	 *     idem for f(a) <=> f(b)
+	 */
+	static public ArrayList<Statement> extractDiff(Term t1, Term t2, Link link) {
 		DifferencesLedger dlg = new DifferencesLedger();
-		extractDiffInner(t1, t2, dlg);
+		
+		if (link.equals("=")) {
+			extractDiffInner(t1, t2, link, dlg);
+		} else if (link.equals("\\eq")) {
+			extractDiffInner(t1, t2, new Link("="), dlg);
+			extractDiffInner(t1, t2, link, dlg);
+		} else if (link.equals("<=")) {
+			extractDiffInner(t1, t2, new Link("="), dlg);
+			extractDiffInner(t1, t2, new Link("<"), dlg);
+			extractDiffInner(t1, t2, link, dlg);
+		} else if (link.equals(">=")) {
+			extractDiffInner(t1, t2, new Link("="), dlg);
+			extractDiffInner(t1, t2, new Link(">"), dlg);
+			extractDiffInner(t1, t2, link, dlg);
+		} else if (link.equals("!=")) {
+			extractDiffInner(t1, t2, link, dlg);
+			extractDiffInner(t1, t2, new Link(">"), dlg);
+			extractDiffInner(t1, t2, new Link("<"), dlg);
+		}
+		
 		Collections.reverse(dlg.diffs);
-		return dlg;
+		return dlg.diffs;
 	}
 	
-	static private Statement extractDiffInner(Term t1, Term t2, DifferencesLedger differencesLedger) {
+	static private Statement extractDiffInner(Term t1, Term t2, Link clink, DifferencesLedger differencesLedger) {
 		t1.flatten();
 		t2.flatten();
 		
 		assertSize(t1); assertSize(t2);
-		Statement voidstatement = new Statement("=", new Term(), new Term());
-		Statement wholestatement = new Statement("=", t1, t2);
+		Statement voidstatement = new Statement(clink, new Term(), new Term());
+		Statement wholestatement = new Statement(clink, t1, t2);
 		differencesLedger.addDifference(wholestatement);
 		
 		
@@ -293,16 +318,16 @@ public class Term {
 		
 		if (t1.size != t2.size) return wholestatement;
 		else if (t1.size == 2) {
-			if (eq0) return extractDiffInner(p11, p21, differencesLedger); // eq0 && eq1 (equals) above
-			if (eq1) return extractDiffInner(p10, p20, differencesLedger);
+			if (eq0) return extractDiffInner(p11, p21, clink, differencesLedger); // eq0 && eq1 (equals) above
+			if (eq1) return extractDiffInner(p10, p20, clink, differencesLedger);
 			return wholestatement;
 		} else {
 			Term p12 = t1.get(2); Term p22 = t2.get(2);
 			boolean eq2 = p12.equals(p22);
 			
 			if (!eq1) return wholestatement;
-			if (eq0) return extractDiffInner(p12, p22, differencesLedger);
-			if (eq2) return extractDiffInner(p10, p20, differencesLedger);
+			if (eq0) return extractDiffInner(p12, p22, clink, differencesLedger);
+			if (eq2) return extractDiffInner(p10, p20, clink, differencesLedger);
 			return wholestatement;
 		}
 	}
@@ -321,50 +346,7 @@ public class Term {
 			&& !Demonstration.isOperator(t.get(2).s)
 		))) { System.out.println("[[[FATAL]]] Term configuration not understood:  " + t); }
 	}
-	
-	/*
-	static public Statement extractDiff2(Term t1, Term t2) {
-		
-		t1.flatten();
-		t2.flatten();
-		
-		if (t1.equals(t2)) return new Statement("=", new Term(), new Term());
-		if (t1.isShallow() || t2.isShallow()) return new Statement("=", t1, t2);
-		
-		int leftpos = 0;	
-		int rightpos1 = t1.size;
-		int rightpos2 = t2.size;
-		int leftmax = Math.min(rightpos1, rightpos2);
-		while (leftpos < leftmax && t1.v.get(leftpos).equals(t2.v.get(leftpos))) leftpos += 1;
-		
-		//System.out.println("\n --Terms--\n" + t1 + " === " + t2 + "\n (leftpos, rightpos1, rightpos2) = (" + leftpos + ", " + rightpos1 + ", " + rightpos2+ ")");
-		
-		while (t1.v.get(rightpos1-1).equals(t2.v.get(rightpos2-1))) {
-			rightpos1 -= 1;
-			rightpos2 -= 1;
-			
-			if (leftpos >= rightpos1 && leftpos >= rightpos2) {
-				return extractDiff(t1.v.get(leftpos), t2.v.get(leftpos));
-			}
-			if (leftpos >= rightpos1 || leftpos >= rightpos2) {
-				return extractByInt(t1, t2, leftpos, rightpos1+1, rightpos2+1);
-			}
-		}
-		if (leftpos == rightpos1-1 && leftpos == rightpos2-1) {
-			return extractDiff(t1.v.get(leftpos), t2.v.get(leftpos));
-		}
-		return extractByInt(t1, t2, leftpos, rightpos1, rightpos2);
-		
-	}*/
 
-	
-	static public Statement extractByInt(Term t1, Term t2, int leftpos, int rightpos1, int rightpos2) {
-		Term nt1 = new Term();
-		Term nt2 = new Term();
-		for (int i=leftpos; i<rightpos1; i++) nt1.addTerm(t1.v.get(i));
-		for (int i=leftpos; i<rightpos2; i++) nt2.addTerm(t2.v.get(i));
-		return new Statement("=", nt1, nt2);
-	}
 	
 	static public Permutations permute(Term t) {
 		t.flatten();

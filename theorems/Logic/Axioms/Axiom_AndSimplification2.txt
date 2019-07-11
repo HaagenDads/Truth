@@ -1,4 +1,4 @@
 Theorem Name:AndSimplification Package:Logic{
 \let p \in \boolean;
-\state p \and \true = p;
+\state p \and \true \eq p;
 }

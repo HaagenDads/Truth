@@ -2,10 +2,10 @@ Theorem Name:OrImplication Package:Logic{
 \let a \in \boolean;
 \let b \in \boolean;
 \let r \in \boolean;
-\state (a \implies r) \and (b \implies r) = (a \or b) \implies r;
+\state (a \implies r) \and (b \implies r) \eq (a \or b) \implies r;
 }
 Demonstration { 
-    (a \or b) \implies r = (\not (a \or b)) \or r = ((\not a) \and (\not b)) \or r
-    = ((\not a) \or r) \and ((\not b) \or r) = (a \implies r) \and ((\not b) \or r)
-    = (a \implies r) \and (b \implies r);
+    (a \or b) \implies r \eq (\not (a \or b)) \or r \eq ((\not a) \and (\not b)) \or r
+    \eq ((\not a) \or r) \and ((\not b) \or r) \eq (a \implies r) \and ((\not b) \or r)
+    \eq (a \implies r) \and (b \implies r);
 }

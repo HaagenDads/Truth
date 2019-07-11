@@ -1,4 +1,4 @@
 Theorem Name:ExcludedMiddle Package:Logic{
 \let p \in \boolean;
-\state p \or (\not p) = \true;
+\state p \or (\not p) \eq \true;
 }

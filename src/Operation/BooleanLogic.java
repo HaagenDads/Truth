@@ -57,8 +57,8 @@ public class BooleanLogic {
 	static public boolean validatePartition(Variable casevar, ArrayList<Statement> cases) {
 		if (cases.size() != 2) System.out.println("Cases partition can only have two cases.");
 		
-		Statement exp1 = new Statement("=", casevar.name, "\\true");
-		Statement exp2 = new Statement("=", casevar.name, "\\false");
+		Statement exp1 = new Statement(new Link("="), casevar.name, "\\true");
+		Statement exp2 = new Statement(new Link("="), casevar.name, "\\false");
 		
 		if (exp1.equals(cases.get(0)) && exp2.equals(cases.get(1))) return true;
 		if (exp1.equals(cases.get(1)) && exp2.equals(cases.get(0))) return true;

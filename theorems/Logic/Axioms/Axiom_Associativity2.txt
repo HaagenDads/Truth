@@ -2,5 +2,5 @@ Theorem Name:Associativity Package:Logic{
 \let p \in \boolean;
 \let q \in \boolean;
 \let r \in \boolean;
-\state p \or (q \or r) = (p \or q) \or r;
+\state p \or (q \or r) \eq (p \or q) \or r;
 }

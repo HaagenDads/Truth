@@ -1,4 +1,4 @@
 Theorem Name:Negation Package:Logic{
 \let p \in \boolean;
-\state \not (\not p) = p;
+\state \not (\not p) \eq p;
 }

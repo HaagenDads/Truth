@@ -1,5 +1,5 @@
 Theorem Name:AndSimplification Package:Logic{
 \let p \in \boolean;
 \let q \in \boolean;
-\state p \and (p \or q) = p;
+\state p \and (p \or q) \eq p;
 }

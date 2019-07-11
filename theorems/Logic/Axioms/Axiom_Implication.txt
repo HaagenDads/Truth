@@ -1,5 +1,5 @@
 Theorem Name:Implication Package:Logic{
 \let p \in \boolean;
 \let q \in \boolean;
-\state p \implies q = (\not p) \or q;
+\state p \implies q \eq (\not p) \or q;
 }

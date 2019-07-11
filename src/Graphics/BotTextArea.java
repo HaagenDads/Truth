@@ -158,11 +158,11 @@ public class BotTextArea extends StringOperations {
 			String paddingSpaces = repeat(" ", maxsize - len(argterm) + 4);
 			
 			if (arg.expl.isError()) {
-				appendString(tab + " = " + argterm, sred);
+				appendString(tab + arg.link.toString() + argterm, sred);
 				appendString(paddingSpaces);
 				appendString(arg.expl.toString() + "\n", sboldred);
 			} else {
-				appendString(tab + " = " + argterm);
+				appendString(tab + arg.link.toString() + argterm);
 				appendString(paddingSpaces);
 				linkedJustifications.add(new linkJustification(arg.expl, doc.getLength()));
 				appendString(arg.expl.getName() + "\n", spale);
@@ -172,10 +172,23 @@ public class BotTextArea extends StringOperations {
 	
 	
 	private void appendString(String s, SimpleAttributeSet set) throws BadLocationException {
-		doc.insertString(doc.getLength(), replaceSymbols(s), set);
+		insertStringToDoc(replaceSymbols(s), set);
 	}
 	private void appendString(String s) throws BadLocationException {
-		doc.insertString(doc.getLength(), replaceSymbols(s), set);
+		ArrayList<Styledsequence> list = parseVisualText(s);
+		for (Styledsequence ss: list) {
+			
+			if (ss.style.equals("bold")) insertStringToDoc(ss.sequence, sbold);
+			else if (ss.style.equals("red")) insertStringToDoc(ss.sequence, sred);
+			else if (ss.style.equals("boldred")) insertStringToDoc(ss.sequence, sboldred);
+			else insertStringToDoc(ss.sequence, set);
+		}
+
+	}
+	
+	
+	private void insertStringToDoc (String s, SimpleAttributeSet set) throws BadLocationException {
+		doc.insertString(doc.getLength(), s, set);
 	}
 	
 	

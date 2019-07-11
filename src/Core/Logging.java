@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import Elements.Assump;
 import Elements.BlockStamp;
 import Elements.Justification;
+import Elements.Link;
 import Elements.Statement;
 import Elements.Term;
 
@@ -61,7 +62,7 @@ public class Logging {
 		if (caseConclusions == null) return;
 		for (Assump a: caseConclusions) {
 			activeLog.addLine(null, a.st.lside, null);
-			activeLog.addLine(" = ", a.st.rside, new Justification(a));
+			activeLog.addLine(new Link("\\eq"), a.st.rside, new Justification(a));
 		}
 		
 	}
@@ -76,7 +77,7 @@ public class Logging {
 		activeLog = nv;
 	}
 	
-	public void addLine(String link, Term term, Justification expl) {
+	public void addLine(Link link, Term term, Justification expl) {
 		
 		if (activeLog.t.equals(type.cases)) {
 			System.out.println("[LOGS] Found line in cases : " + term + "  " + expl);
@@ -116,17 +117,17 @@ public class Logging {
 	public class Arg {
 		
 		public Term term;
-		public String link;
+		public Link link;
 		public Justification expl;
 		
-		public Arg(Term term, String link, Justification expl) {
+		public Arg(Term term, Link link, Justification expl) {
 			this.term = term;
 			this.link = link;
 			this.expl = expl;
 		}
 		
 		public String toString() {
-			return link + " " + term.toString() + " (" + expl.toString() + ")";
+			return link.toString() + term.toString() + " (" + expl.toString() + ")";
 		}
 		
 	}

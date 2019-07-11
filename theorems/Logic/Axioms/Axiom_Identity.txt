@@ -1,4 +1,4 @@
 Theorem Name:Identity Package:Logic{
 \let p \in \boolean;
-\state p = p;
+\state p \eq p;
 }

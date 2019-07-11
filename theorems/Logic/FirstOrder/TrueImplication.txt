@@ -1,8 +1,8 @@
 Theorem Name:TrueImplication Package:Logic{
 
 \let r \in \boolean;
-\state \true \implies r = r;
+\state \true \implies r \eq r;
 }
 Demonstration { 
-    \true \implies r = (\not \true) \or r = \false \or r = r;
+    \true \implies r \eq (\not \true) \or r \eq \false \or r \eq r;
 }

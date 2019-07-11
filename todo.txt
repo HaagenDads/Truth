@@ -1,0 +1,51 @@
+
+Theorems to prove:
+
+\let p_1 \in \boolean
+\let p_2 \in \boolean
+\let p_3 \in \boolean
+\let P = {p_1, p_2, p_3}
+
+\then \exists a, b \in P \sothat a = b
+
+
+# Note: "a, b \in P" doit impliquer deux éléments distincts
+
+
+
+
+# Possibilité de ne pas avoir de lien dans le statement initial
+eg. 
+let a in bool
+let b in bool
+where a = b 
+      a = T
+then  b
+
+# A demonstration should only have pure Terms - no strings
+
+
+
+# Lorsqu'on passe de <=> à =, ajuster la tabulation
+
+
+# DeMorgan3
+
+# Suite de AND ou OR sans parenthèses
+
+# Pour p1, p2, ..., pn
+
+# Spellcheck du compilateur (eg or vs \or)
+
+# Bolden True and False
+
+
+Solved
+# Logique prop: changer pour "\eq"	
+# Change the demonstration so that a <==> b can be solved if a = b
+# a <==> b n'implique pas que a = b ...
+# Regarder la suite de liens
+	eg > > > > ==> >
+	ie. s'intéresser à la réduction
+
+

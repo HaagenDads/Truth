@@ -1,6 +1,7 @@
 package Core;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import Elements.*;
 import Elements.Term.ExceptionTheoremNotApplicable;
@@ -39,56 +40,6 @@ public class Demonstration {
 		this.body = body;
 		this.source = thm;
 		nlog = thm.nlog;
-	}
-	
-	
-	public void compileProposition (ArrayList<String> subbody) {
-			
-		boolean proposition = true;
-		Term first_exp = null;
-		ArrayList<String> exp_right = new ArrayList<String>();
-		Term t1 = null;
-		Term t2;
-		
-		for (String token: subbody) {
-			if (token.equals("=") && assertGroundParenthesis(exp_right)) {
-				t2 = Term.extractTerms(exp_right);
-				if (t1 != null) {
-					boolean innerState = validateStatement(t1, t2);
-					proposition = proposition && innerState;
-					if (!innerState) printout(3, "Could not validate statement " + t1 + " = " + t2);
-				} else {
-					// First expression - No need to validate anything
-					nlog.addLine(null, first_exp = t2, null);
-				}
-				t1 = t2;
-				exp_right = new ArrayList<String>();
-			} else {
-				exp_right.add(token);
-			}
-		}
-
-		t2 = Term.extractTerms(exp_right);
-		if (!validateStatement(t1, t2)) {
-			printout(3, "Could not validate statement " + t1 + " = " + t2);
-			proposition = false;
-		}
-		if (proposition) assumptions.acceptAssumptionFromDemonstration(new Statement("=", first_exp, t2), nlog.blockstamp);
-	}
-	
-	
-	private boolean assertGroundParenthesis(ArrayList<String> exp) {
-		int openedParenthesis = 0;
-		for (String s: exp) {
-		    for (int i = 0; i < s.length(); i++) {
-		        if (s.charAt(i) == '(') {
-		        	openedParenthesis++;
-		        } else if (s.charAt(i) == ')') {
-		            if (openedParenthesis-- == 0)  printout(3, "Trying to close closed parenthesis in " + exp);
-		        }
-		    }
-		}
-		return openedParenthesis == 0;
 	}
 	
 	
@@ -134,6 +85,64 @@ public class Demonstration {
 		return false;		
 	}
 	
+	private void compileProposition (ArrayList<String> subbody) {
+			
+		boolean proposition = true;
+		Term first_exp = null;
+		ArrayList<String> exp_right = new ArrayList<String>();
+		Term t1 = null;
+		Term t2;
+		Link currentlink = null;
+		
+		LinkedList<Link> linkserie = new LinkedList<Link>();
+		for (String token: subbody) {
+			if (Link.isLink(token) && assertGroundParenthesis(exp_right)) {
+				linkserie.add(new Link(token));
+				t2 = Term.extractTerms(exp_right);
+				if (t1 != null) {
+					boolean innerState = validateStatement(t1, t2, currentlink);
+					proposition = proposition && innerState;
+					if (!innerState) printout(3, "Could not validate statement " + t1 + currentlink.toString() + t2);
+				} else {
+					// First expression - No need to validate anything
+					nlog.addLine(null, first_exp = t2, null);
+				}
+				t1 = t2;
+				currentlink = linkserie.getLast();
+				exp_right = new ArrayList<String>();
+			} else {
+				exp_right.add(token);
+			}
+		}
+
+		linkserie.add(currentlink);
+		t2 = Term.extractTerms(exp_right);
+		if (!validateStatement(t1, t2, currentlink)) {
+			printout(3, "Could not validate statement " + t1 + currentlink.toString() + t2);
+			proposition = false;
+		}
+		
+		Link conclusion = Link.reduceSerie(linkserie);
+		proposition = proposition && !conclusion.equals("");
+		if (proposition) assumptions.acceptAssumptionFromDemonstration(new Statement(conclusion, first_exp, t2), nlog.blockstamp);
+	}
+	
+	
+	private boolean assertGroundParenthesis(ArrayList<String> exp) {
+		int openedParenthesis = 0;
+		for (String s: exp) {
+		    for (int i = 0; i < s.length(); i++) {
+		        if (s.charAt(i) == '(') {
+		        	openedParenthesis++;
+		        } else if (s.charAt(i) == ')') {
+		            if (openedParenthesis-- == 0)  printout(3, "Trying to close closed parenthesis in " + exp);
+		        }
+		    }
+		}
+		return openedParenthesis == 0;
+	}
+	
+	
 	private boolean isTheoremDemonstrated() {
 		for (Assump a: assumptions) {
 			if (a.st.equals(proposition)) return true;
@@ -163,39 +172,38 @@ public class Demonstration {
 	 *  the program would extract to difference to be "prove that x = y". Of course, if x=y, then f(x)=f(y).
 	 *  But it is not sufficient. We also need to check if it's known that f(x)=f(y).
 	 *  
-	 *  f(g(x))=f(g(y)) could be true if we prove that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
+	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
-	private boolean validateStatement(Term t1, Term t2) {
-		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2).diffs;
+	private boolean validateStatement(Term t1, Term t2, Link link) {
+		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
 		for (Statement st: diffLedger) {
-			if (validateStatementSpecificDifference(t1, t2, st)) return true;
+			Justification solution = validateStatementSpecificDifference(t1, t2, st);
+			if (solution != null) {
+				nlog.addLine(link, t2, solution);
+				return true;
+			}
 		}
 		printout(3, "Couldnt use assumptions nor math");
-		nlog.addLine(" = ", t2, new Justification("error"));
+		nlog.addLine(link, t2, new Justification("error"));
 		return false;
 	}
 	
-	private boolean validateStatementSpecificDifference(Term t1, Term t2, Statement diff) {
+	private Justification validateStatementSpecificDifference(Term t1, Term t2, Statement diff) {
 		
-		printout("\nValidate statement: " + t1 + " = " + t2 + "  <==>  " + diff.toString());
+		printout("\nValidate statement: " + t1 + diff.link.toString() + t2 + "  <==>  " + diff.toString());
 		
 		// Using assumptions
 		for (Assump a: assumptions) {
 			printout(a.st.toString());
 			if (a.st.equals(diff)) {
-				printout("! Could match with assumption " + a.st.toString() + " !");
-				nlog.addLine(" = ", t2, new Justification(a));
-				return true;
+				return new Justification(a);
 			}
 		}
 		
 		// Using math (assuming X BinOperation Y / UnaryOperation X )
 		try {
 			if (solveMath(diff.lside).equals(solveMath(diff.rside))) {
-				printout("! Could resolve " + diff.lside + " and " + diff.rside + " into " + 
-						solveMath(solveMath(diff.lside)) + " !");
-				nlog.addLine(" = ", t2, new Justification("BooleanLogic"));
-				return true;
+				return new Justification("BooleanLogic");
 			}
 		} catch (ExceptionBooleanCasting e) {}
 		
@@ -203,16 +211,16 @@ public class Demonstration {
 		// Applying previous theorems
 		for (Theorem th: source.loadedTheorems) {
 			if (matchTheorem(th, diff)) {
-				nlog.addLine(" = ", t2, new Justification(th));
-				return true;
+				return new Justification(th);
 			}
 		}	
 		
-		return false;
+		return null;
 	}
 	
 	
 	private boolean matchTheorem (Theorem th, Statement prop) {
+		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
 		return matchTheoremUnilateral(th, prop) || matchTheoremUnilateral(th, prop.switchSides());
 	}
 	
@@ -424,7 +432,9 @@ public class Demonstration {
 				pos += 1;
 				rightHand.add(body.get(pos));
 			}
-			Statement hypothesis = new Statement("=", new Term(casevar.name), Term.extractTerms(rightHand));
+			
+			// Assigning a partition element to the variable; we then need to use "=".
+			Statement hypothesis = new Statement(new Link("="), new Term(casevar.name), Term.extractTerms(rightHand));
 			
 			// Extracting the conditional body
 			ArrayList<String> nestedBody = new ArrayList<String>();

@@ -97,15 +97,17 @@ public class Compiler {
 				ArrayList<String> lefthand = new ArrayList<String>();
 				ArrayList<String> righthand = new ArrayList<String>();
 				boolean left = true;
+				Link link = new Link();
 				for (int i=1; i<elements.length; i++) {
-					if (!elements[i].equals("=")) {
+					if (Link.isLink(elements[i])) {
+						left = false;
+						link = new Link(elements[i]);
+					} else {
 						if (left) lefthand.add(elements[i]);
 						else righthand.add(elements[i]);
-					} else {
-						left = false;
 					}
 				}
-				thm.statement = new Statement("=", Term.extractTerms(lefthand), Term.extractTerms(righthand));
+				thm.statement = new Statement(link, Term.extractTerms(lefthand), Term.extractTerms(righthand));
 			}
 		}
 		
