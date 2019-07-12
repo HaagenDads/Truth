@@ -85,32 +85,55 @@ public class Compiler {
 			
 			statement = statement.trim();
 			String[] elements = statement.split(" ");
-			if (elements[0].equals("\\let")) {
-				
-				if (elements[2].equals("\\in")) {
-					thm.variables.add(new Variable(elements[1], elements[3]));
-				} else { printout(3, "Could not comprehend variable initialization from: " + statement); }
-			}
+			String headToken = elements[0];
 			
-			else if (elements[0].equals("\\state")) {
+			if (headToken.equals("\\let")) {
 				
-				ArrayList<String> lefthand = new ArrayList<String>();
-				ArrayList<String> righthand = new ArrayList<String>();
-				boolean left = true;
-				Link link = new Link();
-				for (int i=1; i<elements.length; i++) {
-					if (Link.isLink(elements[i])) {
-						left = false;
-						link = new Link(elements[i]);
-					} else {
-						if (left) lefthand.add(elements[i]);
-						else righthand.add(elements[i]);
-					}
+				String varname = elements[1];
+				String connection = elements[2];
+
+				if (connection.equals("\\in")) {
+					String set = elements[3];
+					thm.variables.add(new Variable(varname, set));
+				} else { 
+					printout(3, "Could not comprehend variable initialization from: " + statement);
 				}
-				thm.statement = new Statement(link, Term.extractTerms(lefthand), Term.extractTerms(righthand));
+				
+			} else if (headToken.equals("\\where")) {
+				Statement st = parseStatementFromLine(elements);
+				thm.assumptions.acceptAssumptionFromHypothesis(st);
+				
+			} else if (headToken.equals("\\state")) {
+				thm.statement = parseStatementFromLine(elements);
 			}
 		}
 		
+	}
+	
+	/* Specifically disregard the first element of the String[], as it corresponds to the head token. */
+	private Statement parseStatementFromLine (String[] tokens) {
+		
+		/*
+		ArrayList<String> lefthand = new ArrayList<String>();
+		ArrayList<String> righthand = new ArrayList<String>();
+		boolean left = true;
+		Link link = new Link();
+		for (int i=1; i<tokens.length; i++) {
+			if (Link.isLink(tokens[i])) {
+				left = false;
+				link = new Link(tokens[i]);
+			} else {
+				if (left) lefthand.add(tokens[i]);
+				else righthand.add(tokens[i]);
+			}
+		}
+		System.out.println("lefthand: " + lefthand.toString());
+		return new Statement(link, Term.extractTerms(lefthand), Term.extractTerms(righthand));*/
+		ArrayList<String> als = new ArrayList<String>();
+		for (String s: tokens) als.add(s);
+		als.remove(0);
+		Term terms = Term.extractTerms(als);
+		return new Statement(new Link(terms.v.get(1).s), terms.v.get(0), terms.v.get(2));
 	}
 	
 	
@@ -147,7 +170,8 @@ public class Compiler {
 	public void acceptTheorems(String packageName) throws CompilerException {
 		File[] files = new File("theorems/" + packageName + "/Axioms/").listFiles();
 		File[] files2 = new File("theorems/" + packageName + "/FirstOrder/").listFiles();
-		for (File[] folder: new File[][]{files, files2}) {
+		File[] files3 = new File("theorems/" + packageName + "/Natural/").listFiles();
+		for (File[] folder: new File[][]{files, files2, files3}) {
 			for (File f: folder) {
 				String unit = getUnitFromFile(f);
 				

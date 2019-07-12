@@ -2,6 +2,7 @@ package Elements;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 
 import Core.Demonstration;
 import Core.Theorem;
@@ -114,7 +115,7 @@ public class Term {
 	
 	public void embedVariableNames(String head) {
 		if (isShallow()) {
-			if (!s.startsWith(head) && !s.startsWith("\\")) s = head + s;
+			if (!s.startsWith(head) && !s.startsWith("\\") && !Demonstration.isOperator(s)) s = head + s;
 		} else {
 			for (Term x: v) x.embedVariableNames(head);
 		}
@@ -164,7 +165,55 @@ public class Term {
 	}
 	
 	
+	static private Term reduce (Term termarray) {
+		if (termarray.isShallow()) System.out.println("Term sent to be reduced but was shallow... : " + termarray.toString());
+		Term result = new Term();
+		LinkedList<Term> output = new LinkedList<Term>();
+		
+		for (int i=termarray.size-1; i>=0; i--) {
+			Term ith = termarray.get(i);
+			ith.flatten();
+			if (ith.isShallow() && ith.s.equals("\\forall")) {
+				if (output.get(1).isShallow() && output.get(1).s.equals("\\follows")) {
+					Term forallterm = new Term();
+					forallterm.addTerm(ith);
+					forallterm.addTerm(output.pop());
+					output.pop();
+					forallterm.addTerm(output.pop());
+					output.addFirst(forallterm);
+				}
+			} else if (ith.isShallow() && ith.s.equals("\\exists")) {
+				if (output.get(1).isShallow() && output.get(1).s.equals("\\suchthat")) {
+					Term existsterm = new Term();
+					existsterm.addTerm(ith);
+					existsterm.addTerm(output.pop());
+					output.pop();
+					existsterm.addTerm(output.pop());
+					output.addFirst(existsterm);
+				}
+					
+			} else if (ith.isShallow() && ith.s.equals("\\not")) {
+				Term notterm = new Term();
+				notterm.addTerm(ith);
+				notterm.addTerm(output.pop());
+				output.addFirst(notterm);
+			} else {
+				output.addFirst(ith);
+			}
+		}
+		
+		for (Term t: output) result.addTerm(t);
+		result.flatten();
+		return result;
+	}
+	
+	/*
+	 * Returns a term structure (list of other terms, never immediatly shallow)
+	 */
 	static public Term extractTerms(ArrayList<String> seq) {
+		/*System.out.println("___");
+		for (String s: seq) System.out.println(s);*/
+		
 		Term result = new Term();
 		ArrayList<String> innerBuffer = new ArrayList<String>();
 		int openedParenthesis = 0;
@@ -177,6 +226,9 @@ public class Term {
 			seq.set(seq.size()-1, lastString.substring(0, lastString.length()-1));
 		}
 		
+		if (seq.size() == 1) return new Term(seq.get(0));
+		
+		boolean foundlink = false;
 		for (String x: seq) {
 			x = x.trim();
 			if (openedParenthesis > 0) {
@@ -192,9 +244,128 @@ public class Term {
 			} else {
 				openedParenthesis += getParenthesisDifferential(x);
 				if (openedParenthesis > 0) innerBuffer.add(x);
-				else result.addTerm(new Term(x));
+				else {
+					if (Link.isLink(x)) {
+						foundlink = true;
+					}
+					result.addTerm(new Term(x));
+				}
 			}
 		}
+		
+		if (!foundlink) {
+			//System.out.println("Reducing: " + result.toString() + "  (" + result.size + ")");
+			result = Term.reduce(result);
+			//System.out.println("Reduced: " + result.toString() + "  (" + result.size + ")");
+		}
+		if (foundlink && result.size > 3) {
+			
+			Term parsed = new Term();
+			for (int i=0; i<result.size; i++) {
+				Term ith = result.v.get(i);
+				if (ith.isShallow() && Link.isLink(ith.s)) {
+
+					// Left
+					Term tleft = new Term();
+					for (int j=0; j<i; j++) {
+						tleft.addTerm(result.get(j));
+					}
+					
+					// Right
+					Term tright = new Term();
+					for (int j=i+1; j<result.size; j++) {
+						tright.addTerm(result.get(j));
+					}
+					
+					//System.out.println("LeftReducing: " + tleft.toString() + "  (" + tleft.size + ")");
+					parsed.addTerm(Term.reduce(tleft));
+					//System.out.println("LeftReduced: " + tleft.toString() + "  (" + tleft.size + ")");
+					parsed.addTerm(result.get(i));
+					//System.out.println("RightReducing: " + tright.toString() + "  (" + tright.size + ")");
+					parsed.addTerm(Term.reduce(tright));
+					//System.out.println("RightReduced: " + tright.toString() + "  (" + tright.size + ")");
+					
+				}
+			}
+			return parsed;
+		}
+		/*
+		// When an "=" is placed between parenthesis, we want to assume each sides are terms
+		// We can only do that if we take them and put them inside ourselves here
+		if (result.size > 3) {
+			System.out.println("too big. results look like: " + result.toString());
+			for (Term t: result.v) {
+				System.out.println("  " + t.toString());
+			}
+			Term parsed = new Term();
+			boolean foundop = false;
+			for (int i=1; i<result.size; i++) {
+				Term ith = result.v.get(i);
+				if (ith.isShallow() && ith.s.equals("=")) {
+					foundop = true;
+					
+					// Regroup the left
+					if (i > 1) {
+						innerBuffer = new ArrayList<String>();
+						innerBuffer.add("(" + result.get(0).toString());
+						for (int j=1; j<i-1; j++) {
+							String nextterm = result.get(j).toString();
+							//if (!result.get(j).isShallow()) nextterm = "(" + nextterm + ")";
+							innerBuffer.add(nextterm);
+						}
+						innerBuffer.add(result.get(i-1).toString() + ")");
+						parsed.addTerm(extractTerms(innerBuffer));
+					} else {
+						parsed.addTerm(result.get(0));
+					}
+					
+					
+					// Add middle operator (eg. "=")
+					parsed.addTerm(ith);
+					
+					
+					// Regroup the right
+					innerBuffer = new ArrayList<String>();
+					if (i < result.size - 2) {
+						parsed.addTerm(result.get(i+1));						
+					} else {
+						innerBuffer = new ArrayList<String>();
+						innerBuffer.add("(" + result.get(i+1).toString());
+						for (int j=i+2; j<result.size-1; j++) {
+							String nextterm = result.get(j).toString();
+							innerBuffer.add(nextterm);
+						}
+						innerBuffer.add(result.get(result.size-1).toString() + ")");
+						parsed.addTerm(extractTerms(innerBuffer));
+						System.out.println("the right parsed: " + extractTerms(innerBuffer).toString());
+					}
+				}
+			}
+			if (foundop) return parsed;
+		}
+		*/
+		
+		/*
+		// Comprehend Exist and Forall operators, from the written structure
+		//    \exists (x, y) \suchthat ((x > 0) \and (3 = 3))
+		// into a known size 3 term of the form
+		//    [\exists, [(x, y)]_collection, [[x > 0], \and, [3 = 3]]]
+		if (result.size == 4) {
+			Term headToken = result.get(0);
+			Term middleToken = result.get(2);
+			if (headToken.isShallow() && middleToken.isShallow()) {
+				if ((headToken.s.equals("\\exists") && middleToken.s.equals("\\suchthat"))
+				 || (headToken.s.equals("\\forall") && middleToken.s.equals("\\follows"))) {
+					Term parsed = new Term();
+					parsed.addTerm(headToken);
+					// TODO
+					// Implement collections for terms (eg (x, y, z))
+					parsed.addTerm(result.get(1));
+					parsed.addTerm(result.get(3));
+					return parsed;
+				}
+			}
+		}*/
 		return result;
 	}
 	

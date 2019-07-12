@@ -87,6 +87,8 @@ abstract public class StringOperations extends JTextPane {
 		result = result.replace((CharSequence) "\\or", (CharSequence) "or");
 		result = result.replace((CharSequence) "\\implies", (CharSequence) "→");
 		result = result.replace((CharSequence) "\\eq", (CharSequence) "≡");
+		//result = result.replace((CharSequence) "\\forall", (CharSequence) "For all");
+		//result = result.replace((CharSequence) "\\setnatural", (CharSequence) "ℕ");
 		return result;
 		
 	}

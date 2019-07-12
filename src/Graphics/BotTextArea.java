@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import javax.swing.text.*;
 
+import Elements.Assump;
 import Elements.Justification;
 import Core.Logging;
 import Core.StringOperations;
@@ -67,6 +68,7 @@ public class BotTextArea extends StringOperations {
 	
 	/*    Draws the header, i.e. the name, statement and assumptions    */
 	private void drawTheoremHeader(Theorem thm) throws BadLocationException {
+		System.out.println(thm.statement.toString());
 
 		appendString("Theorem " + thm.name, sbold);
 		
@@ -86,8 +88,20 @@ public class BotTextArea extends StringOperations {
 			appendString(" be in " + v.type + "\n");
 			tab = "        ";
 		}
+		appendString("\n");
 		
-		appendString("\n    Then:\n        " + thm.statement.toString());
+		boolean areHypothesis = false;
+		tab = "    Where:\n        ";
+		for (Assump asmp: thm.assumptions) {
+			if (asmp.IndexStamp.equals("hyp")) {
+				appendString(tab + asmp.st.toString());
+				tab = "        ";
+				areHypothesis = true;
+			}
+		}
+		if (areHypothesis) appendString("\n\n");
+		
+		appendString("    Then:\n        " + thm.statement.toString());
 	}
 	
 	/*    Draws the body of the theorem, e.g. everything that comes under the header   */
@@ -172,7 +186,17 @@ public class BotTextArea extends StringOperations {
 	
 	
 	private void appendString(String s, SimpleAttributeSet set) throws BadLocationException {
-		insertStringToDoc(replaceSymbols(s), set);
+		ArrayList<Styledsequence> list = parseVisualText(s);
+		for (Styledsequence ss: list) {
+			
+			if (ss.style.equals("bold")) {
+				if (set.equals(sred)) insertStringToDoc(ss.sequence, sboldred);
+				else insertStringToDoc(ss.sequence, set);
+			}
+			else if (ss.style.equals("red")) insertStringToDoc(ss.sequence, set);
+			else if (ss.style.equals("boldred")) insertStringToDoc(ss.sequence, set);
+			else insertStringToDoc(ss.sequence, set);
+		}
 	}
 	private void appendString(String s) throws BadLocationException {
 		ArrayList<Styledsequence> list = parseVisualText(s);

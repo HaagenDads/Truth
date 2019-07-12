@@ -9,8 +9,10 @@ public class Main {
         frame.setSize(900, 650); 
         frame.setVisible(true);
         //frame.loadTheorem("Logic/FirstOrder/OrImplication.txt");
-        frame.loadTheorem("AndImpliesOrTautology.txt");
+        //frame.loadTheorem("AndImpliesOrTautology.txt");
         //frame.loadTheorem("TrivialAnd.txt");
+        //frame.loadTheorem("Logic/FirstOrder/PartitionImplication.txt");
+        frame.loadTheorem("Unit.txt");
 	}
 	
 }

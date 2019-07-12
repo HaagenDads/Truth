@@ -7,10 +7,12 @@ import Elements.*;
 import Elements.Term.ExceptionTheoremNotApplicable;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
+import Operation.NaturalNumbers.ExceptionNaturalNumbersCasting;
+import Operation.NaturalNumbers;
 
 public class Demonstration {
 
-	private final static int printPriority = 3; // 3 = [FATAL] only; 1 = broad;
+	private final static int printPriority = 0; // 3 = [FATAL] only; 1 = broad;
 	boolean isNested;
 	
 	private Body body;
@@ -175,9 +177,17 @@ public class Demonstration {
 	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
 	private boolean validateStatement(Term t1, Term t2, Link link) {
+		
+		Justification solution;
+		solution = validateTrivialImplication(t1, t2, link);
+		if (solution != null) {
+			nlog.addLine(link, t2, solution);
+			return true;
+		}
+		
 		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
 		for (Statement st: diffLedger) {
-			Justification solution = validateStatementSpecificDifference(t1, t2, st);
+			solution = validateStatementSpecificDifference(t1, t2, st);
 			if (solution != null) {
 				nlog.addLine(link, t2, solution);
 				return true;
@@ -186,6 +196,19 @@ public class Demonstration {
 		printout(3, "Couldnt use assumptions nor math");
 		nlog.addLine(link, t2, new Justification("error"));
 		return false;
+	}
+	
+	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
+		// true \eq (x = 0)
+		t1.flatten();
+		if (link.equals("\\eq") && t1.isShallow() && t1.s.equals("\\true")) {
+			printout("Validated condition for tentative trivial solving");
+			Term left = t2.v.get(0);
+			Term lk = t2.v.get(1);
+			Term right = t2.v.get(2);
+			return validateStatementSpecificDifference(left, right, new Statement(new Link(lk.s), left, right));
+		}
+		return null;
 	}
 	
 	private Justification validateStatementSpecificDifference(Term t1, Term t2, Statement diff) {
@@ -235,6 +258,7 @@ public class Demonstration {
 				substitutions = orderSubstitutions(substitutions);
 				assertValideSubstitutions(th, substitutions);
 				
+				
 				// Applies every required changes so that both left sides would be identical
 				Term alteredRightSide = prop.rside;
 				for (Statement st: substitutions) {
@@ -242,13 +266,6 @@ public class Demonstration {
 				}
 				
 				// Check if the changes are enough for the right sides to be identical
-				if (th.name.equals("Implication")) {
-					printout("\n ** :");
-					for (Statement st: substitutions) {
-						printout("st: " + st.toString());
-					}
-					printout(alteredRightSide + ", " + th.statement.rside);
-				}
 				Term thmRightSide = reduceTheoremVariables(th.statement.rside, substitutions);
 				if (alteredRightSide.equals(thmRightSide)) {
 					printout("** Match theorem : " + substitutions + "   -from " + th.name);
@@ -385,9 +402,17 @@ public class Demonstration {
 	}
 	
 		
+	static public boolean isQuantifierOperator(String s) {
+		if (s==null) return false;
+		String[] opSet = new String[]{"\\exists", "\\forall"};
+		for (String op: opSet) {
+			if (s.equals(op)) return true;
+		}
+		return false;
+	}
 	static public boolean isBinaryOperator(String s) {
 		if (s==null) return false;
-		String[] opSet = new String[]{"\\or", "\\and", "\\implies"};
+		String[] opSet = new String[]{"\\or", "\\and", "\\implies", "=", ">", "<", "<=", ">=", "!="};
 		for (String op: opSet) {
 			if (s.equals(op)) return true;
 		}
@@ -397,6 +422,12 @@ public class Demonstration {
 	
 	private String solveBinaryOperator(String x, String op, String token) throws ExceptionBooleanCasting {
 		if (!isBinaryOperator(op)) printout(3, "Tried to solve binary operator for '" + op + "'");
+		try {
+			return NaturalNumbers.applyBinaryLogic(x, op, token);
+			
+		} catch (ExceptionNaturalNumbersCasting e) {
+			e.explain();
+		}
 		return BooleanLogic.applyBinaryLogic(x, op, token);
 	}
 	
@@ -417,7 +448,7 @@ public class Demonstration {
 	}
 	
 	static public boolean isOperator(String s) {
-		return isUnaryOperator(s) || isBinaryOperator(s);
+		return isUnaryOperator(s) || isBinaryOperator(s) || isQuantifierOperator(s);
 	}
 	
 	

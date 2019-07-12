@@ -15,7 +15,9 @@ public class Link {
 	
 	static public boolean isLink (String string) {
 		if (string.equals("=")) return true;
+		if (string.equals("!=")) return true;
 		if (string.equals("\\eq")) return true;
+		if (string.equals("\\then")) return true;
 		return false;
 	}
 	
@@ -46,6 +48,10 @@ public class Link {
 			if (b.equals("=") || b.equals(">=")) return a;
 		} else if (a.equals(">=")) {
 			if (b.equals("=") || b.equals(">=")) return a;
+		} else if (a.equals("\\eq")) {
+			if (b.equals("\\then")) return b;
+		} else if (a.equals("\\then")) {
+			if (b.equals("\\eq")) return a;
 		}
 		System.out.println("NO LINK CONTINUITY BETWEEN '" + a + "' AND '" + b + "'");		
 		return new Link();

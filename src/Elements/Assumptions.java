@@ -24,7 +24,7 @@ public class Assumptions implements Iterable<Assump>{
 	}
 	
 	public void acceptAssumptionFromHypothesis(Statement st) {
-		addtolist(new Assump(st, "0"));
+		addtolist(new Assump(st, "hyp"));
 	}
 	public void acceptAssumptionFromCasesHypothesis(Statement st) {
 		addtolist(new Assump(st, "-1"));

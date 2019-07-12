@@ -41,10 +41,12 @@ public class Justification {
 		if (isTheorem) return thm.name;
 		else {
 			String stamp = assump.IndexStamp;
-			if (stamp.equals("0")) {
+			if (stamp.equals("hyp")) {
+				return "Hypothesis";
+			} else if (stamp.equals("0")) {
 				return assump.st.toString();
 			} else if (stamp.equals("-1")) {
-				return assump.st.toString();
+				return "Case: " + assump.st.toString();
 			} else {
 				return "(" + stamp + ")";
 			}

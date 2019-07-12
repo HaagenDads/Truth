@@ -1,0 +1,6 @@
+Theorem Name:Nonequality Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\state (x > y) \or (x < y) \eq (x != y);
+}
+

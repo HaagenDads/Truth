@@ -37,7 +37,27 @@ then  b
 
 # Spellcheck du compilateur (eg or vs \or)
 
-# Bolden True and False
+# Check pour les contradictions dans les hypothèses... 
+
+
+
+# UNIVERSAL QUANTIFIER ---------------------
+
+\let x \in \setnatural;
+\let P: \setnatural -> \boolean;
+     P(x) = \boolean(x^2 > 0);
+\then \forall x, P(x) \eq \false;
+}
+\demonstration {
+    \startcase x;
+    \case x = 0;
+        x^2 = 0;
+        x^2 > 0 \eq \false; 
+    \endcase;
+    *** vérification que x = 0 bel et bien dans le \setnatural
+    *** \exists x \in \setnatural \suchthat \not P(x)
+    \not \forall x \in \setnatural P(x)
+}
 
 
 Solved
@@ -47,5 +67,6 @@ Solved
 # Regarder la suite de liens
 	eg > > > > ==> >
 	ie. s'intéresser à la réduction
+# Bolden True and False
 
 
