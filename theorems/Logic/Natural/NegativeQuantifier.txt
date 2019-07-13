@@ -1,0 +1,6 @@
+Theorem Name:NegativeQuantifier Package:Logic{
+\let x \in \setnatural;
+\let p \in \boolean;
+\state \not \forall x \follows p \eq \exists x \suchthat \not p;
+}
+

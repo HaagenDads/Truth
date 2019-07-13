@@ -1,0 +1,13 @@
+Theorem Name:ReductionImpl Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state (a \and b) \implies a \eq \true;
+}
+Demonstration {
+	(a \and b) \implies a \eq
+	\not (a \and b) \or a \eq
+	((\not a) \or (\not b)) \or a \eq
+	((\not a) \or a) \or (\not b) \eq
+   	\true \or \not b \eq 
+	\true;
+}

@@ -3,15 +3,14 @@ Theorem Name:Unit Package:Logic{
 \state \forall x \follows (x > 0) \eq \false;
 }
 Demonstration { 
-    \startcase x
-    \case x = 0 {
         \not (x = 0) \eq (x != 0) \eq ((x > 0) \or (x < 0));
-        \true \eq (x = 0) \eq \not \not (x = 0) \eq \not ((x > 0) \or (x < 0)) \eq
+        (x = 0) \eq \not \not (x = 0) \eq \not ((x > 0) \or (x < 0)) \eq
         (\not (x > 0)) \and (\not (x < 0)) \then (\not (x > 0));
-    }
-    \endcase
 
-    \not \forall x \follows \not (x > 0 = \false) \eq
-    \not \forall x \follows (x > 0 = \true);
+    \false \eq
+    \not \true \eq
+    \not \exists x \suchthat (\not (x > 0)) \eq
+    \forall x \follows \not \not (x > 0) \eq
+    \forall x \follows (x > 0);
 }
 

@@ -1,0 +1,5 @@
+Theorem Name:ReductionImpl Package:Logic{
+\let a \in \boolean;
+\let b \in \boolean;
+\state a \then (a \or b);
+}

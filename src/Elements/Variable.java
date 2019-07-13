@@ -3,11 +3,11 @@ package Elements;
 public class Variable {
 
 	public String name;
-	public String type;
+	public Type type;
 	
 	public Variable(String name, String type) {
 		this.name = name;
-		this.type = type;
+		this.type = new Type(type);
 	}
 	
 	public boolean equals (Variable other) {
@@ -24,7 +24,7 @@ public class Variable {
 	}
 
 	public Variable copy() {
-		return new Variable(name, type);
+		return new Variable(name, type.type);
 	}
 
 	

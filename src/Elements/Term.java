@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 
-import Core.Demonstration;
-import Core.Theorem;
+import Operation.Operator;
 
 public class Term {
 
@@ -28,6 +27,11 @@ public class Term {
 	
 	public Term get(int i) {
 		return v.get(i);
+	}
+	
+	public boolean equalsString(String s) {
+		if (!isShallow()) return false;
+		return this.s.equals(s);
 	}
 	
 	
@@ -79,7 +83,7 @@ public class Term {
 	private boolean isUnaryShallow() {
 		if (!isShallow() && size==2) {
 			Term firstterm = v.get(0);
-			if (firstterm.isShallow() && Demonstration.isUnaryOperator(firstterm.s)) {
+			if (firstterm.isShallow() && Operator.isUnary(firstterm.s)) {
 				return true;
 			}
 		}
@@ -115,7 +119,7 @@ public class Term {
 	
 	public void embedVariableNames(String head) {
 		if (isShallow()) {
-			if (!s.startsWith(head) && !s.startsWith("\\") && !Demonstration.isOperator(s)) s = head + s;
+			if (!s.startsWith(head) && !s.startsWith("\\") && !Operator.isOperator(s)) s = head + s;
 		} else {
 			for (Term x: v) x.embedVariableNames(head);
 		}
@@ -130,15 +134,16 @@ public class Term {
 		}
 	}
 	
-	
-	public void applyType(Theorem thm) {
+	/*
+	public Type getType(Theorem thm) {
 		if (isShallow()) {
 			Variable v = thm.getVariable(s);
-			if (v != null) s = v.type;
+			if (v != null) return v.type;
+			return null;
 		} else {
 			for (Term x: v) x.applyType(thm);
 		}
-	}
+	}*/
 	
 	public Term sliceLeft(int to) {
 		Term output = new Term();
@@ -211,8 +216,8 @@ public class Term {
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
 	static public Term extractTerms(ArrayList<String> seq) {
-		/*System.out.println("___");
-		for (String s: seq) System.out.println(s);*/
+		//System.out.println("___");
+		//for (String s: seq) System.out.println(s);
 		
 		Term result = new Term();
 		ArrayList<String> innerBuffer = new ArrayList<String>();
@@ -289,83 +294,6 @@ public class Term {
 			}
 			return parsed;
 		}
-		/*
-		// When an "=" is placed between parenthesis, we want to assume each sides are terms
-		// We can only do that if we take them and put them inside ourselves here
-		if (result.size > 3) {
-			System.out.println("too big. results look like: " + result.toString());
-			for (Term t: result.v) {
-				System.out.println("  " + t.toString());
-			}
-			Term parsed = new Term();
-			boolean foundop = false;
-			for (int i=1; i<result.size; i++) {
-				Term ith = result.v.get(i);
-				if (ith.isShallow() && ith.s.equals("=")) {
-					foundop = true;
-					
-					// Regroup the left
-					if (i > 1) {
-						innerBuffer = new ArrayList<String>();
-						innerBuffer.add("(" + result.get(0).toString());
-						for (int j=1; j<i-1; j++) {
-							String nextterm = result.get(j).toString();
-							//if (!result.get(j).isShallow()) nextterm = "(" + nextterm + ")";
-							innerBuffer.add(nextterm);
-						}
-						innerBuffer.add(result.get(i-1).toString() + ")");
-						parsed.addTerm(extractTerms(innerBuffer));
-					} else {
-						parsed.addTerm(result.get(0));
-					}
-					
-					
-					// Add middle operator (eg. "=")
-					parsed.addTerm(ith);
-					
-					
-					// Regroup the right
-					innerBuffer = new ArrayList<String>();
-					if (i < result.size - 2) {
-						parsed.addTerm(result.get(i+1));						
-					} else {
-						innerBuffer = new ArrayList<String>();
-						innerBuffer.add("(" + result.get(i+1).toString());
-						for (int j=i+2; j<result.size-1; j++) {
-							String nextterm = result.get(j).toString();
-							innerBuffer.add(nextterm);
-						}
-						innerBuffer.add(result.get(result.size-1).toString() + ")");
-						parsed.addTerm(extractTerms(innerBuffer));
-						System.out.println("the right parsed: " + extractTerms(innerBuffer).toString());
-					}
-				}
-			}
-			if (foundop) return parsed;
-		}
-		*/
-		
-		/*
-		// Comprehend Exist and Forall operators, from the written structure
-		//    \exists (x, y) \suchthat ((x > 0) \and (3 = 3))
-		// into a known size 3 term of the form
-		//    [\exists, [(x, y)]_collection, [[x > 0], \and, [3 = 3]]]
-		if (result.size == 4) {
-			Term headToken = result.get(0);
-			Term middleToken = result.get(2);
-			if (headToken.isShallow() && middleToken.isShallow()) {
-				if ((headToken.s.equals("\\exists") && middleToken.s.equals("\\suchthat"))
-				 || (headToken.s.equals("\\forall") && middleToken.s.equals("\\follows"))) {
-					Term parsed = new Term();
-					parsed.addTerm(headToken);
-					// TODO
-					// Implement collections for terms (eg (x, y, z))
-					parsed.addTerm(result.get(1));
-					parsed.addTerm(result.get(3));
-					return parsed;
-				}
-			}
-		}*/
 		return result;
 	}
 	
@@ -460,6 +388,10 @@ public class Term {
 			extractDiffInner(t1, t2, link, dlg);
 			extractDiffInner(t1, t2, new Link(">"), dlg);
 			extractDiffInner(t1, t2, new Link("<"), dlg);
+		} else if (link.equals("\\then")) {
+			extractDiffInner(t1, t2, new Link("="), dlg);
+			extractDiffInner(t1, t2, new Link("\\eq"), dlg);
+			extractDiffInner(t1, t2, link, dlg);
 		}
 		
 		Collections.reverse(dlg.diffs);
@@ -509,12 +441,12 @@ public class Term {
 	
 	static public void assertUnaryOrBinaryPlacement(Term t) {
 		if (!((t.size == 2
-			&& Demonstration.isUnaryOperator(t.get(0).s)
-			&& !Demonstration.isOperator(t.get(1).s))
+			&& Operator.isUnary(t.get(0).s)
+			&& !Operator.isOperator(t.get(1).s))
 		|| (t.size == 3
-			&& Demonstration.isBinaryOperator(t.get(1).s)
-			&& !Demonstration.isOperator(t.get(0).s)
-			&& !Demonstration.isOperator(t.get(2).s)
+			&& Operator.isBinary(t.get(1).s)
+			&& !Operator.isOperator(t.get(0).s)
+			&& !Operator.isOperator(t.get(2).s)
 		))) { System.out.println("[[[FATAL]]] Term configuration not understood:  " + t); }
 	}
 
@@ -526,7 +458,7 @@ public class Term {
 		if (!t.isShallow()) {		
 			for (int i=0; i<t.v.size(); i++) {
 				Term x = t.v.get(i);
-				if (x.isShallow() && Demonstration.isBinaryOperator(x.s)) {
+				if (x.isShallow() && Operator.isBinary(x.s)) {
 					Term ta = t.sliceLeft(i);
 					Term tb = t.sliceRight(i+1);
 					for (Term permta: permute(ta).vs) {

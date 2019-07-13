@@ -8,11 +8,12 @@ import Elements.Term.ExceptionTheoremNotApplicable;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers.ExceptionNaturalNumbersCasting;
+import Operation.Operator;
 import Operation.NaturalNumbers;
 
 public class Demonstration {
 
-	private final static int printPriority = 0; // 3 = [FATAL] only; 1 = broad;
+	private final static int printPriority = 3; // 3 = [FATAL] only; 1 = broad;
 	boolean isNested;
 	
 	private Body body;
@@ -126,7 +127,18 @@ public class Demonstration {
 		
 		Link conclusion = Link.reduceSerie(linkserie);
 		proposition = proposition && !conclusion.equals("");
-		if (proposition) assumptions.acceptAssumptionFromDemonstration(new Statement(conclusion, first_exp, t2), nlog.blockstamp);
+		if (proposition) {
+			
+			Statement takeaway = new Statement(conclusion, first_exp, t2);
+			
+			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
+			// the link to reflect this reality.
+			if (conclusion.equals("\\then") && first_exp.equalsString("\\true")) {
+				takeaway = new Statement(new Link("\\eq"), t2, first_exp);
+			} 
+			
+			assumptions.acceptAssumptionFromDemonstration(takeaway, nlog.blockstamp);
+		}
 	}
 	
 	
@@ -157,7 +169,7 @@ public class Demonstration {
 	 */
 	private ArrayList<Assump> acceptCasesCommunProvenStatements(Cases cases) {
 		
-		if (cases.validatePartition()) {
+		if (cases.validatePartition().equals("true")) {
 			ArrayList<Assump> bulkResults = new ArrayList<Assump>();
 			for (Assump x: cases.enumerateCommunStatements()) {
 				bulkResults.add(x);
@@ -198,11 +210,37 @@ public class Demonstration {
 		return false;
 	}
 	
+	/* Resolution for statements of the sort:
+	 *    T <==> \exists x (x > 0)
+	 */
+	private Justification validateExistentialProposition(Term t1, Term t2, Link link) {
+		t1.flatten();
+		if (link.equals("\\eq") && t1.equalsString("\\true")) {
+			if (t2.v.size() == 3 && t2.v.get(0).equalsString("\\exists")) {
+				Term var = t2.v.get(1);
+				Term prop = t2.v.get(2);
+				for (Assump a: assumptions) {
+					if (a.st.rside.equals(prop) &&
+					   (a.st.link.equals("\\eq") || a.st.link.equals("\\then"))) {
+						Term assign = a.st.lside;
+						if (assign.v.size() == 3 && assign.v.get(1).equalsString("=")) {
+							if (assign.v.get(0).equalsString(var.s) &&
+							    Type.matchtypes(Type.getType(assign.v.get(2), source), Type.getType(var, source))) {
+								return new Justification(a);
+							    }
+						}
+						
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
 	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
 		// true \eq (x = 0)
 		t1.flatten();
-		if (link.equals("\\eq") && t1.isShallow() && t1.s.equals("\\true")) {
-			printout("Validated condition for tentative trivial solving");
+		if (link.equals("\\eq") && t1.equalsString("\\true")) {
 			Term left = t2.v.get(0);
 			Term lk = t2.v.get(1);
 			Term right = t2.v.get(2);
@@ -215,9 +253,14 @@ public class Demonstration {
 		
 		printout("\nValidate statement: " + t1 + diff.link.toString() + t2 + "  <==>  " + diff.toString());
 		
+		// Existential proposition
+		Justification solution = validateExistentialProposition(diff.lside, diff.rside, diff.link);
+		if (solution != null) return solution;
+		solution = validateExistentialProposition(t2, t1, diff.link);
+		if (solution != null) return solution;
+		
 		// Using assumptions
 		for (Assump a: assumptions) {
-			printout(a.st.toString());
 			if (a.st.equals(diff)) {
 				return new Justification(a);
 			}
@@ -319,16 +362,7 @@ public class Demonstration {
 	
 	
 	private boolean matchTheoremTypes(Variable v, Term t) {
-		return (v.type.equals(getType(t)));
-	}
-	
-	private String getType(Term t) {
-		Term tcopy = t.copy();
-		tcopy.applyType(source);
-		try {
-			return solveMath(tcopy).s;
-		} catch (Exception e) {}
-		return null;
+		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
 	
 	
@@ -382,10 +416,10 @@ public class Demonstration {
 		String Y = null;
 		for (Term token: t.v) {
 			if (!token.isShallow()) token = solveMath(token);
-			if (isUnaryOperator(token.s)) {
+			if (Operator.isUnary(token.s)) {
 				if (X == null && Op == null) Op = token.s;
 				else if (X == null) printout(3, "Multiple unary operators havent been though of yet.");
-			} else if (isBinaryOperator(token.s)) {
+			} else if (Operator.isBinary(token.s)) {
 				if (X == null) printout(3, "Couldnt solve for ': " + token + "'");
 				else if (Op == null) Op = token.s;
 				else printout(3, "Couldnt solve for '" + X + " " + Op + " : " + token + "'");
@@ -401,54 +435,20 @@ public class Demonstration {
 		
 	}
 	
-		
-	static public boolean isQuantifierOperator(String s) {
-		if (s==null) return false;
-		String[] opSet = new String[]{"\\exists", "\\forall"};
-		for (String op: opSet) {
-			if (s.equals(op)) return true;
-		}
-		return false;
-	}
-	static public boolean isBinaryOperator(String s) {
-		if (s==null) return false;
-		String[] opSet = new String[]{"\\or", "\\and", "\\implies", "=", ">", "<", "<=", ">=", "!="};
-		for (String op: opSet) {
-			if (s.equals(op)) return true;
-		}
-		return false;
-	}
-	
 	
 	private String solveBinaryOperator(String x, String op, String token) throws ExceptionBooleanCasting {
-		if (!isBinaryOperator(op)) printout(3, "Tried to solve binary operator for '" + op + "'");
+		if (!Operator.isBinary(op)) printout(3, "Tried to solve binary operator for '" + op + "'");
 		try {
 			return NaturalNumbers.applyBinaryLogic(x, op, token);
 			
-		} catch (ExceptionNaturalNumbersCasting e) {
-			e.explain();
-		}
+		} catch (ExceptionNaturalNumbersCasting e) {}
 		return BooleanLogic.applyBinaryLogic(x, op, token);
 	}
 	
 	
-	static public boolean isUnaryOperator(String s) {
-		if (s==null) return false;
-		String[] opSet = new String[]{"\\not"};
-		for (String op: opSet) {
-			if (s.equals(op)) return true;
-		}
-		return false;
-	}
-	
-	
 	private String solveUnaryOperator(String op, String x) throws ExceptionBooleanCasting {
-		if (!isUnaryOperator(op)) printout(3, "Tried to solve unary operator for '" + op + "'");
+		if (!Operator.isUnary(op)) printout(3, "Tried to solve unary operator for '" + op + "'");
 		return BooleanLogic.applyUnaryLogic(op, x);
-	}
-	
-	static public boolean isOperator(String s) {
-		return isUnaryOperator(s) || isBinaryOperator(s) || isQuantifierOperator(s);
 	}
 	
 	
@@ -514,18 +514,19 @@ public class Demonstration {
 	public class Cases {
 		
 		Variable casevar;
-		String set;
+		Type set;
 		ArrayList<Statement> hypothesis;
 		ArrayList<Demonstration> nested;
 		
 		public Cases(String casename) {
 			hypothesis = new ArrayList<Statement>();
 			nested = new ArrayList<Demonstration>();
-			for (Variable v: source.variables) {
+			casevar = source.getVariable(casename);
+			/*for (Variable v: source.variables) {
 				if (v.name.equals(casename)) {
 					casevar = v; break;
 				}
-			}
+			}*/
 			set = casevar.type;
 		}
 		
@@ -534,12 +535,23 @@ public class Demonstration {
 			this.nested.add(nested);
 		}
 		
-		public boolean validatePartition() {
+		public String validatePartition() {
+			ArrayList<Type> types = new ArrayList<Type>();
+			for (Statement st: hypothesis) {
+				if (!st.lside.s.equals(casevar.name)) return null;
+				types.add(Type.getType(st.rside, source));
+			}
+			
 			if (set.equals("\\boolean")) {
-				return BooleanLogic.validatePartition(casevar, hypothesis);
+				for (Type s: types) if (!s.equals("\\boolean")) return null;
+				return "" + BooleanLogic.validatePartition(casevar, hypothesis, types);
+			}
+			if (set.equals("\\setnatual")) {
+				for (Type s: types) if (!s.equals("\\setnatual")) return null;
+				return NaturalNumbers.validatePartition(casevar, hypothesis, types);
 			}
 			printout(3, "Couldnt validate partition. " + set);
-			return false;
+			return null;
 		}
 		
 		

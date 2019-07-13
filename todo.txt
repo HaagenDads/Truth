@@ -40,24 +40,13 @@ then  b
 # Check pour les contradictions dans les hypothèses... 
 
 
-
 # UNIVERSAL QUANTIFIER ---------------------
 
-\let x \in \setnatural;
-\let P: \setnatural -> \boolean;
-     P(x) = \boolean(x^2 > 0);
-\then \forall x, P(x) \eq \false;
-}
-\demonstration {
-    \startcase x;
-    \case x = 0;
-        x^2 = 0;
-        x^2 > 0 \eq \false; 
-    \endcase;
-    *** vérification que x = 0 bel et bien dans le \setnatural
-    *** \exists x \in \setnatural \suchthat \not P(x)
-    \not \forall x \in \setnatural P(x)
-}
+# PARTITIONS -------------------------------
+# 3 < x < 6
+# x != 4
+
+# Check process to make sure 3 - 6 cannot be labeled "natural numbers"
 
 
 Solved

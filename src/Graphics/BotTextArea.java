@@ -68,8 +68,7 @@ public class BotTextArea extends StringOperations {
 	
 	/*    Draws the header, i.e. the name, statement and assumptions    */
 	private void drawTheoremHeader(Theorem thm) throws BadLocationException {
-		System.out.println(thm.statement.toString());
-
+		
 		appendString("Theorem " + thm.name, sbold);
 		
 		String s = " (From packages ";
@@ -169,14 +168,15 @@ public class BotTextArea extends StringOperations {
 		for (int i=1; i<lg.args.size(); i++) {
 			Logging.Arg arg = lg.args.get(i);
 			String argterm = arg.term.toString();
-			String paddingSpaces = repeat(" ", maxsize - len(argterm) + 4);
+			String linkstr = arg.link.toString();
+			String paddingSpaces = repeat(" ", maxsize - len(argterm) + 7 - len(linkstr));
 			
 			if (arg.expl.isError()) {
-				appendString(tab + arg.link.toString() + argterm, sred);
+				appendString(tab + linkstr + argterm, sred);
 				appendString(paddingSpaces);
 				appendString(arg.expl.toString() + "\n", sboldred);
 			} else {
-				appendString(tab + arg.link.toString() + argterm);
+				appendString(tab + linkstr + argterm);
 				appendString(paddingSpaces);
 				linkedJustifications.add(new linkJustification(arg.expl, doc.getLength()));
 				appendString(arg.expl.getName() + "\n", spale);

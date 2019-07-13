@@ -54,7 +54,7 @@ public class BooleanLogic {
 	}
 	
 	
-	static public boolean validatePartition(Variable casevar, ArrayList<Statement> cases) {
+	static public boolean validatePartition(Variable casevar, ArrayList<Statement> cases, ArrayList<Type> types) {
 		if (cases.size() != 2) System.out.println("Cases partition can only have two cases.");
 		
 		Statement exp1 = new Statement(new Link("="), casevar.name, "\\true");
@@ -68,11 +68,19 @@ public class BooleanLogic {
 	}
 	
 	
-	static public class ExceptionBooleanCasting extends Exception{
+	static public class ExceptionBooleanCasting extends Exception {
 		String a;
 		public ExceptionBooleanCasting(String a) {
 			this.a = a;
 		}
 		public void explain () { System.out.println("Couldnt match '" + a + "' to true/false cast"); }
+	}
+
+
+	static public boolean isValid(String t) {
+		try {
+			if (readString(t) == bool.TRUE || readString(t) == bool.FALSE) return true;
+		} catch (ExceptionBooleanCasting e) {}
+		return false;
 	};
 }
