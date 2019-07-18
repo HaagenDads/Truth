@@ -83,13 +83,15 @@ abstract public class StringOperations extends JTextPane {
 		result = result.replace((CharSequence) "\\not ", (CharSequence) "¬");
 		result = result.replace((CharSequence) "\\false", (CharSequence) "\\$bold{F}");
 		result = result.replace((CharSequence) "\\true", (CharSequence) "\\$bold{T}");
-		result = result.replace((CharSequence) "\\and", (CharSequence) "and");
-		result = result.replace((CharSequence) "\\or", (CharSequence) "or");
+		result = result.replace((CharSequence) "\\and", (CharSequence) "∧");
+		result = result.replace((CharSequence) "\\or", (CharSequence) "∨");
 		result = result.replace((CharSequence) "\\implies", (CharSequence) "→");
 		result = result.replace((CharSequence) "\\eq", (CharSequence) "≡");
-		//result = result.replace((CharSequence) "\\forall", (CharSequence) "For all");
-		//result = result.replace((CharSequence) "\\setnatural", (CharSequence) "ℕ");
-		result = result.replace((CharSequence) "\\then", (CharSequence) "=>");
+		result = result.replace((CharSequence) "\\forall", (CharSequence) "∀");
+		result = result.replace((CharSequence) "\\exists", (CharSequence) "∃");
+		result = result.replace((CharSequence) "\\setnatural", (CharSequence) "ℕ");
+		result = result.replace((CharSequence) "\\in", (CharSequence) "∈");
+		result = result.replace((CharSequence) "\\then", (CharSequence) "⇒");
 		return result;
 		
 	}

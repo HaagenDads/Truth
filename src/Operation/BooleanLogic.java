@@ -21,8 +21,8 @@ public class BooleanLogic {
 	}
 	
 	static public String applyBinaryLogic(String a, String op, String b) throws ExceptionBooleanCasting  {
-		if (a.equals(genericType) && readString(b) != null) return a;
-		if (b.equals(genericType) && readString(a) != null) return b;
+		//if (a.equals(genericType) && readString(b) != null) return a;
+		//if (b.equals(genericType) && readString(a) != null) return b;
 		
 		bool ab = readString(a);
 		bool bb = readString(b);

@@ -24,6 +24,7 @@ public class BotTextArea extends StringOperations {
 	public BotTextArea(TabList tablist) {
 		
 		super();
+		this.setContentType("text/plain; charset=UTF-16");
 		
 		doc = getStyledDocument();
 		
@@ -167,8 +168,8 @@ public class BotTextArea extends StringOperations {
 		
 		for (int i=1; i<lg.args.size(); i++) {
 			Logging.Arg arg = lg.args.get(i);
-			String argterm = arg.term.toString();
 			String linkstr = arg.link.toString();
+			String argterm = arg.term.toString();
 			String paddingSpaces = repeat(" ", maxsize - len(argterm) + 7 - len(linkstr));
 			
 			if (arg.expl.isError()) {

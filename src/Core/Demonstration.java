@@ -271,7 +271,7 @@ public class Demonstration {
 			if (solveMath(diff.lside).equals(solveMath(diff.rside))) {
 				return new Justification("BooleanLogic");
 			}
-		} catch (ExceptionBooleanCasting e) {}
+		} catch (Exception e) {}
 		
 		
 		// Applying previous theorems
@@ -287,39 +287,62 @@ public class Demonstration {
 	
 	private boolean matchTheorem (Theorem th, Statement prop) {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
-		return matchTheoremUnilateral(th, prop) || matchTheoremUnilateral(th, prop.switchSides());
+		if (matchTheoremUnilateral(th, prop)) return true;
+		if (Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides())) return true;
+		return false;
 	}
 	
+
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
 		
 		ArrayList<Term> perms = Term.permute(prop.lside).vs;
-		for (Term propPermutation: perms) { /////////////////////////////////////////// VALIDATE PERMS (implies)///////
+		for (Term propPermutation: perms) { 
 			try {
 				// Extracts every substitutions that would have to be made for the theorem to match the proposition
 				// A substitution would be " replace 'a' by 'thm.x' from the theorem "
-				ArrayList<Statement> substitutions = Term.extractDiffArray(th.statement.lside, propPermutation);
-				substitutions = orderSubstitutions(substitutions);
-				assertValideSubstitutions(th, substitutions);
-				
+				/*if (th.name.equals("LargerOrEqual4")) {
+					System.out.println("___");
+					System.out.println(th.statement.lside.toString());
+					System.out.println(propPermutation.toString());
+				}*/
+				ArrayList<Statement> LSIDEsubstitutions = Term.extractDiffArray(th.statement.lside, propPermutation);
+				LSIDEsubstitutions = orderSubstitutions(LSIDEsubstitutions);
+				assertValidSubstitutions(th, LSIDEsubstitutions);
 				
 				// Applies every required changes so that both left sides would be identical
 				Term alteredRightSide = prop.rside;
-				for (Statement st: substitutions) {
+				for (Statement st: LSIDEsubstitutions) {
 					alteredRightSide = substitute(alteredRightSide, st.rside, st.lside);
 				}
 				
-				// Check if the changes are enough for the right sides to be identical
-				Term thmRightSide = reduceTheoremVariables(th.statement.rside, substitutions);
-				if (alteredRightSide.equals(thmRightSide)) {
-					printout("** Match theorem : " + substitutions + "   -from " + th.name);
-					
-					for (Statement st: substitutions) {
-						Variable v = th.getVariable(st.lside.s);
-						if (v != null && matchTheoremTypes(v, st.rside)) {
-							printout("** Types have been validates! ");
-							return true;
+				ArrayList<Term> RSIDEperms = Term.permute(alteredRightSide).vs;
+				for (Term RSIDEpropPermutation: RSIDEperms) { 
+					try {
+						ArrayList<Statement> RSIDEsubstitutions = Term.extractDiffArray(th.statement.rside, RSIDEpropPermutation, LSIDEsubstitutions);
+						RSIDEsubstitutions = orderSubstitutions(RSIDEsubstitutions);
+						assertValidSubstitutions(th, RSIDEsubstitutions);
+						//assertConsistantSubstitutions(LSIDEsubstitutions, RSIDEsubstitutions);
+						
+						Term finalRSIDE = alteredRightSide;
+						for (Statement st: RSIDEsubstitutions) {
+							finalRSIDE = substitute(finalRSIDE, st.rside, st.lside);
 						}
-					}
+						
+						// Check if the changes are enough for the right sides to be identical
+						Term thmRightSide = reduceTheoremVariables(th.statement.rside, RSIDEsubstitutions);
+						if (finalRSIDE.equals(thmRightSide)) {
+							
+							LSIDEsubstitutions.addAll(RSIDEsubstitutions);
+							printout("** Match theorem : " + LSIDEsubstitutions + "   -from " + th.name);
+							for (Statement st: LSIDEsubstitutions) {
+								Variable v = th.getVariable(st.lside.s);
+								if (v != null && matchTheoremTypes(v, st.rside)) {
+									printout("** Types have been validates! ");
+									return true;
+								}
+							}
+						}
+					} catch (Term.ExceptionTheoremNotApplicable e) {}
 				}
 				
 			} catch (Term.ExceptionTheoremNotApplicable e) {}
@@ -332,17 +355,17 @@ public class Demonstration {
 		t.flatten();
 		if (t.isShallow()) return t;
 		for (int i=subs.size()-1; i>0; i--) {
-		for (int j=i-1; j>=0; j--) {
-			Term ta = subs.get(j).rside;
-			Term tb = subs.get(i).rside;
-			if (ta.equals(tb)) t = substitute(t, subs.get(i).lside, subs.get(j).lside);
-		}
+			for (int j=i-1; j>=0; j--) {
+				Term ta = subs.get(j).rside;
+				Term tb = subs.get(i).rside;
+				if (ta.equals(tb)) t = substitute(t, subs.get(i).lside, subs.get(j).lside);
+			}
 		}
 		return t;
 	}
 	
 	
-	private void assertValideSubstitutions(Theorem th, ArrayList<Statement> substitutions) throws ExceptionTheoremNotApplicable {
+	private void assertValidSubstitutions(Theorem th, ArrayList<Statement> substitutions) throws ExceptionTheoremNotApplicable {
 		for (int i=0; i<substitutions.size(); i++) {
 			
 			Statement outerst = substitutions.get(i);
@@ -359,6 +382,16 @@ public class Demonstration {
 			}
 		}
 	}
+	
+	/*
+	private void assertConsistantSubstitutions(ArrayList<Statement> LSIDEsubstitutions, ArrayList<Statement> RSIDEsubstitutions) throws ExceptionTheoremNotApplicable {
+		for (Statement lst: LSIDEsubstitutions) {
+			for (Statement rst: RSIDEsubstitutions) {
+				if (lst.lside.equals(rst.lside)) {
+					if (lst.rside.equals(rst.rside))
+				}
+			}
+		}*/
 	
 	
 	private boolean matchTheoremTypes(Variable v, Term t) {
@@ -407,7 +440,7 @@ public class Demonstration {
 	}
 	
 	
-	private Term solveMath(Term t) throws ExceptionBooleanCasting {
+	private Term solveMath(Term t) throws ExceptionBooleanCasting, ExceptionCantReduceQuantifier {
 		
 		t.flatten();
 		if (t.isShallow()) return t;
@@ -416,6 +449,7 @@ public class Demonstration {
 		String Y = null;
 		for (Term token: t.v) {
 			if (!token.isShallow()) token = solveMath(token);
+			if (Operator.isQuantifier(token.s)) throw new ExceptionCantReduceQuantifier();
 			if (Operator.isUnary(token.s)) {
 				if (X == null && Op == null) Op = token.s;
 				else if (X == null) printout(3, "Multiple unary operators havent been though of yet.");
@@ -594,4 +628,8 @@ public class Demonstration {
 		}
 		
 	}
+	
+	
+	private class ExceptionCantSolveMath extends Exception {}
+	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
 }

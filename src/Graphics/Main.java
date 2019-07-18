@@ -12,7 +12,7 @@ public class Main {
         //frame.loadTheorem("AndImpliesOrTautology.txt");
         //frame.loadTheorem("TrivialAnd.txt");
         //frame.loadTheorem("Logic/FirstOrder/PartitionImplication.txt");
-        frame.loadTheorem("Unit2.txt");
+        frame.loadTheorem("Unit3.txt");
 	}
 	
 }

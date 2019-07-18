@@ -7,14 +7,15 @@ import Operation.NaturalNumbers;
 
 public class Type {
 
-	String type;
+	public String type;
 	public Type (String t) {
 		assertType(t);
 		type = t;
 	}
 	
 	public String toString() {
-		return "T[" + type + "]";
+		//return "T[" + type + "]";
+		return type;
 	}
 	
 	private void assertType (String t) {
@@ -48,25 +49,24 @@ public class Type {
 		} else {
 			return reduceType(t, thm);
 		}
-		
-		
-	}/*
-		Term tcopy = t.copy();
-		tcopy.applyType(source);
-		
-		try {
-			return reduceType(tcopy).s;
-		} catch (Exception e) {}
-		return null;
-	}*/
+	}
 	
 	static private Type reduceType(Term t, Theorem thm) {
+		
+		if (Operator.isQuantifier(t.v.get(0).s)) {
+			if (t.v.size() == 3 && !Operator.isOperator(t.v.get(1).s) && !Operator.isOperator(t.v.get(2).s)) {
+				return new Type(BooleanLogic.genericType);
+			} else {
+				System.out.println("Error in parsing of type for Quantifier operator.");
+				return new Type("");
+			}
+		}
 		
 		Type X = null;
 		String Op = null;
 		Type Y = null;
+		
 		for (Term token: t.v) {
-			
 			if (Operator.isUnary(token.s)) {
 				if (X == null && Op == null) Op = token.s;
 				else if (X == null) System.out.println("Multiple unary operators havent been though of yet.");
@@ -97,7 +97,7 @@ public class Type {
 	static private Type solveBinary(Type a, String op, Type b) {
 		if (a.equals(b)) {
 			if (a.equals(BooleanLogic.genericType)) {
-				if (op.equals("\\and") || op.equals("\\or")) return a;
+				if (op.equals("\\and") || op.equals("\\or") || op.equals("\\implies")) return a;
 			}
 			if (a.equals(NaturalNumbers.genericType)) {
 				if (op.equals("+") || op.equals("-") || op.equals("*")) return a;

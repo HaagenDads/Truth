@@ -27,7 +27,7 @@ public class TextZone extends JFrame {
 	public Compiler compiler;
 
 	public TabList tablist;
-	private static final Font consolasFont = new Font("Consolas", Font.PLAIN, 12);
+	private static final Font consolasFont = new Font("DialogInput", Font.PLAIN, 12);
 	private static final Font consolasFontButton = new Font("Consolas", Font.BOLD, 12);
 	
 	public TextZone() {
@@ -105,7 +105,6 @@ public class TextZone extends JFrame {
 		tablist = new TabList();
 		instantiateBottext();
 		instantiateTablist();
-	    
 	    
 		JPanel dualbottom = new JPanel();
 		dualbottom.setLayout(new BorderLayout());

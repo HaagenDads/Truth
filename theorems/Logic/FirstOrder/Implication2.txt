@@ -6,18 +6,18 @@ Theorem Name:Implication Package:Logic{
 }
 Demonstration { 
 
-    ((a \implies b) \implies (a \implies c)) \eq (((\not a) \or b) \implies (a \implies c))
-    \eq ((\not a) \or b) \implies ((\not a) \or c) \eq (\not ((\not a) \or b)) \or ((\not a) \or c)
-    \eq (((\not (\not a)) \and (\not b))) \or ((\not a) \or c)
-    \eq (a \and (\not b)) \or ((\not a) \or c)
-    \eq (a \or ((\not a) \or c)) \and ((\not b) \or ((\not a) \or c))
-    \eq ((a \or (\not a)) \or c) \and ((\not b) \or ((\not a) \or c))
-    \eq (\true \or c) \and ((\not b) \or ((\not a) \or c))
-    \eq \true \and ((\not b) \or ((\not a) \or c))
-    \eq (\not b) \or ((\not a) \or c);
+    ((a \implies b) \implies (a \implies c)) \eq ((\not a \or b) \implies (a \implies c))
+    \eq (\not a \or b) \implies (\not a \or c) \eq (\not (\not a \or b)) \or (\not a \or c)
+    \eq ((\not \not a \and \not b)) \or (\not a \or c)
+    \eq (a \and (\not b)) \or (\not a \or c)
+    \eq (a \or (\not a \or c)) \and (\not b \or (\not a \or c))
+    \eq ((a \or \not a) \or c) \and (\not b \or (\not a \or c))
+    \eq (\true \or c) \and (\not b \or (\not a \or c))
+    \eq \true \and (\not b \or (\not a \or c))
+    \eq \not b \or (\not a \or c);
 
-    (a \implies (b \implies c)) \eq a \implies ((\not b) \or c) \eq (\not a) \or ((\not b) \or c)
-    \eq (\not b) \or ((\not a) \or c) \eq ((a \implies b) \implies (a \implies c));
+    (a \implies (b \implies c)) \eq a \implies (\not b \or c) \eq \not a \or (\not b \or c)
+    \eq \not b \or (\not a \or c) \eq ((a \implies b) \implies (a \implies c));
     
     (a \implies (b \implies c)) \implies ((a \implies b) \implies (a \implies c))
     \eq (a \implies (b \implies c)) \implies (a \implies (b \implies c)) \eq \true;

@@ -102,6 +102,11 @@ public class Term {
 	public String toString() {
 		if (isShallow()) return s;
 		String output = "";
+		
+		if (v.get(0).isShallow() && Operator.isQuantifier(v.get(0).s)) {
+			return v.get(0).s + v.get(1).toString() + ": " + v.get(2).toString();
+		}
+		
 		for (Term x: v) {
 			if (x.isShallow()) output += x.s + " ";
 			else if (x.isUnaryShallow()) {
@@ -326,21 +331,32 @@ public class Term {
 	}
 	
 	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop) throws ExceptionTheoremNotApplicable {
+		return extractDiffArray(tthm, tprop, new ArrayList<Statement>());
+	}
+	
+	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> priorSubs) throws ExceptionTheoremNotApplicable {
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		
 		tthm.flatten();
 		tprop.flatten();
 		
 		if (tthm.isShallow()) {
-			result.add(new Statement(new Link("="), tthm, tprop));
+			// Following case implies no difference; no need to check.
+			if (tprop.isShallow() && tprop.equals(tthm)) return result;
+			
+			// Can't overload a thm variable (thm.a can't be both equal to (x>0) and (x=0))
+			for (Statement st: priorSubs) {
+				if (st.lside.equals(tthm)) throw new ExceptionTheoremNotApplicable();
+			}
+			result.add(new Statement(new Link(":="), tthm, tprop));
 		}
 		else {
 			if (tthm.size != tprop.size) throw new ExceptionTheoremNotApplicable();
 			for (int i=0; i<tthm.size; i++) {
 				Term tA = tthm.get(i);
 				Term tB = tprop.get(i);
-				result.addAll(extractDiffArray(tA, tB));
 				
+				result.addAll(extractDiffArray(tA, tB));
 			}
 		}
 		return result;
@@ -446,6 +462,10 @@ public class Term {
 		|| (t.size == 3
 			&& Operator.isBinary(t.get(1).s)
 			&& !Operator.isOperator(t.get(0).s)
+			&& !Operator.isOperator(t.get(2).s))
+		|| (t.size == 3
+			&& Operator.isQuantifier(t.get(0).s)
+			&& !Operator.isOperator(t.get(1).s)
 			&& !Operator.isOperator(t.get(2).s)
 		))) { System.out.println("[[[FATAL]]] Term configuration not understood:  " + t); }
 	}
@@ -458,7 +478,7 @@ public class Term {
 		if (!t.isShallow()) {		
 			for (int i=0; i<t.v.size(); i++) {
 				Term x = t.v.get(i);
-				if (x.isShallow() && Operator.isBinary(x.s)) {
+				if (x.isShallow() && Operator.isCommutative(x.s)) {
 					Term ta = t.sliceLeft(i);
 					Term tb = t.sliceRight(i+1);
 					for (Term permta: permute(ta).vs) {

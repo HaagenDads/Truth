@@ -1,0 +1,6 @@
+Theorem Name:LargerOrEqual Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\state \not (x < y) \eq (x >= y);
+}
+

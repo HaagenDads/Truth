@@ -2,6 +2,8 @@ package Elements;
 
 import java.util.LinkedList;
 
+import Operation.Operator;
+
 public class Link {
 
 	String link;
@@ -18,8 +20,10 @@ public class Link {
 		if (string.equals("!=")) return true;
 		if (string.equals("\\eq")) return true;
 		if (string.equals("\\then")) return true;
+		if (string.equals(":=")) return true;
 		return false;
 	}
+	
 	
 	static public boolean isSufficient (Link theoremlink, Link propositionlink) {
 		if (theoremlink.equals(propositionlink)) return true;
@@ -76,5 +80,8 @@ public class Link {
 		return this.link.equals("error");
 	}
 	
+	static public boolean isCommutative(Link o) {
+		return isLink(o.link) && Operator.isCommutative(o.link);
+	}
 
 }
