@@ -1,0 +1,7 @@
+Theorem Name:AxiomAddition Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\let z \in \setnatural;
+\state (x = y) \eq ((x + z) = (y + z));
+}
+

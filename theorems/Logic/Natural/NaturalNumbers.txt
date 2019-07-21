@@ -1,0 +1,5 @@
+Theorem Name:LargerOrEqual Package:Logic{
+\let x \in \setnatural;
+\state x * 0 = 0;
+}
+

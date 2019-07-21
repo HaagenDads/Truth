@@ -133,7 +133,7 @@ public class Compiler {
 		for (String s: tokens) als.add(s);
 		als.remove(0);
 		Term terms = Term.extractTerms(als);
-		return new Statement(new Link(terms.v.get(1).s), terms.v.get(0), terms.v.get(2));
+		return new Statement(new Link(terms.get(1).s), terms.get(0), terms.get(2));
 	}
 	
 	

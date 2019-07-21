@@ -1,7 +1,6 @@
 package Elements;
 
 import Operation.BooleanLogic;
-import Operation.Operator;
 import Core.Theorem;
 import Operation.NaturalNumbers;
 
@@ -36,55 +35,30 @@ public class Type {
 		return false;
 	}
 	
+	static public boolean matchtypes (Term t1, Term t2, Theorem thm) {
+		return matchtypes(getType(t1, thm), getType(t2, thm));
+	}
+	
 	static public Type getType(Term t, Theorem thm) {
-		t.flatten();
-		if (t.isShallow()) {
+		Term.Disp termdisp = t.getDisposition();
+		if (termdisp == Term.Disp.F) {
 			Variable v = thm.getVariable(t.s);
 			if (v != null) return v.type;
-			
 			if (BooleanLogic.isValid(t.s)) return new Type(BooleanLogic.genericType);
 			if (NaturalNumbers.isValid(t.s)) return new Type(NaturalNumbers.genericType);
 			return null;
-
-		} else {
-			return reduceType(t, thm);
 		}
-	}
-	
-	static private Type reduceType(Term t, Theorem thm) {
-		
-		if (Operator.isQuantifier(t.v.get(0).s)) {
-			if (t.v.size() == 3 && !Operator.isOperator(t.v.get(1).s) && !Operator.isOperator(t.v.get(2).s)) {
-				return new Type(BooleanLogic.genericType);
-			} else {
-				System.out.println("Error in parsing of type for Quantifier operator.");
-				return new Type("");
-			}
+		if (termdisp == Term.Disp.QTT) return new Type(BooleanLogic.genericType);
+		if (termdisp == Term.Disp.OT) {
+			Type x = getType(t.get(1), thm);
+			return solveUnary(t.get(0).s, x);
 		}
-		
-		Type X = null;
-		String Op = null;
-		Type Y = null;
-		
-		for (Term token: t.v) {
-			if (Operator.isUnary(token.s)) {
-				if (X == null && Op == null) Op = token.s;
-				else if (X == null) System.out.println("Multiple unary operators havent been though of yet.");
-			} else if (Operator.isBinary(token.s)) {
-				if (X == null) System.out.println( "Couldnt solve for ': " + token + "'");
-				else if (Op == null) Op = token.s;
-				else System.out.println( "Couldnt solve for '" + X + " " + Op + " : " + token + "'");
-			} else {
-				Type type = getType(token, thm);
-				
-				if (X == null && Op == null) X = type;
-				else if (X == null) X = solveUnary(Op, type);
-				else if (Op == null) System.out.println("Couldnt solve for '" + X + " : " + token + "'");
-				else if (Y == null) X = solveBinary(X, Op, type);
-				else System.out.println( "Couldnt solve for '" + X + " " + Op + " " + Y + " : " + token + "'");
-			}
+		if (termdisp == Term.Disp.TOT) {
+			Type x = getType(t.get(0), thm);
+			Type y = getType(t.get(2), thm);
+			return solveBinary(x, t.get(1).s, y);
 		}
-		return X;
+		else return null;
 	}
 	
 	static private Type solveUnary(String op, Type a) {

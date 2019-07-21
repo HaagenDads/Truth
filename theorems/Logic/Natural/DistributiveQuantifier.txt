@@ -1,0 +1,7 @@
+Theorem Name:DistributiveQuantifier Package:Logic{
+\let x \in \setnatural;
+\let p \in \boolean;
+\let q \in \boolean;
+\state \forall x \follows (p \and q) \eq (\forall x \follows p) \and (\forall x \follows q);
+}
+

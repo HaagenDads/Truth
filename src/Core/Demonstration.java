@@ -13,7 +13,7 @@ import Operation.NaturalNumbers;
 
 public class Demonstration {
 
-	private final static int printPriority = 3; // 3 = [FATAL] only; 1 = broad;
+	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
 	boolean isNested;
 	
 	private Body body;
@@ -190,16 +190,18 @@ public class Demonstration {
 	 */
 	private boolean validateStatement(Term t1, Term t2, Link link) {
 		
+		
 		Justification solution;
-		solution = validateTrivialImplication(t1, t2, link);
+		/*solution = validateTrivialImplication(t1, t2, link);
 		if (solution != null) {
 			nlog.addLine(link, t2, solution);
 			return true;
-		}
+		}*/
 		
 		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
 		for (Statement st: diffLedger) {
-			solution = validateStatementSpecificDifference(t1, t2, st);
+			printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
+			solution = validateStatementSpecificDifference(st);
 			if (solution != null) {
 				nlog.addLine(link, t2, solution);
 				return true;
@@ -213,50 +215,79 @@ public class Demonstration {
 	/* Resolution for statements of the sort:
 	 *    T <==> \exists x (x > 0)
 	 */
-	private Justification validateExistentialProposition(Term t1, Term t2, Link link) {
-		t1.flatten();
-		if (link.equals("\\eq") && t1.equalsString("\\true")) {
-			if (t2.v.size() == 3 && t2.v.get(0).equalsString("\\exists")) {
-				Term var = t2.v.get(1);
-				Term prop = t2.v.get(2);
-				for (Assump a: assumptions) {
-					if (a.st.rside.equals(prop) &&
-					   (a.st.link.equals("\\eq") || a.st.link.equals("\\then"))) {
-						Term assign = a.st.lside;
-						if (assign.v.size() == 3 && assign.v.get(1).equalsString("=")) {
-							if (assign.v.get(0).equalsString(var.s) &&
-							    Type.matchtypes(Type.getType(assign.v.get(2), source), Type.getType(var, source))) {
-								return new Justification(a);
-							    }
-						}
-						
-					}
+	private Justification validateExistentialProposition(String quant, Term cond, Term prop) {
+		boolean isexist = quant.equals("\\exists");
+		boolean isforall = quant.equals("\\forall");
+		if (!isexist && !isforall) System.out.println("Fatal error in QTT identification.");
+	
+		for (Assump a: assumptions) {
+			boolean linkeq = a.st.link.equals("\\eq");
+			if (linkeq || a.st.link.equals("\\then")) {
+				if (a.st.rside.equals(prop)) {
+					boolean matching = matchConditionalExistentialStatement(a.st.lside, cond, isexist);
+					if (matching) return new Justification(a);
+				}
+			} 
+			// iif gets to try with the switched positions of the assumption
+			if (linkeq) {
+				if (a.st.lside.equals(prop)) {
+					boolean matching = matchConditionalExistentialStatement(a.st.rside, cond, isexist);
+					if (matching) return new Justification(a);
 				}
 			}
 		}
 		return null;
 	}
+
 	
+	private boolean matchConditionalExistentialStatement (Term assumpLside, Term cond, boolean isexist) {
+		if (assumpLside.getDisposition() == Term.Disp.TOT && Link.isConditional(assumpLside.get(1).s)) {
+			
+			Statement assign = new Statement(new Link(assumpLside.get(1).s), assumpLside.get(0), assumpLside.get(2));
+			
+			// Exact match between conditions
+			if (assign.equals(cond)) return true;
+			
+			// Partial match between conditions
+			if (assign.link.equals("=") && isexist) {
+				if (assign.lside.equalsString(cond.s) && Type.matchtypes(assign.rside, cond, source)) {
+					return true;
+				}
+			}
+			// TODO i dont want to always have to write x = 4 ==> x > 3 ==> ... ==> f(x) > 0 ==> Exists x | f(x) > 0
+		}
+		return false;
+	}
+	
+	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
 	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
-		// true \eq (x = 0)
 		t1.flatten();
 		if (link.equals("\\eq") && t1.equalsString("\\true")) {
-			Term left = t2.v.get(0);
-			Term lk = t2.v.get(1);
-			Term right = t2.v.get(2);
-			return validateStatementSpecificDifference(left, right, new Statement(new Link(lk.s), left, right));
+			Term.Disp disp = t2.getDisposition();
+			//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
+			//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
+			if (disp == Term.Disp.QTT) {
+				return validateExistentialProposition(t2.get(0).s, t2.get(1), t2.get(2));
+			}
+			if (disp == Term.Disp.TOT) {
+				Term left = t2.get(0);
+				String lk = t2.get(1).s;
+				Term right = t2.get(2);
+				if (Link.isLink(lk)) {
+					return validateStatementSpecificDifference(new Statement(new Link(lk), left, right));
+				}
+			}			
 		}
 		return null;
 	}
 	
-	private Justification validateStatementSpecificDifference(Term t1, Term t2, Statement diff) {
-		
-		printout("\nValidate statement: " + t1 + diff.link.toString() + t2 + "  <==>  " + diff.toString());
-		
-		// Existential proposition
-		Justification solution = validateExistentialProposition(diff.lside, diff.rside, diff.link);
+	private Justification validateStatementSpecificDifference(Statement diff) {
+	
+		// Trivial proposition
+		Justification solution;
+		solution = validateTrivialImplication(diff.lside, diff.rside, diff.link);
 		if (solution != null) return solution;
-		solution = validateExistentialProposition(t2, t1, diff.link);
+		solution = validateTrivialImplication(diff.rside, diff.lside, diff.link);
 		if (solution != null) return solution;
 		
 		// Using assumptions
@@ -432,7 +463,7 @@ public class Demonstration {
 			else return from;
 		}
 		if (from.equals(key)) return into;
-		for (Term x: from.v) {
+		for (Term x: from.iterator()) {
 			result.addTerm(substitute(x, key, into));
 		}
 		
@@ -447,7 +478,7 @@ public class Demonstration {
 		String X = null;
 		String Op = null;
 		String Y = null;
-		for (Term token: t.v) {
+		for (Term token: t.iterator()) {
 			if (!token.isShallow()) token = solveMath(token);
 			if (Operator.isQuantifier(token.s)) throw new ExceptionCantReduceQuantifier();
 			if (Operator.isUnary(token.s)) {

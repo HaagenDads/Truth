@@ -2,14 +2,16 @@ package Elements;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Stack;
 
 import Operation.Operator;
 
 public class Term {
 
 	public String s;
-	public ArrayList<Term> v;
+	private ArrayList<Term> v;
 	public int size;
 	public Term() {
 		v = new ArrayList<Term>();
@@ -24,9 +26,25 @@ public class Term {
 		size ++;
 	}
 	
-	
 	public Term get(int i) {
-		return v.get(i);
+		try {
+			return v.get(i);
+		} catch (Exception e) {
+			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + v.toString());
+			return null;
+		}
+	}
+	
+	// I don't want 'Term' to be iterable...
+	public class TermArrayIterator implements Iterable<Term> {
+		ArrayList<Term> v;
+		public TermArrayIterator (ArrayList<Term> v) { this.v = v; }
+		public Iterator<Term> iterator() {
+			return v.iterator();
+		}
+	}
+	public TermArrayIterator iterator() {
+		return new TermArrayIterator(v);
 	}
 	
 	public boolean equalsString(String s) {
@@ -34,17 +52,17 @@ public class Term {
 		return this.s.equals(s);
 	}
 	
+	public boolean isOperator() {
+		if (isShallow() && Operator.isOperator(s)) return true;
+		return false;
+	}	
 	
 	public boolean equals(Term t) {
-		t.flatten();
 		if (isShallow()) {
 			if (t.isShallow()) {
 				if (s == null && t.s == null) return true;
 				return s.equals(t.s);
-			}
-			else return t.equals(this);
-		} else if (flatten()) {
-			return t.equals(this);
+			} else return false;
 		} else if (t.isShallow()) {
 			return false;
 		} else {
@@ -58,30 +76,32 @@ public class Term {
 		}
 	}
 	
-	public boolean isShallow() { return v == null; }
-	public boolean flatten() {
+	public boolean isShallow() {
+		flatten();
+		return v == null;
+	}
+	public void flatten() {
 		// Are we able to obtain a shallow term?
-		if (!isShallow() && size==1) {
+		if (size==1) {
 			Term inner = v.get(0);
-			if (inner.isShallow()) {
+			if (inner.size == 0) {
 				v = null;
 				s = inner.s;
-				return true;
+				size = 0;
 			} else {
 				v = inner.v;
 				size = inner.size;
-				return flatten();
+				flatten();
 			}
-		} else {
-			return false;
 		}
 	}
 	
 	/*
 	 * 	Should only be used in the 'toString()' operation
 	 */
+	/*
 	private boolean isUnaryShallow() {
-		if (!isShallow() && size==2) {
+		if (size==2) {
 			Term firstterm = v.get(0);
 			if (firstterm.isShallow() && Operator.isUnary(firstterm.s)) {
 				return true;
@@ -89,6 +109,26 @@ public class Term {
 		}
 		return false;
 	}
+	*/
+	
+	public static enum Disp {TOT, QTT, OT, F, ERR};
+	
+	// TOT := [Term, Operator, Term]   QTT := [Quantifier, Term, Term]  OT := [Operator, Term]  F := [Term] (flat)   ERR := error 
+	public Disp getDisposition() {
+		if (isShallow()) return Disp.F;
+		
+		Term t1 = get(0);
+		Term t2 = get(1);
+		if (size == 2) {
+			if (t1.isOperator() && !t2.isOperator()) return Disp.OT;
+		} else if (size == 3) {
+			Term t3 = get(2);
+			if (t2.isOperator() && Operator.isBinary(t2.s) && !t1.isOperator() && !t3.isOperator()) return Disp.TOT;
+			if (t1.isOperator() && Operator.isQuantifier(t1.s) && !t2.isOperator() && !t3.isOperator()) return Disp.QTT;
+		}
+		return Disp.ERR;
+	}
+	
 	
 	public Term copy() {
 		if (isShallow()) return new Term(s);
@@ -100,25 +140,32 @@ public class Term {
 	}
 	
 	public String toString() {
-		if (isShallow()) return s;
-		String output = "";
+		Disp disp = getDisposition();
+		if (disp == Disp.F) return s;	
+		if (disp == Disp.QTT) return v.get(0).s + v.get(1).toString() + ": " + v.get(2).toString();
 		
-		if (v.get(0).isShallow() && Operator.isQuantifier(v.get(0).s)) {
-			return v.get(0).s + v.get(1).toString() + ": " + v.get(2).toString();
-		}
+		String output = "";
+		if (disp == Disp.ERR) output += "[disp error (size="+size+")] ";
 		
 		for (Term x: v) {
-			if (x.isShallow()) output += x.s + " ";
-			else if (x.isUnaryShallow()) {
+			Disp innerdisp = x.getDisposition();
+			if (innerdisp == Disp.F) output += x.s + " ";
+			else if (innerdisp == Disp.OT) {
 				output += x.v.get(0).s + " ";
 				Term secondterm = x.v.get(1);
-				if (!secondterm.isShallow() && !secondterm.isUnaryShallow()) output += "(" + secondterm.toString() + ") ";
+				Disp seconddisp = secondterm.getDisposition();
+				if (seconddisp != Disp.F && seconddisp != Disp.OT) output += "(" + secondterm.toString() + ") ";
 				else output += secondterm.toString() + " ";
 			}
 			else output += "(" + x.toString() + ") ";
 		}
-		if (output.length() == 0) return "";
-		return output.substring(0, output.length()-1) + "";
+		return removeLastSpace(output);
+	}
+	
+	private String removeLastSpace(String s) {
+		int len = s.length();
+		if (len == 0) return "";
+		return "" + s.substring(0, len-1);
 	}
 	
 	
@@ -176,44 +223,48 @@ public class Term {
 	
 	
 	static private Term reduce (Term termarray) {
-		if (termarray.isShallow()) System.out.println("Term sent to be reduced but was shallow... : " + termarray.toString());
+		if (termarray.isShallow()) {
+			return termarray;
+		}
 		Term result = new Term();
 		LinkedList<Term> output = new LinkedList<Term>();
 		
-		for (int i=termarray.size-1; i>=0; i--) {
-			Term ith = termarray.get(i);
-			ith.flatten();
-			if (ith.isShallow() && ith.s.equals("\\forall")) {
-				if (output.get(1).isShallow() && output.get(1).s.equals("\\follows")) {
-					Term forallterm = new Term();
-					forallterm.addTerm(ith);
-					forallterm.addTerm(output.pop());
-					output.pop();
-					forallterm.addTerm(output.pop());
-					output.addFirst(forallterm);
-				}
-			} else if (ith.isShallow() && ith.s.equals("\\exists")) {
-				if (output.get(1).isShallow() && output.get(1).s.equals("\\suchthat")) {
-					Term existsterm = new Term();
-					existsterm.addTerm(ith);
-					existsterm.addTerm(output.pop());
-					output.pop();
-					existsterm.addTerm(output.pop());
-					output.addFirst(existsterm);
-				}
-					
-			} else if (ith.isShallow() && ith.s.equals("\\not")) {
-				Term notterm = new Term();
-				notterm.addTerm(ith);
-				notterm.addTerm(output.pop());
-				output.addFirst(notterm);
-			} else {
-				output.addFirst(ith);
-			}
+		Stack<Term> input = new Stack<Term>();
+		input.addAll(termarray.v);
+
+		while (!input.isEmpty()) {
+			Term ith = input.pop();
+			if (ith.isShallow()) {
+				if (ith.s.equals("\\forall")) {
+					// TODO collection, FIND \\follows instead of assuming it is at pos 1
+					if (output.get(1).isShallow() && output.get(1).s.equals("\\follows")) {
+						Term forallterm = new Term();
+						forallterm.addTerm(ith);
+						forallterm.addTerm(output.pop());
+						output.pop();
+						forallterm.addTerm(output.pop());
+						output.addFirst(forallterm);
+					}
+				} else if (ith.s.equals("\\exists")) {
+					if (output.get(1).isShallow() && output.get(1).s.equals("\\suchthat")) {
+						Term existsterm = new Term();
+						existsterm.addTerm(ith);
+						existsterm.addTerm(output.pop());
+						output.pop();
+						existsterm.addTerm(output.pop());
+						output.addFirst(existsterm);
+					}
+						
+				} else if (ith.s.equals("\\not")) {
+					Term notterm = new Term();
+					notterm.addTerm(ith);
+					notterm.addTerm(output.pop());
+					output.addFirst(notterm);
+				} else output.addFirst(ith);
+			} else output.addFirst(ith);
 		}
 		
 		for (Term t: output) result.addTerm(t);
-		result.flatten();
 		return result;
 	}
 	
@@ -508,6 +559,5 @@ public class Term {
 			vs.add(t);
 		}
 	}
-
 	
 }

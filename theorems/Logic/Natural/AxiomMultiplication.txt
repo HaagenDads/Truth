@@ -1,0 +1,5 @@
+Theorem Name:AxiomMultiplication Package:Logic{
+\let x \in \setnatural;
+\state 2 * x = x + x;
+}
+

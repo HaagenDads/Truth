@@ -15,13 +15,22 @@ public class Link {
 		this.link = link;
 	}
 	
-	static public boolean isLink (String string) {
-		if (string.equals("=")) return true;
-		if (string.equals("!=")) return true;
-		if (string.equals("\\eq")) return true;
-		if (string.equals("\\then")) return true;
-		if (string.equals(":=")) return true;
+	static private boolean isPartOfList(String s, String[] opSet) {
+		if (s==null) return false;
+		for (String op: opSet) {
+			if (s.equals(op)) return true;
+		}
 		return false;
+	}
+	
+	static public boolean isLink (String string) {
+		String[] opSet = new String[]{"=", "!=", "\\eq", "\\then", ":=", "<", ">", "<=", ">="};
+		return isPartOfList(string, opSet);
+	}
+	
+	static public boolean isConditional (String string) {
+		String[] opSet = new String[]{"=", "!=", "<", ">", "<=", ">="};
+		return isPartOfList(string, opSet);
 	}
 	
 	

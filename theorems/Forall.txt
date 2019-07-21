@@ -1,0 +1,11 @@
+Theorem Name:Unit Package:Logic{
+\let x \in \setnatural;
+\state \forall (x > 2) \follows (x * x > x + x) \eq \true;
+}
+Demonstration { 
+    (x > 2) \eq (x * x > 2 * x) \eq (x * x > x + x);
+
+    \true \eq
+    \forall (x > 2) \follows (x * x > x + x);
+}
+

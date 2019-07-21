@@ -19,7 +19,7 @@ public class Operator {
 		return isPartOfList(s, opSet);
 	}
 	static public boolean isBinary(String s) {
-		String[] opSet = new String[]{"\\or", "\\and", "\\implies", "=", ">", "<", "<=", ">=", "!="};
+		String[] opSet = new String[]{"\\or", "\\and", "\\implies", "=", ">", "<", "<=", ">=", "!=", "*", "+", "-"};
 		return isPartOfList(s, opSet);
 	}
 	
