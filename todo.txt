@@ -40,14 +40,15 @@ then  b
 # Check pour les contradictions dans les hypothèses... 
 
 
-# UNIVERSAL QUANTIFIER ---------------------
-
 # PARTITIONS -------------------------------
 # 3 < x < 6
 # x != 4
 
 # Check process to make sure 3 - 6 cannot be labeled "natural numbers"
 
+
+
+Synthaxic sugar for known sums of i=1..3 of x    :    x + x + x
 
 Solved
 # Logique prop: changer pour "\eq"	
@@ -57,5 +58,6 @@ Solved
 	eg > > > > ==> >
 	ie. s'intéresser à la réduction
 # Bolden True and False
+# UNIVERSAL QUANTIFIER
 
 

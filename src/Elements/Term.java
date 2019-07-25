@@ -10,20 +10,27 @@ import Operation.Operator;
 
 public class Term {
 
-	public String s;
+	public static enum Disp {TOT, QTT, OT, F, ERR};
+	private Disp disp;
+	
 	private ArrayList<Term> v;
 	public int size;
+	public String s;
+
 	public Term() {
 		v = new ArrayList<Term>();
 		size = 0;
+		disp = null;
 	}
 	public Term(String s) {
 		this.s = s;
 		size = 0;
+		disp = null;
 	}
 	public void addTerm(Term t) {
 		v.add(t);
 		size ++;
+		disp = null;
 	}
 	
 	public Term get(int i) {
@@ -83,7 +90,8 @@ public class Term {
 	public void flatten() {
 		// Are we able to obtain a shallow term?
 		if (size==1) {
-			Term inner = v.get(0);
+			Term inner = get(0);
+			disp = null;
 			if (inner.size == 0) {
 				v = null;
 				s = inner.s;
@@ -94,38 +102,26 @@ public class Term {
 				flatten();
 			}
 		}
-	}
+	}	
 	
-	/*
-	 * 	Should only be used in the 'toString()' operation
-	 */
-	/*
-	private boolean isUnaryShallow() {
-		if (size==2) {
-			Term firstterm = v.get(0);
-			if (firstterm.isShallow() && Operator.isUnary(firstterm.s)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	*/
-	
-	public static enum Disp {TOT, QTT, OT, F, ERR};
-	
-	// TOT := [Term, Operator, Term]   QTT := [Quantifier, Term, Term]  OT := [Operator, Term]  F := [Term] (flat)   ERR := error 
+	/* TOT := [Term, Operator, Term]   QTT := [Quantifier, Term, Term]  OT := [Operator, Term]  F := [Term] (flat)   ERR := error  */
 	public Disp getDisposition() {
+		if (disp == null) disp = computeDisposition();
+		return disp;
+	}
+	
+	private Disp computeDisposition() {
 		if (isShallow()) return Disp.F;
 		
-		Term t1 = get(0);
-		Term t2 = get(1);
-		if (size == 2) {
-			if (t1.isOperator() && !t2.isOperator()) return Disp.OT;
-		} else if (size == 3) {
-			Term t3 = get(2);
-			if (t2.isOperator() && Operator.isBinary(t2.s) && !t1.isOperator() && !t3.isOperator()) return Disp.TOT;
-			if (t1.isOperator() && Operator.isQuantifier(t1.s) && !t2.isOperator() && !t3.isOperator()) return Disp.QTT;
-		}
+			Term t1 = get(0);
+			Term t2 = get(1);
+			if (size == 2) {
+				if (t1.isOperator() && Operator.isUnary(t1.s) && !t2.isOperator()) return Disp.OT;
+			} else if (size == 3) {
+				Term t3 = get(2);
+				if (t2.isOperator() && Operator.isBinary(t2.s) && !t1.isOperator() && !t3.isOperator()) return Disp.TOT;
+				if (t1.isOperator() && Operator.isQuantifier(t1.s) && !t2.isOperator() && !t3.isOperator()) return Disp.QTT;
+			}
 		return Disp.ERR;
 	}
 	
@@ -133,7 +129,7 @@ public class Term {
 	public Term copy() {
 		if (isShallow()) return new Term(s);
 		Term copy = new Term();
-		for (Term x: v) {
+		for (Term x: iterator()) {
 			copy.addTerm(x.copy());
 		}
 		return copy;
@@ -142,17 +138,17 @@ public class Term {
 	public String toString() {
 		Disp disp = getDisposition();
 		if (disp == Disp.F) return s;	
-		if (disp == Disp.QTT) return v.get(0).s + v.get(1).toString() + ": " + v.get(2).toString();
+		if (disp == Disp.QTT) return get(0).s + get(1).toString() + ": " + get(2).toString();
 		
 		String output = "";
 		if (disp == Disp.ERR) output += "[disp error (size="+size+")] ";
 		
-		for (Term x: v) {
+		for (Term x: iterator()) {
 			Disp innerdisp = x.getDisposition();
 			if (innerdisp == Disp.F) output += x.s + " ";
 			else if (innerdisp == Disp.OT) {
-				output += x.v.get(0).s + " ";
-				Term secondterm = x.v.get(1);
+				output += x.get(0).s + " ";
+				Term secondterm = x.get(1);
 				Disp seconddisp = secondterm.getDisposition();
 				if (seconddisp != Disp.F && seconddisp != Disp.OT) output += "(" + secondterm.toString() + ") ";
 				else output += secondterm.toString() + " ";
@@ -169,11 +165,12 @@ public class Term {
 	}
 	
 	
-	public void embedVariableNames(String head) {
+	public void embedVariableNames(String head, ArrayList<String> vars) {
 		if (isShallow()) {
-			if (!s.startsWith(head) && !s.startsWith("\\") && !Operator.isOperator(s)) s = head + s;
+			//if (!s.startsWith(head) && !s.startsWith("\\") && !Operator.isOperator(s)) s = head + s;
+			if (!s.startsWith(head) && vars.contains(s)) s = head + s;
 		} else {
-			for (Term x: v) x.embedVariableNames(head);
+			for (Term x: v) x.embedVariableNames(head, vars);
 		}
 	}
 
@@ -207,7 +204,7 @@ public class Term {
 	
 	public Term sliceRight(int from) {
 		Term output = new Term();
-		for (int i=from; i<v.size(); i++) {
+		for (int i=from; i<size; i++) {
 			output.addTerm(get(i));
 		}
 		return output;
@@ -323,7 +320,7 @@ public class Term {
 			
 			Term parsed = new Term();
 			for (int i=0; i<result.size; i++) {
-				Term ith = result.v.get(i);
+				Term ith = result.get(i);
 				if (ith.isShallow() && Link.isLink(ith.s)) {
 
 					// Left
@@ -381,38 +378,47 @@ public class Term {
 		return result;
 	}
 	
-	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop) throws ExceptionTheoremNotApplicable {
-		return extractDiffArray(tthm, tprop, new ArrayList<Statement>());
-	}
 	
-	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> priorSubs) throws ExceptionTheoremNotApplicable {
+	/*
+	 * Demonstration territory
+	 */
+	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop) throws ExceptionTheoremNotApplicable {
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		
-		tthm.flatten();
-		tprop.flatten();
-		
-		if (tthm.isShallow()) {
+		Disp disp = tthm.getDisposition();
+		if (disp == Disp.F) {
 			// Following case implies no difference; no need to check.
 			if (tprop.isShallow() && tprop.equals(tthm)) return result;
+				
 			
 			// Can't overload a thm variable (thm.a can't be both equal to (x>0) and (x=0))
-			for (Statement st: priorSubs) {
-				if (st.lside.equals(tthm)) throw new ExceptionTheoremNotApplicable();
+			for (Statement st: result) {
+				if (st.lside.equals(tthm) && !st.rside.equals(tprop)) throw new ExceptionTheoremNotApplicable();
 			}
+			
 			result.add(new Statement(new Link(":="), tthm, tprop));
 		}
 		else {
-			if (tthm.size != tprop.size) throw new ExceptionTheoremNotApplicable();
-			for (int i=0; i<tthm.size; i++) {
-				Term tA = tthm.get(i);
-				Term tB = tprop.get(i);
-				
-				result.addAll(extractDiffArray(tA, tB));
-			}
+			if (disp != tprop.getDisposition()) throw new ExceptionTheoremNotApplicable();
+			if (disp == Disp.OT) {
+				assertSameOperator(tthm, tprop, 0);
+				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1)));
+			} else if (disp == Disp.TOT) {
+				assertSameOperator(tthm, tprop, 1);
+				result.addAll(extractDiffArray(tthm.get(0), tprop.get(0)));
+				result.addAll(extractDiffArray(tthm.get(2), tprop.get(2)));
+			} else if (disp == Disp.QTT) {
+				assertSameOperator(tthm, tprop, 0);
+				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1)));
+				result.addAll(extractDiffArray(tthm.get(2), tprop.get(2)));
+			} else throw new ExceptionTheoremNotApplicable();
 		}
 		return result;
-	}
+	}	
 	
+	static private void assertSameOperator (Term a, Term b, int pos) throws ExceptionTheoremNotApplicable {
+		if (!a.get(pos).equalsString(b.get(pos).s)) throw new ExceptionTheoremNotApplicable();
+	}
 	
 	static public class DifferencesLedger {
 		
@@ -527,8 +533,8 @@ public class Term {
 		Permutations perm = new Permutations();
 		
 		if (!t.isShallow()) {		
-			for (int i=0; i<t.v.size(); i++) {
-				Term x = t.v.get(i);
+			for (int i=0; i<t.size; i++) {
+				Term x = t.get(i);
 				if (x.isShallow() && Operator.isCommutative(x.s)) {
 					Term ta = t.sliceLeft(i);
 					Term tb = t.sliceRight(i+1);

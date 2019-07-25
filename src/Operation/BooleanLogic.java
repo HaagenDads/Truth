@@ -8,24 +8,23 @@ public class BooleanLogic {
 	public static enum bool {TRUE, FALSE, BOOLEAN};
 	public static final String genericType = "\\boolean";
 	
-	static public String applyUnaryLogic(String op, String a) throws ExceptionBooleanCasting  {
-		if (a.equals(genericType)) return a;
-		
+	static public String applyUnaryLogic(String op, String a) {
+
 		bool x = readString(a);
-		if (op.equals("\\not")) {
+		if (x != null && op.equals("\\not")) {
 			if (x.equals(bool.TRUE)) return "\\false";
 			if (x.equals(bool.FALSE)) return "\\true";
 		}
-		else System.out.println("[FATAL] Couldnt match logic operator '" + op + "' to 'not' casting.");
 		return null;
 	}
 	
-	static public String applyBinaryLogic(String a, String op, String b) throws ExceptionBooleanCasting  {
+	static public String applyBinaryLogic(String a, String op, String b) {
 		//if (a.equals(genericType) && readString(b) != null) return a;
 		//if (b.equals(genericType) && readString(a) != null) return b;
 		
 		bool ab = readString(a);
 		bool bb = readString(b);
+		if (ab == null || bb == null) return null;
 		if (op.equals("\\and")) {
 			if (ab.equals(bool.TRUE) && bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
@@ -38,19 +37,14 @@ public class BooleanLogic {
 			if (ab.equals(bool.FALSE) || bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
 		}
-		else { 
-			System.out.println("[FATAL] Couldnt match logic operator '" + op + "' to 'and/or/implies' casting.");
-			return "\\false";
-		}
+		return null;
 	}
 	
-	static public bool readString(String a) throws ExceptionBooleanCasting {
+	static public bool readString(String a) {
 		if (a.equals("\\true")) return bool.TRUE;
 		else if (a.equals("\\false")) return bool.FALSE;
 		else if (a.equals(genericType)) return bool.BOOLEAN;
-		else {
-			throw new ExceptionBooleanCasting(a);
-		}
+		else return null;
 	}
 	
 	
@@ -78,9 +72,7 @@ public class BooleanLogic {
 
 
 	static public boolean isValid(String t) {
-		try {
-			if (readString(t) == bool.TRUE || readString(t) == bool.FALSE) return true;
-		} catch (ExceptionBooleanCasting e) {}
+		if (readString(t) == bool.TRUE || readString(t) == bool.FALSE) return true;
 		return false;
 	};
 }

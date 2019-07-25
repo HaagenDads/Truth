@@ -1,5 +1,6 @@
 package Elements;
 
+import java.util.ArrayList;
 
 public class Statement {
 	
@@ -29,11 +30,12 @@ public class Statement {
 	}
 	
 	public boolean equals(Statement other) {
-		if (!this.link.equals(other.link)) return false;
-		//System.out.println(this.toString() + "  :  " + other.toString());
-
-		if (lside.equals(other.lside) && rside.equals(other.rside)) return true;
-		if (lside.equals(other.rside) && rside.equals(other.lside)) return true;
+		if (this.link.equals(other.link)) {
+			if (lside.equals(other.lside) && rside.equals(other.rside)) return true;
+			if (Link.isCommutative(link)) {
+				if (lside.equals(other.rside) && rside.equals(other.lside)) return true;
+			}
+		}
 		return false;
 		
 	}
@@ -45,9 +47,9 @@ public class Statement {
 		return this;
 	}
 	
-	public void embedVariableNames(String head) {
-		lside.embedVariableNames(head);
-		rside.embedVariableNames(head);
+	public void embedVariableNames(String head, ArrayList<String> vars) {
+		lside.embedVariableNames(head, vars);
+		rside.embedVariableNames(head, vars);
 	}
 	public void removeEmbeding() {
 		lside.removeEmbeding();

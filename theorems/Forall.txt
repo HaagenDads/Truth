@@ -3,7 +3,7 @@ Theorem Name:Unit Package:Logic{
 \state \forall (x > 2) \follows (x * x > x + x) \eq \true;
 }
 Demonstration { 
-    (x > 2) \eq (x * x > 2 * x) \eq (x * x > x + x);
+    (x > 2) \eq (2 < x) \eq (2 * x < x * x) \eq (x + x < x * x) \eq (x * x > x + x);
 
     \true \eq
     \forall (x > 2) \follows (x * x > x + x);

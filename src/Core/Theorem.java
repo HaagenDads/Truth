@@ -68,9 +68,14 @@ public class Theorem {
 	public void embedVariableNames() {
 		if (isEmbeded) return;
 		isEmbeded = true;
-		statement.embedVariableNames("thm.");
-		for (Assump a: assumptions) a.st.embedVariableNames("thm.");
-		for (Variable v: variables) v.embedVariableNames("thm.");
+		
+		ArrayList<String> vars = new ArrayList<String>();
+		for (Variable v: variables) {
+			vars.add(v.name);
+			v.embedVariableNames("thm.");
+		}
+		statement.embedVariableNames("thm.", vars);
+		for (Assump a: assumptions) a.st.embedVariableNames("thm.", vars);
 	}
 	
 	public void removeEmbeding() {

@@ -12,6 +12,6 @@ public class Main {
         //frame.loadTheorem("TrivialAnd.txt");
         //frame.loadTheorem("Logic/FirstOrder/PartitionImplication.txt");
         //frame.loadTheorem("Unit3.txt");
-        frame.loadTheorem("Forall.txt");
+        frame.loadTheorem("EmbededQuantifier.txt");
 	}
 }

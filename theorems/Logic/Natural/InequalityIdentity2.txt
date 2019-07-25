@@ -1,0 +1,6 @@
+Theorem Name:InequalityIdentity Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\state (x <= y) \eq (y >= x);
+}
+

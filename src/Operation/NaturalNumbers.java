@@ -9,29 +9,28 @@ import Elements.Variable;
 public class NaturalNumbers {
 	
 	public static final String genericType = "\\setnatural";
-	public static final String[] oplist = new String[]{"+", "-"};
+	public static final String[] oplist = new String[]{"+", "-", "*"};
 	public static final String[] opcomparaison = new String[]{"=", "<", ">", "<=", ">=", "!="};
 	
 	
-	static public String applyBinaryLogic (String a, String op, String b) throws ExceptionNaturalNumbersCasting  {
+	static public String applyBinaryLogic (String a, String op, String b) {
 		NatItem stra = readString(a);
 		NatItem strb = readString(b);
 		
+		/*
 		if ((a.equals(genericType) && stra != null)
 		 || (b.equals(genericType) && strb != null)) {
 			for (String o: oplist) if (o.equals(op)) return genericType;
 			for (String o: opcomparaison) if (o.equals(op)) return BooleanLogic.genericType;
 			return null;
-		}
+		}*/
 		
 		if (stra != null && strb != null) {
 			if (op.equals("+")) return "" + (stra.v + strb.v);
 			if (op.equals("-")) return "" + (stra.v - strb.v);
-			else { 
-				System.out.println("[FATAL] Couldnt match natural numbers operator '" + op + "' to '+/-' casting.");
-				return "null";
-			}
-		} else throw new ExceptionNaturalNumbersCasting(a + " " + op + " " + b);
+			if (op.equals("-")) return "" + (stra.v * strb.v);
+			return "null";
+		} else return null;
 	}
 	
 	/* Only three possible conclusion:

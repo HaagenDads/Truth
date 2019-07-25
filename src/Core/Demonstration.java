@@ -1,19 +1,21 @@
 package Core;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import Elements.*;
 import Elements.Term.ExceptionTheoremNotApplicable;
+import Elements.Term.Permutations;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
-import Operation.NaturalNumbers.ExceptionNaturalNumbersCasting;
-import Operation.Operator;
 import Operation.NaturalNumbers;
 
 public class Demonstration {
 
 	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
+	private static final String debugthm = "AxiomMultiplicationBy2";
+	
 	boolean isNested;
 	
 	private Body body;
@@ -168,7 +170,7 @@ public class Demonstration {
 	 *   Takes commun proven statements from cases and accepts them in the higher demonstration level
 	 */
 	private ArrayList<Assump> acceptCasesCommunProvenStatements(Cases cases) {
-		
+		// TODO generalise for QTT exists statements
 		if (cases.validatePartition().equals("true")) {
 			ArrayList<Assump> bulkResults = new ArrayList<Assump>();
 			for (Assump x: cases.enumerateCommunStatements()) {
@@ -192,11 +194,6 @@ public class Demonstration {
 		
 		
 		Justification solution;
-		/*solution = validateTrivialImplication(t1, t2, link);
-		if (solution != null) {
-			nlog.addLine(link, t2, solution);
-			return true;
-		}*/
 		
 		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
 		for (Statement st: diffLedger) {
@@ -224,6 +221,7 @@ public class Demonstration {
 			boolean linkeq = a.st.link.equals("\\eq");
 			if (linkeq || a.st.link.equals("\\then")) {
 				if (a.st.rside.equals(prop)) {
+					printout(":trying to match cond exist statement:");
 					boolean matching = matchConditionalExistentialStatement(a.st.lside, cond, isexist);
 					if (matching) return new Justification(a);
 				}
@@ -246,7 +244,9 @@ public class Demonstration {
 			Statement assign = new Statement(new Link(assumpLside.get(1).s), assumpLside.get(0), assumpLside.get(2));
 			
 			// Exact match between conditions
-			if (assign.equals(cond)) return true;
+			if (cond.getDisposition() == Term.Disp.TOT) {
+				if (assign.equals(new Statement(new Link(cond.get(1).s), cond.get(0), cond.get(2)))) return true;
+			}
 			
 			// Partial match between conditions
 			if (assign.link.equals("=") && isexist) {
@@ -323,23 +323,30 @@ public class Demonstration {
 		return false;
 	}
 	
+	@SuppressWarnings("unused")
+	private void _debug(Theorem thm, String thmname, String str) {
+		if (printPriority==0 && thm.name.equals(thmname)) {
+			System.out.println(str);
+		}
+	}
 
+	/*
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
 		
 		ArrayList<Term> perms = Term.permute(prop.lside).vs;
 		for (Term propPermutation: perms) { 
 			try {
+				String debugthm = "AxiomMultiplicationIneq";
 				// Extracts every substitutions that would have to be made for the theorem to match the proposition
 				// A substitution would be " replace 'a' by 'thm.x' from the theorem "
-				/*if (th.name.equals("LargerOrEqual4")) {
-					System.out.println("___");
-					System.out.println(th.statement.lside.toString());
-					System.out.println(propPermutation.toString());
-				}*/
+				_debug(th, debugthm, "___\n" + th.statement.lside.toString() + "\n" + propPermutation.toString());
+				
 				ArrayList<Statement> LSIDEsubstitutions = Term.extractDiffArray(th.statement.lside, propPermutation);
 				LSIDEsubstitutions = orderSubstitutions(LSIDEsubstitutions);
+				_debug(th, debugthm, ":subs:\n" + LSIDEsubstitutions.toString());
+
 				assertValidSubstitutions(th, LSIDEsubstitutions);
-				
+				_debug(th, debugthm, ":validated:");
 				// Applies every required changes so that both left sides would be identical
 				Term alteredRightSide = prop.rside;
 				for (Statement st: LSIDEsubstitutions) {
@@ -351,16 +358,21 @@ public class Demonstration {
 					try {
 						ArrayList<Statement> RSIDEsubstitutions = Term.extractDiffArray(th.statement.rside, RSIDEpropPermutation, LSIDEsubstitutions);
 						RSIDEsubstitutions = orderSubstitutions(RSIDEsubstitutions);
+						_debug(th, debugthm, ":rsidesubs:\n" + RSIDEsubstitutions.toString());
 						assertValidSubstitutions(th, RSIDEsubstitutions);
+						_debug(th, debugthm, ":validated:");
 						//assertConsistantSubstitutions(LSIDEsubstitutions, RSIDEsubstitutions);
 						
 						Term finalRSIDE = alteredRightSide;
 						for (Statement st: RSIDEsubstitutions) {
 							finalRSIDE = substitute(finalRSIDE, st.rside, st.lside);
 						}
+						_debug(th, debugthm, ":finalrside:\n" + finalRSIDE.toString());
+						
 						
 						// Check if the changes are enough for the right sides to be identical
 						Term thmRightSide = reduceTheoremVariables(th.statement.rside, RSIDEsubstitutions);
+						_debug(th, debugthm, ":thmrside:\n" + thmRightSide.toString());
 						if (finalRSIDE.equals(thmRightSide)) {
 							
 							LSIDEsubstitutions.addAll(RSIDEsubstitutions);
@@ -380,10 +392,114 @@ public class Demonstration {
 		}
 		return false;
 	}
+	*/
+	
+	/*
+	 * We first find permutations from the left side, make sure the types match.
+	 */
+	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
+		Permutations pmleft = Term.permute(prop.lside);
+		Permutations pmright = Term.permute(prop.rside);
+		
+		// TODO think about 'is \true gonna yield an empty validperm?'
+		
+		_debug(th, debugthm, ":thm - " + debugthm + ":");
+		ValidPermutations validleftperms = extractValidPerms(pmleft.vs, th, th.statement.lside);
+		if (validleftperms.isEmpty()) return false;
+		_debug(th, debugthm, ":leftperms:");
+		for (UniquePerm pleft: validleftperms) _debug(th, debugthm, pleft.sts.toString());
+		
+		ValidPermutations validrightperms = extractValidPerms(pmright.vs, th, th.statement.rside);
+		if (validrightperms.isEmpty()) return false;
+		_debug(th, debugthm, ":rightperms:");
+		for (UniquePerm pright: validrightperms) _debug(th, debugthm, pright.sts.toString());
+		
+		for (UniquePerm pleft: validleftperms) {
+		for (UniquePerm pright: validrightperms) {
+			_debug(th, debugthm, ":assertingsubs:");
+			if (assertValidSubstitutions(pleft.sts, pright.sts)) {
+				return true;
+			}
+			_debug(th, debugthm, ":!!didntmatch:\n" + pleft.sts.toString() + "\n" + pright.sts.toString());
+		}
+		}
+		
+		
+		return false;
+	}
+	
+	private boolean assertValidSubstitutions(ArrayList<Statement> grpA, ArrayList<Statement> grpB) {
+		for (Statement stA: grpA) {
+		for (Statement stB: grpB) {
+			if (stA.lside.equals(stB.lside) && !stA.rside.equals(stB.rside)) {
+				return false;
+			}
+		}
+		}
+		return true;
+	}	
+	
+	// TODO assert that a thm cant have an undeclared variable ever
+	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) {
+		ValidPermutations validperms = new ValidPermutations();
+		for (Term propPermutation: perms) { 
+			try {
+				// extractDiffArray already checks for surjectivity
+				ArrayList<Statement> substitutions = Term.extractDiffArray(thside, propPermutation);
+				substitutions = orderSubstitutions(substitutions);
+				
+				// checking here for types - trueSubs ignores substitutions of non-variables (e.g. \true, 4)
+				// Case for 3 = 3, for example
+				// TODO: verify that it wont show up as "thm.3 = 3"
+			
+				ArrayList<Statement> trueSubs = new ArrayList<Statement>();
+				for (Statement st: substitutions) {
+					Variable v = th.getVariable(st.lside.s);
+					if (v == null) {
+						if (!st.lside.equals(st.rside)) {
+							_debug(th, debugthm, ":invalid nonequal nonvariable: " + st.toString());
+							throw new ExceptionTheoremNotApplicable();
+						}
+					} else if (!matchTheoremTypes(v, st.rside)) throw new ExceptionTheoremNotApplicable();
+					else trueSubs.add(st);
+				}
+				validperms.add(propPermutation, trueSubs);
+			} catch (ExceptionTheoremNotApplicable e) {}
+		}
+		return validperms;
+	}
+	
+
+	private class ValidPermutations implements Iterable<UniquePerm>{
+		ArrayList<UniquePerm> perms;
+		public ValidPermutations () {
+			perms = new ArrayList<UniquePerm>();
+		}
+		public void add(Term propperm, ArrayList<Statement> subs) {
+			perms.add(new UniquePerm(propperm, subs));
+		}
+		public boolean isEmpty() {
+			return perms.size() == 0;
+		}
+		public Iterator<UniquePerm> iterator() {
+			return perms.iterator();
+		}
+	}
+	
+	// TODO remove t if not actually needed... after running lots of tests.
+	private class UniquePerm {
+		@SuppressWarnings("unused")
+		Term t;
+		ArrayList<Statement> sts;
+		public UniquePerm (Term t, ArrayList<Statement> sts) {
+			this.t = t;
+			this.sts = sts;
+		}
+	}
 	
 	
+	/* FORGOT WHAT THAT DID... 
 	private Term reduceTheoremVariables(Term t, ArrayList<Statement> subs) {
-		t.flatten();
 		if (t.isShallow()) return t;
 		for (int i=subs.size()-1; i>0; i--) {
 			for (int j=i-1; j>=0; j--) {
@@ -394,42 +510,13 @@ public class Demonstration {
 		}
 		return t;
 	}
-	
-	
-	private void assertValidSubstitutions(Theorem th, ArrayList<Statement> substitutions) throws ExceptionTheoremNotApplicable {
-		for (int i=0; i<substitutions.size(); i++) {
-			
-			Statement outerst = substitutions.get(i);
-			if (th.getVariable(outerst.lside.s) == null) {
-				if (!outerst.lside.equals(outerst.rside)) throw new ExceptionTheoremNotApplicable();
-			} else {
-				for (int j=i+1; j<substitutions.size(); j++) {
-					
-					Statement innerst = substitutions.get(j);
-					if (outerst.lside.equals(innerst.lside) && !outerst.rside.equals(innerst.rside)) {
-						throw new ExceptionTheoremNotApplicable();
-					}
-				}
-			}
-		}
-	}
-	
-	/*
-	private void assertConsistantSubstitutions(ArrayList<Statement> LSIDEsubstitutions, ArrayList<Statement> RSIDEsubstitutions) throws ExceptionTheoremNotApplicable {
-		for (Statement lst: LSIDEsubstitutions) {
-			for (Statement rst: RSIDEsubstitutions) {
-				if (lst.lside.equals(rst.lside)) {
-					if (lst.rside.equals(rst.rside))
-				}
-			}
-		}*/
-	
+	*/
 	
 	private boolean matchTheoremTypes(Variable v, Term t) {
 		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
 	
-	
+	/*	Prioritizes largest substitutions before more shallow ones  */
 	private ArrayList<Statement> orderSubstitutions(ArrayList<Statement> former) {
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		int nbshallow = 0;
@@ -473,49 +560,52 @@ public class Demonstration {
 	
 	private Term solveMath(Term t) throws ExceptionBooleanCasting, ExceptionCantReduceQuantifier {
 		
-		t.flatten();
-		if (t.isShallow()) return t;
-		String X = null;
-		String Op = null;
-		String Y = null;
-		for (Term token: t.iterator()) {
-			if (!token.isShallow()) token = solveMath(token);
-			if (Operator.isQuantifier(token.s)) throw new ExceptionCantReduceQuantifier();
-			if (Operator.isUnary(token.s)) {
-				if (X == null && Op == null) Op = token.s;
-				else if (X == null) printout(3, "Multiple unary operators havent been though of yet.");
-			} else if (Operator.isBinary(token.s)) {
-				if (X == null) printout(3, "Couldnt solve for ': " + token + "'");
-				else if (Op == null) Op = token.s;
-				else printout(3, "Couldnt solve for '" + X + " " + Op + " : " + token + "'");
-			} else {
-				if (X == null && Op == null) X = token.s;
-				else if (X == null) X = solveUnaryOperator(Op, token.s);
-				else if (Op == null) printout(3, "Couldnt solve for '" + X + " : " + token + "'");
-				else if (Y == null) X = solveBinaryOperator(X, Op, token.s);
-				else printout(3, "Couldnt solve for '" + X + " " + Op + " " + Y + " : " + token + "'");
-			}
+		if (t == null) return null;
+		Term.Disp disp = t.getDisposition();
+		if (disp == Term.Disp.F) return t;
+		if (disp == Term.Disp.OT) {
+			Term t1 = solveMath(t.get(1));
+			return solveUnaryOperator(t.get(0).s, t1);
 		}
-		return new Term(X);
+		if (disp == Term.Disp.TOT) {
+			Term t1 = solveMath(t.get(0));
+			Term t2 = solveMath(t.get(2));
+			return solveBinaryOperator(t.get(1).s, t1, t2);
+		}
+		if (disp == Term.Disp.QTT) {
+			return solveQuantifierOperator(t.get(2));
+		}
+
+		return null;
 		
 	}
 	
 	
-	private String solveBinaryOperator(String x, String op, String token) throws ExceptionBooleanCasting {
-		if (!Operator.isBinary(op)) printout(3, "Tried to solve binary operator for '" + op + "'");
-		try {
-			return NaturalNumbers.applyBinaryLogic(x, op, token);
-			
-		} catch (ExceptionNaturalNumbersCasting e) {}
-		return BooleanLogic.applyBinaryLogic(x, op, token);
+	private Term solveBinaryOperator(String op, Term t1, Term t2) {
+		if (!t1.isShallow() || !t2.isShallow()) return null;
+		String result = NaturalNumbers.applyBinaryLogic(op, t1.s, t2.s);
+		if (result != null) return new Term(result);
+		
+		result = BooleanLogic.applyBinaryLogic(t1.s, op, t2.s);
+		if (result != null) return new Term(result);
+		return null;
 	}
 	
 	
-	private String solveUnaryOperator(String op, String x) throws ExceptionBooleanCasting {
-		if (!Operator.isUnary(op)) printout(3, "Tried to solve unary operator for '" + op + "'");
-		return BooleanLogic.applyUnaryLogic(op, x);
+	private Term solveUnaryOperator(String op, Term term) {
+		if (!term.isShallow()) return null;
+		
+		String result = BooleanLogic.applyUnaryLogic(op, term.s);
+		if (result == null) return null;
+		return new Term(result);
 	}
 	
+	private Term solveQuantifierOperator (Term term) {
+		term.flatten();
+		if (term.equalsString("\\true")) return term;
+		if (term.equalsString("\\false")) return term;
+		return null;
+	}
 	
 	private int parseCases(int initpos, Variable casevar, Cases cases) {
 
