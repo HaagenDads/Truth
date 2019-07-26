@@ -1,0 +1,6 @@
+Theorem Name:IdentityIdempotent Package:Logic{
+\let X \be \set;
+
+\state X \union X = X;
+}
+

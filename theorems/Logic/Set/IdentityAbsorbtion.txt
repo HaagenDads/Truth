@@ -1,0 +1,6 @@
+Theorem Name:IdentityAbsorbtion Package:Logic{
+\let X \be \set;
+
+\state X \union \{} = X;
+}
+

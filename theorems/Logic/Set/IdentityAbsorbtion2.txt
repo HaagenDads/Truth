@@ -1,0 +1,7 @@
+Theorem Name:IdentityAbsorbtion Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+
+\state X \union (X \intersection Y) = X;
+}
+

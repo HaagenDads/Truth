@@ -1,0 +1,4 @@
+Theorem Name:AxiomSelf Package:Logic{
+\let X \be \set;
+\state X \subset X \eq \true;
+}

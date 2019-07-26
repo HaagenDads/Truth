@@ -1,0 +1,6 @@
+Theorem Name:UnitSet Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\state X \subset (X \union Y);
+}
+

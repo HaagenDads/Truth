@@ -1,0 +1,7 @@
+Theorem Name:IdentityAssociativity Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\let Z \be \set;
+\state X \union (Y \union Z) = (X \union Y) \union Z;
+}
+

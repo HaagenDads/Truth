@@ -1,0 +1,7 @@
+Theorem Name:IdentityDistributivity Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\let Z \be \set;
+\state X \intersection (Y \union Z) = (X \intersection Y) \union (X \intersection Z);
+}
+

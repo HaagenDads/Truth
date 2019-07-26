@@ -1,0 +1,7 @@
+Theorem Name:IdentityAssociativity Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\let Z \be \set;
+\state X \intersection (Y \intersection Z) = (X \intersection Y) \intersection Z;
+}
+

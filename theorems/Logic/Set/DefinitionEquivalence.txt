@@ -1,0 +1,7 @@
+Theorem Name:DefinitionEquivalence Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+
+\state (X \subset Y) \and (Y \subset X) \then X = Y;
+}
+

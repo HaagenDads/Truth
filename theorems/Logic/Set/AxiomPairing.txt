@@ -1,0 +1,8 @@
+Theorem Name:AxiomPairing Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\let Z \be \set;
+
+\state \exists Z \suchthat (X \in Z) \and (Y \in Z) \eq \true;
+}
+
