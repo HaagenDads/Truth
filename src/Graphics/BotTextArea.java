@@ -16,7 +16,7 @@ import Elements.Variable;
 
 public class BotTextArea extends StringOperations {
 	
-	private SimpleAttributeSet sbold, svar, spale, sred, sboldred, set;
+	private SimpleAttributeSet sbold, svar, spale, sred, sboldred, set, sital;
 	private Document doc;	
 	private ArrayList<linkJustification> linkedJustifications;
 	private TabList tablist;
@@ -32,6 +32,9 @@ public class BotTextArea extends StringOperations {
 		
 		sbold = new SimpleAttributeSet();
 		StyleConstants.setBold(sbold, true);
+		
+		sital = new SimpleAttributeSet();
+		StyleConstants.setItalic(sital, true);
 		
 		svar = new SimpleAttributeSet();
 		StyleConstants.setBold(svar, true);
@@ -204,6 +207,7 @@ public class BotTextArea extends StringOperations {
 		for (Styledsequence ss: list) {
 			
 			if (ss.style.equals("bold")) insertStringToDoc(ss.sequence, sbold);
+			else if (ss.style.equals("ital")) insertStringToDoc(ss.sequence, sital);
 			else if (ss.style.equals("red")) insertStringToDoc(ss.sequence, sred);
 			else if (ss.style.equals("boldred")) insertStringToDoc(ss.sequence, sboldred);
 			else insertStringToDoc(ss.sequence, set);

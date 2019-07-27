@@ -3,6 +3,8 @@ package Elements;
 import Operation.BooleanLogic;
 import Core.Theorem;
 import Operation.NaturalNumbers;
+import Operation.Op;
+import Operation.Operator;
 
 public class Type {
 
@@ -18,7 +20,7 @@ public class Type {
 	}
 	
 	private void assertType (String t) {
-		if (t.equals("\\boolean") || t.equals("\\setnatural")) return;
+		if (isin(t, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, Set.genericType})) return;
 		System.out.println("Type '" + t + "' doesn't exist");
 	}
 	
@@ -51,35 +53,49 @@ public class Type {
 		if (termdisp == Term.Disp.QTT) return new Type(BooleanLogic.genericType);
 		if (termdisp == Term.Disp.OT) {
 			Type x = getType(t.get(1), thm);
-			return solveUnary(t.get(0).s, x);
+			return solveUnary((Operator) (t.get(0)), x);
 		}
 		if (termdisp == Term.Disp.TOT) {
 			Type x = getType(t.get(0), thm);
 			Type y = getType(t.get(2), thm);
-			return solveBinary(x, t.get(1).s, y);
+			return solveBinary(x, (Operator) (t.get(1)), y);
 		}
 		else return null;
 	}
 	
-	static private Type solveUnary(String op, Type a) {
+	static private Type solveUnary(Operator op, Type a) {
 		if (a.equals(BooleanLogic.genericType)) {
-			if (op.equals("\\not")) return a;
+			if (op.equals(Op.not)) return a;
 		}
 		return null;
 	}
 	
-	static private Type solveBinary(Type a, String op, Type b) {
+	static private Type solveBinary(Type a, Operator op, Type b) {
 		if (a.equals(b)) {
 			if (a.equals(BooleanLogic.genericType)) {
-				if (op.equals("\\and") || op.equals("\\or") || op.equals("\\implies")) return a;
+				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies})) return a;
 			}
 			if (a.equals(NaturalNumbers.genericType)) {
-				if (op.equals("+") || op.equals("-") || op.equals("*")) return a;
-				if (op.equals("=") || op.equals("<") || op.equals(">") || op.equals(">=") || op.equals("<=") || op.equals("!=")) {
+				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult})) return a;
+				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
 					return new Type(BooleanLogic.genericType);
 				}
+			}
+			if (b.equals(Set.genericType)) {
+				if (a.equals(b)) {
+					if (isin(op, new Operator[]{Op.intersection, Op.union})) return a;
+					if (isin(op, new Operator[]{Op.subset, Op.psubset, Op.eq})) return new Type(BooleanLogic.genericType);
+				} else if (isin(op, new Operator[]{Op.in, Op.notin})) return new Type(BooleanLogic.genericType);
 			}
 		}
 		return null;
 	}
+	
+	public static boolean isin(Object t, Object[] list) {
+		for (Object s: list) {
+			if (t.equals(s)) return true;
+		}
+		return false;
+	}
+
 }

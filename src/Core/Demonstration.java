@@ -6,6 +6,7 @@ import java.util.LinkedList;
 
 import Elements.*;
 import Elements.Term.ExceptionTheoremNotApplicable;
+import Elements.Term.ExceptionTrivialEquality;
 import Elements.Term.Permutations;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
@@ -103,7 +104,7 @@ public class Demonstration {
 		for (String token: subbody) {
 			if (Link.isLink(token) && assertGroundParenthesis(exp_right)) {
 				linkserie.add(new Link(token));
-				t2 = Term.extractTerms(exp_right);
+				t2 = Term.compileTerms(exp_right);
 				if (t1 != null) {
 					boolean innerState = validateStatement(t1, t2, currentlink);
 					proposition = proposition && innerState;
@@ -121,7 +122,7 @@ public class Demonstration {
 		}
 
 		linkserie.add(currentlink);
-		t2 = Term.extractTerms(exp_right);
+		t2 = Term.compileTerms(exp_right);
 		if (!validateStatement(t1, t2, currentlink)) {
 			printout(3, "Could not validate statement " + t1 + currentlink.toString() + t2);
 			proposition = false;
@@ -171,7 +172,9 @@ public class Demonstration {
 	 */
 	private ArrayList<Assump> acceptCasesCommunProvenStatements(Cases cases) {
 		// TODO generalise for QTT exists statements
-		if (cases.validatePartition().equals("true")) {
+		// TODO make this work
+		//if (cases.validatePartition().equals("true")) {
+		if (cases.isPartitionComplete()) {
 			ArrayList<Assump> bulkResults = new ArrayList<Assump>();
 			for (Assump x: cases.enumerateCommunStatements()) {
 				bulkResults.add(x);
@@ -195,18 +198,24 @@ public class Demonstration {
 		
 		Justification solution;
 		
-		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
-		for (Statement st: diffLedger) {
-			printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
-			solution = validateStatementSpecificDifference(st);
-			if (solution != null) {
-				nlog.addLine(link, t2, solution);
-				return true;
+		try {
+			ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
+			for (Statement st: diffLedger) {
+				printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
+				solution = validateStatementSpecificDifference(st);
+				if (solution != null) {
+					nlog.addLine(link, t2, solution);
+					return true;
+				}
 			}
+			printout(3, "Couldnt use assumptions nor math");
+			nlog.addLine(link, t2, new Justification("error"));
+			return false;
+			
+		} catch (ExceptionTrivialEquality e) {
+			nlog.addLine(link, t2, new Justification("Trivial equality"));
+			return true;
 		}
-		printout(3, "Couldnt use assumptions nor math");
-		nlog.addLine(link, t2, new Justification("error"));
-		return false;
 	}
 	
 	/* Resolution for statements of the sort:
@@ -217,6 +226,11 @@ public class Demonstration {
 		boolean isforall = quant.equals("\\forall");
 		if (!isexist && !isforall) System.out.println("Fatal error in QTT identification.");
 	
+		// TODO check if cond matches the set, eg x < 0 should be invalid if x in naturals
+		if (cond.getDisposition() == Term.Disp.TOT && Link.isConditional(cond.get(1).s) && cond.equals(prop)) {
+			return new Justification("Self evident");
+		}
+		
 		for (Assump a: assumptions) {
 			boolean linkeq = a.st.link.equals("\\eq");
 			if (linkeq || a.st.link.equals("\\then")) {
@@ -329,70 +343,6 @@ public class Demonstration {
 			System.out.println(str);
 		}
 	}
-
-	/*
-	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
-		
-		ArrayList<Term> perms = Term.permute(prop.lside).vs;
-		for (Term propPermutation: perms) { 
-			try {
-				String debugthm = "AxiomMultiplicationIneq";
-				// Extracts every substitutions that would have to be made for the theorem to match the proposition
-				// A substitution would be " replace 'a' by 'thm.x' from the theorem "
-				_debug(th, debugthm, "___\n" + th.statement.lside.toString() + "\n" + propPermutation.toString());
-				
-				ArrayList<Statement> LSIDEsubstitutions = Term.extractDiffArray(th.statement.lside, propPermutation);
-				LSIDEsubstitutions = orderSubstitutions(LSIDEsubstitutions);
-				_debug(th, debugthm, ":subs:\n" + LSIDEsubstitutions.toString());
-
-				assertValidSubstitutions(th, LSIDEsubstitutions);
-				_debug(th, debugthm, ":validated:");
-				// Applies every required changes so that both left sides would be identical
-				Term alteredRightSide = prop.rside;
-				for (Statement st: LSIDEsubstitutions) {
-					alteredRightSide = substitute(alteredRightSide, st.rside, st.lside);
-				}
-				
-				ArrayList<Term> RSIDEperms = Term.permute(alteredRightSide).vs;
-				for (Term RSIDEpropPermutation: RSIDEperms) { 
-					try {
-						ArrayList<Statement> RSIDEsubstitutions = Term.extractDiffArray(th.statement.rside, RSIDEpropPermutation, LSIDEsubstitutions);
-						RSIDEsubstitutions = orderSubstitutions(RSIDEsubstitutions);
-						_debug(th, debugthm, ":rsidesubs:\n" + RSIDEsubstitutions.toString());
-						assertValidSubstitutions(th, RSIDEsubstitutions);
-						_debug(th, debugthm, ":validated:");
-						//assertConsistantSubstitutions(LSIDEsubstitutions, RSIDEsubstitutions);
-						
-						Term finalRSIDE = alteredRightSide;
-						for (Statement st: RSIDEsubstitutions) {
-							finalRSIDE = substitute(finalRSIDE, st.rside, st.lside);
-						}
-						_debug(th, debugthm, ":finalrside:\n" + finalRSIDE.toString());
-						
-						
-						// Check if the changes are enough for the right sides to be identical
-						Term thmRightSide = reduceTheoremVariables(th.statement.rside, RSIDEsubstitutions);
-						_debug(th, debugthm, ":thmrside:\n" + thmRightSide.toString());
-						if (finalRSIDE.equals(thmRightSide)) {
-							
-							LSIDEsubstitutions.addAll(RSIDEsubstitutions);
-							printout("** Match theorem : " + LSIDEsubstitutions + "   -from " + th.name);
-							for (Statement st: LSIDEsubstitutions) {
-								Variable v = th.getVariable(st.lside.s);
-								if (v != null && matchTheoremTypes(v, st.rside)) {
-									printout("** Types have been validates! ");
-									return true;
-								}
-							}
-						}
-					} catch (Term.ExceptionTheoremNotApplicable e) {}
-				}
-				
-			} catch (Term.ExceptionTheoremNotApplicable e) {}
-		}
-		return false;
-	}
-	*/
 	
 	/*
 	 * We first find permutations from the left side, make sure the types match.
@@ -550,7 +500,7 @@ public class Demonstration {
 			else return from;
 		}
 		if (from.equals(key)) return into;
-		for (Term x: from.iterator()) {
+		for (Term x: from.v) {
 			result.addTerm(substitute(x, key, into));
 		}
 		
@@ -607,6 +557,10 @@ public class Demonstration {
 		return null;
 	}
 	
+	
+	/* =========================================================
+	 *  CASES
+	 */
 	private int parseCases(int initpos, Variable casevar, Cases cases) {
 
 		if (body.get(initpos).equals("\\case") && body.get(initpos+1).equals(casevar.name)) {
@@ -620,7 +574,7 @@ public class Demonstration {
 			}
 			
 			// Assigning a partition element to the variable; we then need to use "=".
-			Statement hypothesis = new Statement(new Link("="), new Term(casevar.name), Term.extractTerms(rightHand));
+			Statement hypothesis = new Statement(new Link("="), new Term(casevar.name), Term.compileTerms(rightHand));
 			
 			// Extracting the conditional body
 			ArrayList<String> nestedBody = new ArrayList<String>();
@@ -653,18 +607,6 @@ public class Demonstration {
 		return body.size();
 		
 	}
-			
-	
-	private void printout(String text) {
-		printout(1, text);
-	}
-	
-	private void printout(int priority, String text) {
-		if (printPriority > priority) return;
-		if (priority == 3) System.out.println("[FATAL]" + text);
-		else System.out.println(text);
-	}
-	
 	
 	public class Cases {
 		
@@ -672,43 +614,53 @@ public class Demonstration {
 		Type set;
 		ArrayList<Statement> hypothesis;
 		ArrayList<Demonstration> nested;
+		boolean valid;
 		
 		public Cases(String casename) {
 			hypothesis = new ArrayList<Statement>();
 			nested = new ArrayList<Demonstration>();
 			casevar = source.getVariable(casename);
-			/*for (Variable v: source.variables) {
-				if (v.name.equals(casename)) {
-					casevar = v; break;
-				}
-			}*/
 			set = casevar.type;
+			valid = true;
 		}
 		
 		public void addCase(Statement hypothesis, Demonstration nested) {
+			String err = assertCase(hypothesis);
+			if (err != null) {
+				printout(3, err); valid = false;
+			}
+	
 			this.hypothesis.add(hypothesis);
 			this.nested.add(nested);
 		}
 		
-		public String validatePartition() {
-			ArrayList<Type> types = new ArrayList<Type>();
-			for (Statement st: hypothesis) {
-				if (!st.lside.s.equals(casevar.name)) return null;
-				types.add(Type.getType(st.rside, source));
-			}
+		private String assertCase(Statement hypothesis) {
+			String err = "Error in case hypothesis; ";
 			
-			if (set.equals("\\boolean")) {
-				for (Type s: types) if (!s.equals("\\boolean")) return null;
-				return "" + BooleanLogic.validatePartition(casevar, hypothesis, types);
-			}
-			if (set.equals("\\setnatual")) {
-				for (Type s: types) if (!s.equals("\\setnatual")) return null;
-				return NaturalNumbers.validatePartition(casevar, hypothesis, types);
-			}
-			printout(3, "Couldnt validate partition. " + set);
+			if (!Link.isConditional(hypothesis.link.link)) return err + "link not a conditional statement.";
+			else if (!hypothesis.lside.equalsString(casevar.name)) return err + "case variable invalid.";
+			else if (!Type.matchtypes(new Term(casevar.name), hypothesis.rside, source)) return "types non-matching";
 			return null;
 		}
 		
+		// TODO 
+		public void compilePartition() {
+			
+		}
+		
+		/* Answers to whether the partition is complete of partial - used to determine the assumption that follows from the cases */
+		public boolean isPartitionComplete() {
+			return false;/*
+					
+			if (set.equals("\\boolean")) {
+				return "" + BooleanLogic.validatePartition(casevar, hypothesis);
+			}
+			if (set.equals("\\setnatual")) {
+				return NaturalNumbers.validatePartition(casevar, hypothesis);
+			}
+			printout(3, "Couldnt validate partition. " + set);
+			return null;*/
+		}
 		
 		/*
 		 *   Find commun statements proven in every case in order to make a general statement, given a partition of cases
@@ -749,7 +701,17 @@ public class Demonstration {
 		}
 		
 	}
+
 	
+	private void printout(String text) {
+		printout(1, text);
+	}
+	
+	private void printout(int priority, String text) {
+		if (printPriority > priority) return;
+		if (priority == 3) System.out.println("[FATAL]" + text);
+		else System.out.println(text);
+	}
 	
 	private class ExceptionCantSolveMath extends Exception {}
 	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}

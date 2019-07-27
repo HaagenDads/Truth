@@ -1,35 +1,63 @@
 package Operation;
 
-public class Operator {
+import Elements.Term;
 
-	static private boolean isPartOfList(String s, String[] opSet) {
+public class Operator extends Term {
+
+	
+	public String s;
+	public Operator (String s) {
+		this.s = s;
+	}
+	
+	public boolean equals (Operator other) {
+		return this.s.equals(other.s);
+	}
+	public Operator copy () {
+		return new Operator(s);
+	}
+	
+	
+	private boolean isPartOfList(Operator[] opSet) {
 		if (s==null) return false;
-		for (String op: opSet) {
+		for (Operator op: opSet) {
 			if (s.equals(op)) return true;
 		}
 		return false;
 	}
-	static public boolean isQuantifier(String s) {
-		String[] opSet = new String[]{"\\exists", "\\forall"};
-		return isPartOfList(s, opSet);
-		
-	}
-	static public boolean isUnary(String s) {
-		String[] opSet = new String[]{"\\not"};
-		return isPartOfList(s, opSet);
-	}
-	static public boolean isBinary(String s) {
-		String[] opSet = new String[]{"\\or", "\\and", "\\implies", "=", ">", "<", "<=", ">=", "!=", "*", "+", "-"};
-		return isPartOfList(s, opSet);
+	
+	public boolean isQuantifier() {
+		Operator[] opSet = new Operator[]{Op.exists, Op.forall};
+		return isPartOfList(opSet);
 	}
 	
-	static public boolean isOperator(String s) {
-		return isUnary(s) || isBinary(s) || isQuantifier(s);
+	public boolean isSet() {
+		return s.equals("\\set");
 	}
 	
-	static public boolean isCommutative(String s) {
-		String[] opSet = new String[]{"\\or", "\\and", "=", "!=", "+", "-", "*", "\\eq"};
-		return isPartOfList(s, opSet);
+	public boolean isUnary() {
+		Operator[] opSet = new Operator[]{Op.not, Op.minus};
+		return isPartOfList(opSet);
+	}
+	
+	public boolean isBinary() {
+		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.minus,
+										  Op.intersection, Op.union, Op.subset, Op.psubset, Op.in, Op.notin};
+		return isPartOfList(opSet);
+	}
+	
+	public boolean isOperator() {
+		return isUnary() || isBinary() || isQuantifier();
+	}
+	
+	public boolean isCommutative() {
+		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.eq, Op.ineq, Op.plus, Op.mult, Op.equiv, Op.intersection, Op.union};
+		return isPartOfList(opSet);
+	}
+	
+	public boolean isReversing() {
+		Operator[] opSet = new Operator[]{Op.minus, Op.div};
+		return isPartOfList(opSet);
 	}
 
 }

@@ -95,6 +95,8 @@ public class Compiler {
 				if (connection.equals("\\in")) {
 					String set = elements[3];
 					thm.variables.add(new Variable(varname, set));
+				} else if (connection.equals("\\be") && elements[3].equals("\\set")) {
+					thm.variables.add(new Variable(varname, "\\set"));
 				} else { 
 					printout(3, "Could not comprehend variable initialization from: " + statement);
 				}
@@ -132,7 +134,7 @@ public class Compiler {
 		ArrayList<String> als = new ArrayList<String>();
 		for (String s: tokens) als.add(s);
 		als.remove(0);
-		Term terms = Term.extractTerms(als);
+		Term terms = Term.compileTerms(als);
 		return new Statement(new Link(terms.get(1).s), terms.get(0), terms.get(2));
 	}
 	
@@ -171,7 +173,8 @@ public class Compiler {
 		File[] files = new File("theorems/" + packageName + "/Axioms/").listFiles();
 		File[] files2 = new File("theorems/" + packageName + "/FirstOrder/").listFiles();
 		File[] files3 = new File("theorems/" + packageName + "/Natural/").listFiles();
-		for (File[] folder: new File[][]{files, files2, files3}) {
+		File[] files4 = new File("theorems/" + packageName + "/Set/").listFiles();
+		for (File[] folder: new File[][]{files, files2, files3, files4}) {
 			for (File f: folder) {
 				String unit = getUnitFromFile(f);
 				

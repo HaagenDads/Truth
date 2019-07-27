@@ -80,18 +80,14 @@ abstract public class StringOperations extends JTextPane {
 	
 	protected String replaceSymbols(String s) {
 		String result = s;
-		result = result.replace((CharSequence) "\\not ", (CharSequence) "¬");
-		result = result.replace((CharSequence) "\\false", (CharSequence) "\\$bold{F}");
-		result = result.replace((CharSequence) "\\true", (CharSequence) "\\$bold{T}");
-		result = result.replace((CharSequence) "\\and", (CharSequence) "∧");
-		result = result.replace((CharSequence) "\\or", (CharSequence) "∨");
-		result = result.replace((CharSequence) "\\implies", (CharSequence) "→");
-		result = result.replace((CharSequence) "\\eq", (CharSequence) "≡");
-		result = result.replace((CharSequence) "\\forall", (CharSequence) "∀");
-		result = result.replace((CharSequence) "\\exists", (CharSequence) "∃");
-		result = result.replace((CharSequence) "\\setnatural", (CharSequence) "ℕ");
-		result = result.replace((CharSequence) "\\in", (CharSequence) "∈");
-		result = result.replace((CharSequence) "\\then", (CharSequence) "⇒");
+		String[] from = new String[]{"\\not ", "\\false", "\\true", "\\and", "\\or", "\\implies", "\\eq", 
+				"\\forall", "\\exists", "\\setnatural", "\\in", "\\notin", "\\then", "\\subset", "\\psubset", "\\notsubset", 
+				"\\intersection", "\\union", "\\{}", "\\pset"};
+		String[] to = new String[]{"¬", "\\$bold{F}", "\\$bold{T}", "∧", "∨", "→", "≡", "∀", "∃", "ℕ", "∈", "∉", "⇒", "⊆", "⊂", "⊆ ?", "⋂", "⋃", "{}",
+				"\\$ital{P"};
+		for (int i=0; i<from.length; i++) {
+			result = result.replace((CharSequence) from[i], (CharSequence) to[i]);
+		}
 		return result;
 		
 	}
