@@ -10,7 +10,7 @@ import Operation.Operator;
 
 public class Term {
 
-	public static enum Disp {SET, TOT, QTT, OT, F, C, ERR};
+	public static enum Disp {SET, TOT, QTT, OT, F, C, FC, ERR};
 	private Disp disp;
 	protected boolean iscollection = false;
 	protected boolean isoperator = false;
@@ -133,7 +133,7 @@ public class Term {
 		if (size == 2) {
 			if (t1.isOperator()) {
 				if (((Operator) t1).isUnary() && !t2.isOperator()) return Disp.OT;
-			}
+			} else if (t1.isShallow() && t2.isCollection()) return Disp.FC;
 		} else if (size == 3) {
 			Term t3 = get(2);
 			if (t2.isOperator() && ((Operator) t2).isBinary() && !t1.isOperator() && !t3.isOperator()) {
@@ -163,6 +163,7 @@ public class Term {
 		if (disp == Disp.F) return s;	
 		if (disp == Disp.C) return toString();
 		if (disp == Disp.QTT) return get(0).s + get(1).toString() + ": " + get(2).toString();
+		if (disp == Disp.FC) return get(0).s + get(1).toString();
 		
 		String output = "";
 		if (disp == Disp.ERR) output += "[disp error (size="+size+")] ";
@@ -177,6 +178,9 @@ public class Term {
 				Disp seconddisp = secondterm.getDisposition();
 				if (seconddisp != Disp.F && seconddisp != Disp.OT) output += "(" + secondterm.toString() + ") ";
 				else output += secondterm.toString() + " ";
+			}
+			else if (innerdisp == Disp.FC) {
+				output += x.get(0).s + x.get(1).toString();
 			}
 			else output += "(" + x.toString() + ") ";
 		}
@@ -277,7 +281,29 @@ public class Term {
 	/*
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
-	static public Term compileTerms(ArrayList<String> seq) {
+	static public Term compileTerms (ArrayList<String> seq) {
+		ArrayList<String> cleaned = sepwithComma(seq);
+		return compileTermsClean(cleaned);
+	}
+	
+	/* Separates terms with commas without removing them */
+	static private ArrayList<String> sepwithComma (ArrayList<String> seq) {
+		ArrayList<String> commasep = new ArrayList<String>();
+		for (String s: seq) {
+			ArrayList<Character> newstr = new ArrayList<Character>();
+			for (char c: s.toCharArray()) {
+				newstr.add(c);
+				if (c == ',') {
+					commasep.add(getStringRepresentation(newstr));
+					newstr = new ArrayList<Character>();
+				}
+			}
+			if (newstr.size() != 0) commasep.add(getStringRepresentation(newstr));
+		}
+		return commasep;
+	}
+	
+	static private Term compileTermsClean(ArrayList<String> seq) {
 		//System.out.println("___");
 		//for (String s: seq) System.out.println(s);
 		
@@ -314,7 +340,7 @@ public class Term {
 						innerterm = compileCollection(innerBuffer);
 						inCollection = false;
 					}
-					else innerterm = compileTerms(innerBuffer);
+					else innerterm = compileTermsClean(innerBuffer);
 					result.addTerm(innerterm);
 					innerBuffer = new ArrayList<String>();
 				}
@@ -334,9 +360,7 @@ public class Term {
 		}
 		
 		if (!foundlink) {
-			//System.out.println("Reducing: " + result.toString() + "  (" + result.size + ")");
 			result = Term.reduce(result);
-			//System.out.println("Reduced: " + result.toString() + "  (" + result.size + ")");
 		}
 		if (foundlink && result.size > 3) {
 			
@@ -356,15 +380,9 @@ public class Term {
 					for (int j=i+1; j<result.size; j++) {
 						tright.addTerm(result.get(j));
 					}
-					
-					//System.out.println("LeftReducing: " + tleft.toString() + "  (" + tleft.size + ")");
 					parsed.addTerm(Term.reduce(tleft));
-					//System.out.println("LeftReduced: " + tleft.toString() + "  (" + tleft.size + ")");
 					parsed.addTerm(result.get(i));
-					//System.out.println("RightReducing: " + tright.toString() + "  (" + tright.size + ")");
 					parsed.addTerm(Term.reduce(tright));
-					//System.out.println("RightReduced: " + tright.toString() + "  (" + tright.size + ")");
-					
 				}
 			}
 			return parsed;
@@ -373,12 +391,16 @@ public class Term {
 	}
 	
 	static private boolean isCollectionHeader (String s) {
-		return s.startsWith("\\set(") || s.startsWith("\\cartprod(");
+		if (s == null || s.equals("")) return false;
+		char first = s.charAt(0);
+		return Character.isLetter(first);
+		//return s.startsWith("\\set(") || s.startsWith("\\cartprod(");
 	}
 	static private boolean isSingletonCollection (String s) {
 		return isCollectionHeader(s) && s.endsWith(")");
 	}
-	static private Collection compileSingletonCollection (String s) {
+	
+	static private Term compileSingletonCollection (String s) {
 		ArrayList<ArrayList<String>> collections = new ArrayList<ArrayList<String>>();
 		ArrayList<String> innercoll = new ArrayList<String>();
 		innercoll.add(s);
@@ -387,7 +409,7 @@ public class Term {
 	}
 	
 	// expect a space after a comma
-	static private Collection compileCollection (ArrayList<String> as) {
+	static private Term compileCollection (ArrayList<String> as) {
 		ArrayList<ArrayList<String>> parsed = new ArrayList<ArrayList<String>>();
 		ArrayList<String> inner = new ArrayList<String>();
 		int openedParenthesis = 0;
@@ -406,9 +428,19 @@ public class Term {
 		return compileCollectionParsed(parsed);
 	}
 	
-	static private Collection compileCollectionParsed (ArrayList<ArrayList<String>> aas) {
+	static private String getStringRepresentation(ArrayList<Character> list) {    
+	    StringBuilder builder = new StringBuilder(list.size());
+	    for(Character ch: list)
+	    {
+	        builder.append(ch);
+	    }
+	    return builder.toString();
+	}
+	
+	static private Term compileCollectionParsed (ArrayList<ArrayList<String>> aas) {
 		// Remove the collection header
 		String[] firstelement = aas.get(0).get(0).split("\\(", 2);
+		assertProperParenthesis(firstelement[1], aas.size() == 1);
 		aas.get(0).set(0, firstelement[1]);
 		
 		// Remove last element closing parenthesis
@@ -417,9 +449,32 @@ public class Term {
 		lastAs.set(lastAs.size()-1, lastelement.substring(0, lastelement.length()-1));
 		
 		Collection coll = new Collection();
-		if (firstelement[0].equals("\\cartprod")) coll.setCartesian(true);
-		for (ArrayList<String> as: aas) coll.addTerm(compileTerms(as));
+		for (ArrayList<String> as: aas) coll.addTerm(compileTermsClean(as));
+		if (firstelement[0].equals("\\cartprod")) coll.iscartesian = true;
+		if (firstelement[0].equals("\\set")) coll.isset = true;
+		else {
+			Term fc = new Term();
+			fc.addTerm(makeNewTerm(firstelement[0]));
+			fc.addTerm(coll);
+			fc.disp = Disp.FC;
+			return fc;
+		}
 		return coll;
+	}
+	
+	/* Flags wrong construction of the form a()()(x, y, z) but not a(()x, y, z) */
+	static private void assertProperParenthesis (String str, boolean isSingleton) {
+		int result = 1;
+		boolean reached0 = false;
+		for (char c: str.toCharArray()) {
+			if (reached0) System.out.println("[[[ FATAL ]]] Parenthesis error in " + str);
+			if (c == '(') result++;
+			if (c == ')') result--;
+			if (result == 0) {
+				if (isSingleton) reached0 = true;
+				else System.out.println("[[[ FATAL ]]] Parenthesis error in " + str);
+			}
+		}
 	}
 	static private boolean isSurroundedByParenthesis(ArrayList<String> seq) {
 		if (seq.get(0).charAt(0) != '(') return false;
@@ -459,7 +514,6 @@ public class Term {
 		if (disp == Disp.F) {
 			// Following case implies no difference; no need to check.
 			if (tprop.isShallow() && tprop.equals(tthm)) return result;
-				
 			
 			// Can't overload a thm variable (thm.a can't be both equal to (x>0) and (x=0))
 			for (Statement st: result) {
@@ -468,12 +522,11 @@ public class Term {
 			
 			result.add(new Statement(new Link(":="), tthm, tprop));
 		}
-		else if (disp == Disp.C) {
-			result.addAll(Collection.extractDiffArray(tthm, tprop));
-		}
 		else {
 			if (disp != tprop.getDisposition()) throw new ExceptionTheoremNotApplicable();
-			if (disp == Disp.OT) {
+			if (disp == Disp.C) {
+				result.addAll(Collection.extractDiffArray(tthm, tprop));
+			} else if (disp == Disp.OT) {
 				assertSameOperator(tthm, tprop, 0);
 				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1)));
 			} else if (disp == Disp.TOT) {
@@ -484,7 +537,11 @@ public class Term {
 				assertSameOperator(tthm, tprop, 0);
 				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1)));
 				result.addAll(extractDiffArray(tthm.get(2), tprop.get(2)));
-			} else throw new ExceptionTheoremNotApplicable();
+			} else if (disp == Disp.FC) {
+				result.addAll(extractDiffArray(tthm.get(0), tprop.get(0)));
+				result.addAll(Collection.extractDiffArray(tthm.get(1), tprop.get(1)));
+			}
+			else throw new ExceptionTheoremNotApplicable();
 		}
 		return result;
 	}	
@@ -581,6 +638,10 @@ public class Term {
 				if (eq0) return extractDiffInnerWithReversing(p11, p21, clink, dL, p10.s);
 				if (eq1) return false; // No sympathy for operator synonyms
 				return false;
+			} else if (d1 == Disp.FC) {
+				if (eq0 && (clink.equals(Op.eq) || clink.equals(Op.equiv))) return extractDiffInner(p11, p21, clink, dL);
+				if (eq1 && (clink.equals(Op.eq))) return extractDiffInner(p10, p20, clink, dL);
+				return false;
 			} else {
 				Term p12 = t1.get(2); Term p22 = t2.get(2);
 				boolean eq2 = p12.equals(p22);
@@ -610,6 +671,7 @@ public class Term {
 	static public Permutations permute(Term t) {
 		Permutations perm = new Permutations();
 		Disp disp = t.getDisposition();
+		
 		if (disp == Disp.F) {
 			perm.add(t);
 		} 
@@ -640,6 +702,11 @@ public class Term {
 		}
 		else if (disp == Disp.C) {
 			return Collection.permute((Collection) t);
+		}
+		else if (disp == Disp.FC) {
+			for (Term permc: Collection.permute(t.get(1)).vs) {
+				perm.add(glueTerms(new Term[]{t.get(0), permc}));
+			}
 		}
 		return perm;
 	}

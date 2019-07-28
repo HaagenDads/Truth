@@ -10,6 +10,10 @@ public class Variable {
 		this.type = new Type(type);
 	}
 	
+	public String toHeader() {
+		return " be in " + type + "\n";
+	}
+	
 	public boolean equals (Variable other) {
 		return (name.equals(other.name) && type.equals(other.type));
 	}

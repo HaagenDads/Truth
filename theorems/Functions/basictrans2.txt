@@ -1,0 +1,14 @@
+Theorem Name:Unit Package:Logic{
+\let D, S \be \set;
+\let f, g, h \be \function D -> S;
+\let x \in D;
+
+\where f(x) = g(x);
+\where g(x) = h(x);
+
+\state f(x) = h(x);
+}
+Demonstration { 
+    f(x) = g(x) = h(x);
+}
+

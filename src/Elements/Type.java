@@ -10,7 +10,7 @@ public class Type {
 
 	public String type;
 	public Type (String t) {
-		assertType(t);
+		//assertType(t);
 		type = t;
 	}
 	
@@ -19,11 +19,20 @@ public class Type {
 		return type;
 	}
 	
+	/*
 	private void assertType (String t) {
-		if (isin(t, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, Set.genericType})) return;
+		if (isin(t, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, Set.genericType, 
+				                 Function.genericType})) return;
 		System.out.println("Type '" + t + "' doesn't exist");
-	}
+	}*/
 	
+	public boolean equals (Set other) {
+		if (other.c.size == 1) {
+			Term s = other.c.get(0);
+			return s.equals(this);
+		}
+		return false;
+	}
 	public boolean equals (Type other) {
 		return this.type.equals(other.type);
 	}
@@ -60,8 +69,15 @@ public class Type {
 			Type y = getType(t.get(2), thm);
 			return solveBinary(x, (Operator) (t.get(1)), y);
 		}
+		if (termdisp == Term.Disp.FC) {
+			Function fnc = (Function) (thm.getVariable(t.get(0).s));
+			Collection coll = (Collection) (t.get(1));
+			if (fnc.domain.isElement(coll, thm)) return fnc.image;
+			return null;
+		}
 		else return null;
 	}
+	
 	
 	static private Type solveUnary(Operator op, Type a) {
 		if (a.equals(BooleanLogic.genericType)) {

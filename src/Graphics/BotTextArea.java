@@ -88,7 +88,7 @@ public class BotTextArea extends StringOperations {
 		for (Variable v: thm.variables) {
 			appendString(tab);
 			appendString(v.name, svar);
-			appendString(" be in " + v.type + "\n");
+			appendString(v.toHeader());
 			tab = "        ";
 		}
 		appendString("\n");
@@ -98,7 +98,7 @@ public class BotTextArea extends StringOperations {
 		for (Assump asmp: thm.assumptions) {
 			if (asmp.IndexStamp.equals("hyp")) {
 				appendString(tab + asmp.st.toString());
-				tab = "        ";
+				tab = "\n        ";
 				areHypothesis = true;
 			}
 		}

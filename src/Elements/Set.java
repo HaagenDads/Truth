@@ -1,38 +1,48 @@
 package Elements;
 
-import java.util.ArrayList;
+import Core.Theorem;
 
-public abstract class Set {
+public class Set extends Type {
 	
 	public static final String genericType = "\\set";
-	ArrayList<Set> subsets;
-	ArrayList<Set> cartesian;
-	int multiplicity;
+
+	Collection c;
 	
-	public Set () {
-		subsets = new ArrayList<Set>();
-		cartesian = new ArrayList<Set>();
-		multiplicity = 1;
-		
+	public Set (Term t) {
+		super(null);
+		if (t.isCollection()) c = (Collection) t;
+		else {
+			c = new Collection();
+			c.addTerm(t);
+		}
 	}
 	
-	public boolean isShallow () {
-		return cartesian.size() == 0;
-	}
-	public boolean isSingleton () {
-		return subsets.size() == 0;
+	public String toString() {
+		if (c.size == 1) return c.get(0).toString();
+		String output = "";
+		for (int i=0; i<c.size-1; i++) output += c.get(i).toString() + " × ";
+		return output += c.get(c.size-1);
 	}
 	
 	public boolean equals (Set other) {
-		
+		if (other.c.size != this.c.size) return false;
+		for (int i=0; i<c.size; i++) {
+			if (!other.c.get(i).equals(this.c.get(i))) return false;
+		}
+		return true;
+	}
+	public boolean equals (Type other) {
+		return other.equals(this);
 	}
 	
-	abstract public Set join (Set a, Set b);
-	abstract public boolean isComplete ();
-	
-	public class Singleton {
-		Link link;
-		public Singleton (Variable v, Link link, Term )
+	public boolean isElement(Collection coll, Theorem thm) {
+		if (coll.size != c.size) return false;
+		for (int i=0; i<c.size; i++) {
+			Type arg = Type.getType(coll.get(i), thm);
+			String setname = this.c.get(i).s;
+			if (!arg.equals(setname)) return false;
+		}
+		return true;
 	}
 	
 	

@@ -6,13 +6,15 @@ import java.util.ArrayList;
 public class Collection extends Term {
 	
 	ArrayList<Term> items;
-	private boolean cartesian;
+	boolean iscartesian;
+	boolean isset;
 	public Collection () {
 		super();
 		items = new ArrayList<Term>();
 		size = 0;
 		iscollection = true;
-		cartesian = false;
+		iscartesian = false;
+		isset = false;
 	}
 	
 	public Term get (int i) { return items.get(i);  }
@@ -44,18 +46,23 @@ public class Collection extends Term {
 	}
 	public String toString() {
 		String link = ", ";
-		if (cartesian) link = " x ";
+		if (iscartesian) link = " × ";
 		String output = "(";
+		String closing = ")";
+		if (isset) {
+			output = "{";
+			closing = "}";
+		}
 		for (Term t: items) {
-			if (!t.isShallow() && !(t.getDisposition() == Disp.C)) output += "(" + t.toString() + ")" + link;
+			Disp tdisp = t.getDisposition();
+			if (!t.isShallow() && !(tdisp == Disp.C) && !(tdisp == Disp.FC)) output += "(" + t.toString() + ")" + link;
 			else output += t.toString() + link;
 		}
-		return output.substring(0, output.length()-link.length()) + ")";
+		return output.substring(0, output.length()-link.length()) + closing;
 	}
 	
 	
-	public boolean isCartesian() { return cartesian; }
-	public void setCartesian (boolean bool) { cartesian = bool; }
+	public boolean isCartesian() { return iscartesian; }
 	
 	public void embedVariableNames(String head, ArrayList<String> vars) {
 		for (Term x: items) x.embedVariableNames(head, vars);

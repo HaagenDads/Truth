@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 import Elements.*;
+import Elements.Function.ExceptionSetInvalid;
 import Graphics.TextZone;
 
 
@@ -89,14 +90,46 @@ public class Compiler {
 			
 			if (headToken.equals("\\let")) {
 				
-				String varname = elements[1];
-				String connection = elements[2];
+				ArrayList<String> varname = new ArrayList<String>();
+				int i = 1;
+				while (!(elements[i].equals("\\in") || elements[i].equals("\\be"))) {
+					varname.add(elements[i++]);
+				}
+				varname = parseVarnames(varname);
+				String connection = elements[i++];
 
 				if (connection.equals("\\in")) {
-					String set = elements[3];
-					thm.variables.add(new Variable(varname, set));
-				} else if (connection.equals("\\be") && elements[3].equals("\\set")) {
-					thm.variables.add(new Variable(varname, "\\set"));
+					String set = elements[i];
+					for (String var: varname) thm.variables.add(new Variable(var, set));
+				} else if (connection.equals("\\be") && elements[i].equals("\\set")) {
+					for (String var: varname) thm.variables.add(new Variable(var, "\\set"));
+				} else if (connection.equals("\\be") && elements[i].equals("\\function")) {
+					i++;
+					if (elements.length > i) {
+						ArrayList<String> domain = new ArrayList<String>();
+						ArrayList<String> image = new ArrayList<String>();
+						boolean todomain = true;
+						
+						for (; i<elements.length; i++) {
+							if (elements[i].equals("->")) todomain = false;
+							else {
+								if (todomain) domain.add(elements[i]);
+								else image.add(elements[i]);
+							}
+						}
+						
+						try {
+							for (String var: varname) {
+								Function func = new Function(var);
+								func.setDomain(Term.compileTerms(domain), thm);
+								func.setImage(Term.compileTerms(image), thm);
+								thm.variables.add(func);
+							}
+						} catch (ExceptionSetInvalid e) {
+							printout(3, e.getError());
+						}
+					}
+					
 				} else { 
 					printout(3, "Could not comprehend variable initialization from: " + statement);
 				}
@@ -110,6 +143,15 @@ public class Compiler {
 			}
 		}
 		
+	}
+	
+	private ArrayList<String> parseVarnames (ArrayList<String> varname) {
+		ArrayList<String> output = new ArrayList<String>();
+		for (String var: varname) {
+			for (String v: var.split(",")) if (!v.equals("")) output.add(v);
+		}
+		
+		return output;
 	}
 	
 	/* Specifically disregard the first element of the String[], as it corresponds to the head token. */
