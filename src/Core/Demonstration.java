@@ -11,6 +11,8 @@ import Elements.Term.Permutations;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers;
+import Operation.Op;
+import Operation.Operator;
 
 public class Demonstration {
 
@@ -136,8 +138,8 @@ public class Demonstration {
 			
 			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
 			// the link to reflect this reality.
-			if (conclusion.equals("\\then") && first_exp.equalsString("\\true")) {
-				takeaway = new Statement(new Link("\\eq"), t2, first_exp);
+			if (conclusion.equals(Op.then) && first_exp.equalsString("\\true")) {
+				takeaway = new Statement(new Link(Op.equiv), t2, first_exp);
 			} 
 			
 			assumptions.acceptAssumptionFromDemonstration(takeaway, nlog.blockstamp);
@@ -195,9 +197,7 @@ public class Demonstration {
 	 */
 	private boolean validateStatement(Term t1, Term t2, Link link) {
 		
-		
 		Justification solution;
-		
 		try {
 			ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
 			for (Statement st: diffLedger) {
@@ -221,9 +221,9 @@ public class Demonstration {
 	/* Resolution for statements of the sort:
 	 *    T <==> \exists x (x > 0)
 	 */
-	private Justification validateExistentialProposition(String quant, Term cond, Term prop) {
-		boolean isexist = quant.equals("\\exists");
-		boolean isforall = quant.equals("\\forall");
+	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) {
+		boolean isexist = quant.equals(Op.exists);
+		boolean isforall = quant.equals(Op.forall);
 		if (!isexist && !isforall) System.out.println("Fatal error in QTT identification.");
 	
 		// TODO check if cond matches the set, eg x < 0 should be invalid if x in naturals
@@ -232,8 +232,8 @@ public class Demonstration {
 		}
 		
 		for (Assump a: assumptions) {
-			boolean linkeq = a.st.link.equals("\\eq");
-			if (linkeq || a.st.link.equals("\\then")) {
+			boolean linkeq = a.st.link.equals(Op.equiv);
+			if (linkeq || a.st.link.equals(Op.then)) {
 				if (a.st.rside.equals(prop)) {
 					printout(":trying to match cond exist statement:");
 					boolean matching = matchConditionalExistentialStatement(a.st.lside, cond, isexist);
@@ -263,7 +263,7 @@ public class Demonstration {
 			}
 			
 			// Partial match between conditions
-			if (assign.link.equals("=") && isexist) {
+			if (assign.link.equals(Op.eq) && isexist) {
 				if (assign.lside.equalsString(cond.s) && Type.matchtypes(assign.rside, cond, source)) {
 					return true;
 				}
@@ -276,12 +276,12 @@ public class Demonstration {
 	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
 	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
 		t1.flatten();
-		if (link.equals("\\eq") && t1.equalsString("\\true")) {
+		if (link.equals(Op.equiv) && t1.equalsString("\\true")) {
 			Term.Disp disp = t2.getDisposition();
 			//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
 			//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
 			if (disp == Term.Disp.QTT) {
-				return validateExistentialProposition(t2.get(0).s, t2.get(1), t2.get(2));
+				return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
 			}
 			if (disp == Term.Disp.TOT) {
 				Term left = t2.get(0);
@@ -311,10 +311,15 @@ public class Demonstration {
 			}
 		}
 		
-		// Using math (assuming X BinOperation Y / UnaryOperation X )
+		// Using math
 		try {
-			if (solveMath(diff.lside).equals(solveMath(diff.rside))) {
-				return new Justification("BooleanLogic");
+			Term matht = new Term();
+			matht.addTerm(diff.lside);
+			matht.addTerm(Op.getOperator(diff.link.link));
+			matht.addTerm(diff.rside);
+			
+			if (solveMath(matht).equalsString("\\true")) {
+				return new Justification("SolvingMath");
 			}
 		} catch (Exception e) {}
 		
@@ -515,12 +520,12 @@ public class Demonstration {
 		if (disp == Term.Disp.F) return t;
 		if (disp == Term.Disp.OT) {
 			Term t1 = solveMath(t.get(1));
-			return solveUnaryOperator(t.get(0).s, t1);
+			return solveUnaryOperator((Operator) (t.get(0)), t1);
 		}
 		if (disp == Term.Disp.TOT) {
 			Term t1 = solveMath(t.get(0));
 			Term t2 = solveMath(t.get(2));
-			return solveBinaryOperator(t.get(1).s, t1, t2);
+			return solveBinaryOperator((Operator) (t.get(1)), t1, t2);
 		}
 		if (disp == Term.Disp.QTT) {
 			return solveQuantifierOperator(t.get(2));
@@ -531,9 +536,9 @@ public class Demonstration {
 	}
 	
 	
-	private Term solveBinaryOperator(String op, Term t1, Term t2) {
+	private Term solveBinaryOperator(Operator op, Term t1, Term t2) {
 		if (!t1.isShallow() || !t2.isShallow()) return null;
-		String result = NaturalNumbers.applyBinaryLogic(op, t1.s, t2.s);
+		String result = NaturalNumbers.applyBinaryLogic(t1.s, op, t2.s);
 		if (result != null) return new Term(result);
 		
 		result = BooleanLogic.applyBinaryLogic(t1.s, op, t2.s);
@@ -542,7 +547,7 @@ public class Demonstration {
 	}
 	
 	
-	private Term solveUnaryOperator(String op, Term term) {
+	private Term solveUnaryOperator(Operator op, Term term) {
 		if (!term.isShallow()) return null;
 		
 		String result = BooleanLogic.applyUnaryLogic(op, term.s);

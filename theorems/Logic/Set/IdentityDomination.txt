@@ -1,6 +1,6 @@
 Theorem Name:IdentityDomination Package:Logic{
 \let X \be \set;
 
-\state X \intersection \{} = \{};
+\state X \intersection \emptyset = \emptyset;
 }
 

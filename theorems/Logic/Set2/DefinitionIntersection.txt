@@ -1,0 +1,6 @@
+Theorem Name:DefinitionIntersection Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\state (X \intersection Y) = \set(x: (x \in X) \and (x \in Y));
+}
+

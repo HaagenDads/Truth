@@ -1,0 +1,7 @@
+Theorem Name:InequalityTransitivity Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\let z \in \setnatural;
+\state ((x > y) \and (y > z)) \eq (x > z);
+}
+

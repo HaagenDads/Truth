@@ -9,11 +9,11 @@ import Elements.Variable;
 public class NaturalNumbers {
 	
 	public static final String genericType = "\\setnatural";
-	public static final String[] oplist = new String[]{"+", "-", "*"};
-	public static final String[] opcomparaison = new String[]{"=", "<", ">", "<=", ">=", "!="};
+	public static final Operator[] oplist = new Operator[]{Op.plus, Op.minus, Op.mult};
+	public static final Operator[] opcomparaison = new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq};
 	
 	
-	static public String applyBinaryLogic (String a, String op, String b) {
+	static public String applyBinaryLogic (String a, Operator op, String b) {
 		NatItem stra = readString(a);
 		NatItem strb = readString(b);
 		
@@ -26,11 +26,24 @@ public class NaturalNumbers {
 		}*/
 		
 		if (stra != null && strb != null) {
-			if (op.equals("+")) return "" + (stra.v + strb.v);
-			if (op.equals("-")) return "" + (stra.v - strb.v);
-			if (op.equals("-")) return "" + (stra.v * strb.v);
+			if (op.equals(Op.plus)) return "" + (stra.v + strb.v);
+			if (op.equals(Op.minus)) return "" + (stra.v - strb.v);
+			if (op.equals(Op.mult)) return "" + (stra.v * strb.v);
+			
+			if (op.equals(Op.eq)) return toBooleanString(stra.v == strb.v);
+			if (op.equals(Op.ineq)) return toBooleanString(stra.v != strb.v);
+			if (op.equals(Op.lt)) return toBooleanString(stra.v < strb.v);
+			if (op.equals(Op.le)) return toBooleanString(stra.v <= strb.v);
+			if (op.equals(Op.gt)) return toBooleanString(stra.v > strb.v);
+			if (op.equals(Op.ge)) return toBooleanString(stra.v >= strb.v);
+			
 			return "null";
 		} else return null;
+	}
+	
+	static private String toBooleanString (boolean b) {
+		if (b) return "\\true";
+		return "\\false";
 	}
 	
 	/* Only three possible conclusion:

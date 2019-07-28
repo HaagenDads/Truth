@@ -8,32 +8,32 @@ public class BooleanLogic {
 	public static enum bool {TRUE, FALSE, BOOLEAN};
 	public static final String genericType = "\\boolean";
 	
-	static public String applyUnaryLogic(String op, String a) {
+	static public String applyUnaryLogic(Operator op, String a) {
 
 		bool x = readString(a);
-		if (x != null && op.equals("\\not")) {
+		if (x != null && op.equals(Op.not)) {
 			if (x.equals(bool.TRUE)) return "\\false";
 			if (x.equals(bool.FALSE)) return "\\true";
 		}
 		return null;
 	}
 	
-	static public String applyBinaryLogic(String a, String op, String b) {
+	static public String applyBinaryLogic(String a, Operator op, String b) {
 		//if (a.equals(genericType) && readString(b) != null) return a;
 		//if (b.equals(genericType) && readString(a) != null) return b;
 		
 		bool ab = readString(a);
 		bool bb = readString(b);
 		if (ab == null || bb == null) return null;
-		if (op.equals("\\and")) {
+		if (op.equals(Op.and)) {
 			if (ab.equals(bool.TRUE) && bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
 		}
-		else if (op.equals("\\or")) {
+		else if (op.equals(Op.or)) {
 			if (ab.equals(bool.TRUE) || bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
 		}
-		else if (op.equals("\\implies")) {
+		else if (op.equals(Op.implies)) {
 			if (ab.equals(bool.FALSE) || bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
 		}
@@ -51,8 +51,8 @@ public class BooleanLogic {
 	static public boolean validatePartition(Variable casevar, ArrayList<Statement> cases, ArrayList<Type> types) {
 		if (cases.size() != 2) System.out.println("Cases partition can only have two cases.");
 		
-		Statement exp1 = new Statement(new Link("="), casevar.name, "\\true");
-		Statement exp2 = new Statement(new Link("="), casevar.name, "\\false");
+		Statement exp1 = new Statement(new Link(Op.eq), casevar.name, "\\true");
+		Statement exp2 = new Statement(new Link(Op.eq), casevar.name, "\\false");
 		
 		if (exp1.equals(cases.get(0)) && exp2.equals(cases.get(1))) return true;
 		if (exp1.equals(cases.get(1)) && exp2.equals(cases.get(0))) return true;

@@ -1,0 +1,6 @@
+Theorem Name:DefinitionUnion Package:Logic{
+\let X \be \set;
+\let Y \be \set;
+\state (X \union Y) = \set(x : (x \in X) \or (x \in Y));
+}
+

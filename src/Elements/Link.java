@@ -32,13 +32,13 @@ public class Link {
 	}
 	
 	static public boolean isLink (String string) {
-		Operator[] opSet = new Operator[]{Op.eq, Op.ineq, Op.lt, Op.gt, Op.le, Op.ge, Op.equiv, Op.then, Op.assign};
-		return isin(new Operator(string), opSet);
+		Operator[] opSet = new Operator[]{Op.eq, Op.ineq, Op.lt, Op.gt, Op.le, Op.ge, Op.equiv, Op.then, Op.assign, Op.iff};
+		return isin(Op.getOperator(string), opSet);
 	}
 	
 	static public boolean isConditional (String string) {
 		Operator[] opSet = new Operator[]{Op.eq, Op.ineq, Op.lt, Op.gt, Op.le, Op.ge};
-		return isin(string, opSet);
+		return isin(Op.getOperator(string), opSet);
 	}	
 	
 	static public boolean isSufficient (Link theoremlink, Link propositionlink) {
@@ -49,16 +49,16 @@ public class Link {
 	
 	
 	static public Link reduceSerie (LinkedList<Link> linkserie) {
-		Link reduction = new Link();
+		Link reduction = null;
 		for (Link b: linkserie) {
 			reduction = reduceLinks(reduction, b);
-			if (reduction.equals("")) return new Link();
+			if (reduction == null) return new Link();
 		}
 		return reduction;
 	}
 	
 	static private Link reduceLinks (Link a, Link b) {
-		if (a.equals("")) return b;
+		if (a == null) return b;
 		if (a.equals(b)) return a;
 		if (a.equals(Op.lt)) {
 			if (b.equals(Op.eq) || b.equals(Op.le)) return a;

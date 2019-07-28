@@ -1,0 +1,11 @@
+Theorem Name:Unit Package:Logic{
+\let x \in \setnatural;
+\where x > 4;
+\state x > 0;
+}
+Demonstration { 
+    x > 4 > 0;
+
+
+}
+

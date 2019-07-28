@@ -8,6 +8,7 @@ public final class Op {
 	public static final Operator and = new Operator("\\and");
 	public static final Operator or = new Operator("\\or");
 	public static final Operator implies = new Operator("\\implies");
+	public static final Operator iff = new Operator("\\iff");
 	public static final Operator equiv = new Operator("\\eq");
 	public static final Operator then = new Operator("\\then");
 	public static final Operator assign = new Operator(":=");
@@ -35,15 +36,15 @@ public final class Op {
 	public static final Operator forall = new Operator("\\forall");
 	
 	private static final HashMap<String, Operator> hashmap = new HashMap<String, Operator>() {{
-		Operator[] oplist = new Operator[]{not, and, or, implies, equiv, then, assign,
+		Operator[] oplist = new Operator[]{not, and, or, implies, iff, equiv, then, assign,
 										   plus, minus, mult, div,
 										   eq, lt, gt, le, ge, ineq,
 										   intersection, union, subset, psubset, in, notin,
 										   exists, forall};
-		String[] strlist = new String[]{"\\not", "\\and", "\\or", "\\implies", "\\eq", "\\then", ":=",
+		String[] strlist = new String[]{"\\not", "\\and", "\\or", "\\implies", "\\iff", "\\eq", "\\then", ":=",
 										"+", "-", "*", "/",
 										"=", "<", ">", "<=", ">=", "!=",
-										"\\intersection", "\\union", "\\psubset", "\\in", "\\notin",
+										"\\intersection", "\\union", "\\subset", "\\psubset", "\\in", "\\notin",
 										"\\exists", "\\forall"};
 		
 		for (int i=0; i<oplist.length; i++) put(strlist[i], oplist[i]); 

@@ -114,27 +114,11 @@ public class Compiler {
 	
 	/* Specifically disregard the first element of the String[], as it corresponds to the head token. */
 	private Statement parseStatementFromLine (String[] tokens) {
-		
-		/*
-		ArrayList<String> lefthand = new ArrayList<String>();
-		ArrayList<String> righthand = new ArrayList<String>();
-		boolean left = true;
-		Link link = new Link();
-		for (int i=1; i<tokens.length; i++) {
-			if (Link.isLink(tokens[i])) {
-				left = false;
-				link = new Link(tokens[i]);
-			} else {
-				if (left) lefthand.add(tokens[i]);
-				else righthand.add(tokens[i]);
-			}
-		}
-		System.out.println("lefthand: " + lefthand.toString());
-		return new Statement(link, Term.extractTerms(lefthand), Term.extractTerms(righthand));*/
 		ArrayList<String> als = new ArrayList<String>();
 		for (String s: tokens) als.add(s);
 		als.remove(0);
 		Term terms = Term.compileTerms(als);
+		//System.out.println(terms.toString());
 		return new Statement(new Link(terms.get(1).s), terms.get(0), terms.get(2));
 	}
 	

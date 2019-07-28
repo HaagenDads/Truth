@@ -55,21 +55,8 @@ public class Assumptions implements Iterable<Assump>{
 		return clone;
 	}
 
-
 	public Iterator<Assump> iterator() {
-		return new Iterator<Assump> () {
-            private final Iterator<Assump> iter = list.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            @Override
-            public Assump next() {
-                return iter.next();
-            }
-        };
+		return list.iterator();
 	}
 	
 	

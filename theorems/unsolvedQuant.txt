@@ -1,0 +1,16 @@
+Theorem Name:Unit Package:Logic{
+\let x \in \setnatural;
+\let y \in \setnatural;
+\state (\exists x \suchthat (\forall (y > x) \follows (y > 0))) \eq \true;
+}
+Demonstration { 
+    \startcase x
+    \case x = 4 {
+        (y > x) \eq (y > 4) \eq ((y > 4) \and \true) \eq ((y > 4) \and (4 > 0)) \then (y > 0);
+        (\forall (y > x) \follows (y > 0)) \eq \true;
+    }
+    \endcase
+    (\exists x \suchthat (\forall (y > x) \follows (y > 0))) \eq \true;
+
+}
+

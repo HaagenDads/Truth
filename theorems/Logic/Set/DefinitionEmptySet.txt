@@ -1,5 +1,5 @@
 Theorem Name:DefinitionEmptySet Package:Logic{
 \let X \be \set;
-\state \{} \subset X \eq \true;
+\state \emptyset \subset X \eq \true;
 }
 

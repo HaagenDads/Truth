@@ -4,10 +4,9 @@ import Elements.Term;
 
 public class Operator extends Term {
 
-	
-	public String s;
 	public Operator (String s) {
-		this.s = s;
+		super(s);
+		isoperator = true;
 	}
 	
 	public boolean equals (Operator other) {
@@ -16,12 +15,14 @@ public class Operator extends Term {
 	public Operator copy () {
 		return new Operator(s);
 	}
+	public String toString() {
+		return s;
+	}
 	
 	
 	private boolean isPartOfList(Operator[] opSet) {
-		if (s==null) return false;
 		for (Operator op: opSet) {
-			if (s.equals(op)) return true;
+			if (equals(op)) return true;
 		}
 		return false;
 	}
@@ -42,16 +43,12 @@ public class Operator extends Term {
 	
 	public boolean isBinary() {
 		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.minus,
-										  Op.intersection, Op.union, Op.subset, Op.psubset, Op.in, Op.notin};
+										  Op.intersection, Op.union, Op.subset, Op.psubset, Op.in, Op.notin, Op.equiv, Op.iff, Op.then};
 		return isPartOfList(opSet);
 	}
 	
-	public boolean isOperator() {
-		return isUnary() || isBinary() || isQuantifier();
-	}
-	
 	public boolean isCommutative() {
-		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.eq, Op.ineq, Op.plus, Op.mult, Op.equiv, Op.intersection, Op.union};
+		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.eq, Op.ineq, Op.plus, Op.mult, Op.equiv, Op.intersection, Op.union, Op.iff};
 		return isPartOfList(opSet);
 	}
 	

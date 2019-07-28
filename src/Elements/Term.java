@@ -37,6 +37,7 @@ public class Term {
 	
 	public boolean isCollection () {return iscollection; }
 	public boolean isOperator () {return isoperator; }
+	
 	public void addTerm(Term t) {
 		Term[] oldv = v;
 		v = new Term[++size];
@@ -124,20 +125,20 @@ public class Term {
 	}
 	
 	private Disp computeDisposition() {
-		if (isShallow()) return Disp.F;
+		if (isShallow() || isOperator()) return Disp.F;
 		if (isCollection()) return Disp.C;
 		
 		Term t1 = get(0);
 		Term t2 = get(1);
 		if (size == 2) {
 			if (t1.isOperator()) {
-				Operator op1 = (Operator) t1;
-				if (op1.isUnary() && !t2.isOperator()) return Disp.OT;
+				if (((Operator) t1).isUnary() && !t2.isOperator()) return Disp.OT;
 			}
-			
 		} else if (size == 3) {
 			Term t3 = get(2);
-			if (t2.isOperator() && ((Operator) t2).isBinary() && !t1.isOperator() && !t3.isOperator()) return Disp.TOT;
+			if (t2.isOperator() && ((Operator) t2).isBinary() && !t1.isOperator() && !t3.isOperator()) {
+				return Disp.TOT;
+			}
 			if (t1.isOperator() && !t2.isOperator() && !t3.isOperator()) {
 				Operator op1 = (Operator) t1;
 				if (op1.isQuantifier()) return Disp.QTT;
@@ -149,7 +150,7 @@ public class Term {
 	
 	
 	public Term copy() {
-		if (isShallow()) return new Term(s);
+		if (isShallow()) return makeNewTerm(s);
 		Term copy = new Term();
 		for (Term x: v) {
 			copy.addTerm(x.copy());
@@ -326,9 +327,7 @@ public class Term {
 					innerBuffer.add(x);
 				}
 				else {
-					if (Link.isLink(x)) {
-						foundlink = true;
-					}
+					if (Link.isLink(x)) foundlink = true;
 					result.addTerm(makeNewTerm(x));
 				}
 			}
@@ -344,7 +343,7 @@ public class Term {
 			Term parsed = new Term();
 			for (int i=0; i<result.size; i++) {
 				Term ith = result.get(i);
-				if (ith.isShallow() && Link.isLink(ith.s)) {
+				if (ith.isOperator() && Link.isLink(ith.s)) {
 
 					// Left
 					Term tleft = new Term();
@@ -409,7 +408,7 @@ public class Term {
 	
 	static private Collection compileCollectionParsed (ArrayList<ArrayList<String>> aas) {
 		// Remove the collection header
-		String[] firstelement = aas.get(0).get(0).split("(", 2);
+		String[] firstelement = aas.get(0).get(0).split("\\(", 2);
 		aas.get(0).set(0, firstelement[1]);
 		
 		// Remove last element closing parenthesis
@@ -550,6 +549,8 @@ public class Term {
 		} else if (link.equals(Op.then)) {
 			dlg.extractDiff(new Link(Op.eq));
 			dlg.extractDiff(new Link(Op.equiv));
+			dlg.extractDiff(link);
+		} else {
 			dlg.extractDiff(link);
 		}
 		
