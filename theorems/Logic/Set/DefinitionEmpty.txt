@@ -1,0 +1,5 @@
+Theorem Name:DefinitionEmpty Package:Logic{
+\let D \be \set;
+\state (D is empty) \eq (D = \emptyset) ;
+}
+

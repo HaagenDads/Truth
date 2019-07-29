@@ -57,9 +57,11 @@ public class Type {
 			if (v != null) return v.type;
 			if (BooleanLogic.isValid(t.s)) return new Type(BooleanLogic.genericType);
 			if (NaturalNumbers.isValid(t.s)) return new Type(NaturalNumbers.genericType);
+			if (Set.isValid(t.s)) return new Type(Set.genericType);
 			return null;
 		}
 		if (termdisp == Term.Disp.QTT) return new Type(BooleanLogic.genericType);
+		if (termdisp == Term.Disp.DEF) return new Type(BooleanLogic.genericType);
 		if (termdisp == Term.Disp.OT) {
 			Type x = getType(t.get(1), thm);
 			return solveUnary((Operator) (t.get(0)), x);

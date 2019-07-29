@@ -1,5 +1,0 @@
-Theorem Name:AxiomMultiplication Package:Logic{
-\let x \in \setnatural;
-\state (x < y) \eq (x * z < y * z);
-}
-

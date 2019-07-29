@@ -16,6 +16,12 @@ public class Set extends Type {
 			c.addTerm(t);
 		}
 	}
+	public Set (Function f, String purpose) {
+		super(null);
+		Term abstractset = new Term(f.name + "." + purpose);
+		c = new Collection();
+		c.addTerm(abstractset);
+	}
 	
 	public String toString() {
 		if (c.size == 1) return c.get(0).toString();
@@ -43,6 +49,11 @@ public class Set extends Type {
 			if (!arg.equals(setname)) return false;
 		}
 		return true;
+	}
+	
+	public static boolean isValid (String str) {
+		if (str.equals("\\emptyset")) return true;
+		return false;
 	}
 	
 	

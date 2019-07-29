@@ -17,7 +17,7 @@ import Operation.Operator;
 public class Demonstration {
 
 	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
-	private static final String debugthm = "AxiomMultiplicationBy2";
+	private static final String debugthm = "";
 	
 	boolean isNested;
 	
@@ -295,6 +295,7 @@ public class Demonstration {
 		return null;
 	}
 	
+
 	private Justification validateStatementSpecificDifference(Statement diff) {
 	
 		// Trivial proposition
@@ -344,7 +345,7 @@ public class Demonstration {
 	
 	@SuppressWarnings("unused")
 	private void _debug(Theorem thm, String thmname, String str) {
-		if (printPriority==0 && thm.name.equals(thmname)) {
+		if (printPriority==1 && thm.name.equals(thmname)) {
 			System.out.println(str);
 		}
 	}
@@ -358,7 +359,7 @@ public class Demonstration {
 		
 		// TODO think about 'is \true gonna yield an empty validperm?'
 		
-		_debug(th, debugthm, ":thm - " + debugthm + ":");
+		_debug(th, debugthm, ":thm - " + debugthm + ": size pmleft = " + pmleft.vs.size());
 		ValidPermutations validleftperms = extractValidPerms(pmleft.vs, th, th.statement.lside);
 		if (validleftperms.isEmpty()) return false;
 		_debug(th, debugthm, ":leftperms:");

@@ -3,6 +3,7 @@ package Elements;
 import java.util.ArrayList;
 
 
+
 public class Collection extends Term {
 	
 	ArrayList<Term> items;
@@ -18,6 +19,7 @@ public class Collection extends Term {
 	}
 	
 	public Term get (int i) { return items.get(i);  }
+	public boolean isEmpty() { return size == 0; }
 	
 	public boolean equalsString(String s) { return false; }
 	public boolean equals (Term other) {
@@ -45,6 +47,7 @@ public class Collection extends Term {
 		return output;
 	}
 	public String toString() {
+		if (isEmpty()) return "()";
 		String link = ", ";
 		if (iscartesian) link = " × ";
 		String output = "(";
@@ -72,8 +75,8 @@ public class Collection extends Term {
 		for (Term x: items) x.removeEmbeding();
 	}
 	
-	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop) throws ExceptionTheoremNotApplicable {
-		ArrayList<Statement> result = new ArrayList<Statement>();
+
+	static protected ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> result) throws ExceptionTheoremNotApplicable {
 		Collection c1 = (Collection) tthm;
 		
 		if (tprop.getDisposition() != Disp.C) throw new ExceptionTheoremNotApplicable();
@@ -81,7 +84,7 @@ public class Collection extends Term {
 		
 		if (c1.size != c2.size) throw new ExceptionTheoremNotApplicable();
 		for (int i=0; i<c1.size; i++) {
-			result.addAll(Term.extractDiffArray(c1.get(i), c2.get(i)));
+			result.addAll(Term.extractDiffArray(c1.get(i), c2.get(i), result));
 		}
 		return result;
 	}

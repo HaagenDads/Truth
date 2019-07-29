@@ -1,5 +1,0 @@
-Theorem Name:OrSimplification Package:Logic{
-\let p \in \boolean;
-\let q \in \boolean;
-\state p \or (p \and q) = p;
-}

@@ -1,0 +1,5 @@
+Theorem Name:DefinitionDecreasing Package:Logic{
+\let I \be \set;
+\let f \be \function;
+\state (f is decreasing on [I]) \eq (\forall (\tuple(a, b) \in \cartprod(I, I)) \follows ((a >= b) \eq (f(a) <= f(b))));
+}

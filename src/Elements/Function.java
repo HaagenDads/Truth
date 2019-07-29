@@ -10,14 +10,19 @@ public class Function extends Variable {
 	
 	public Collection args;
 	public Term definition;
+	public boolean defaultDomain, defaultImage;
 	
 	public Function(String name) {
 		super(name, "\\function");
+		domain = new Set(this, "domain");
+		image = new Set(this, "image");
+		defaultDomain = true;
+		defaultImage = true;
 	}
 	
 	public String toHeader() {
 		String res = " be a function";
-		if (domain != null && image != null) {
+		if (!defaultDomain && !defaultImage) {
 			res += " of " + domain.toString() + " -> " + image.toString();
 		}
 		return res + "\n";
@@ -27,12 +32,14 @@ public class Function extends Variable {
 		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, true);
 		domain = new Set(term);
+		defaultDomain = false;
 	}
 	
 	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid {
 		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, false);
 		image = new Set(term);
+		defaultImage = false;
 	}
 
 	public class ExceptionSetInvalid extends Exception {

@@ -128,6 +128,11 @@ public class Compiler {
 						} catch (ExceptionSetInvalid e) {
 							printout(3, e.getError());
 						}
+					} else {
+						for (String var: varname) {
+							Function func = new Function(var);
+							thm.variables.add(func);
+						}
 					}
 					
 				} else { 

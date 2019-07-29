@@ -1,5 +1,0 @@
-Theorem Name:AxiomNaturalNumbers Package:Logic{
-\let x \in \setnatural;
-\state (x < x) \eq \false;
-}
-
