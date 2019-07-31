@@ -53,6 +53,7 @@ public class Type {
 	static public Type getType(Term t, Theorem thm) {
 		Term.Disp termdisp = t.getDisposition();
 		if (termdisp == Term.Disp.F) {
+			if (isin(t.s, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, Set.genericType})) return new Type(Set.genericType);
 			Variable v = thm.getVariable(t.s);
 			if (v != null) return v.type;
 			if (BooleanLogic.isValid(t.s)) return new Type(BooleanLogic.genericType);

@@ -57,9 +57,10 @@ public class Collection extends Term {
 			closing = "}";
 		}
 		for (Term t: items) {
-			Disp tdisp = t.getDisposition();
-			if (!t.isShallow() && !(tdisp == Disp.C) && !(tdisp == Disp.FC)) output += "(" + t.toString() + ")" + link;
-			else output += t.toString() + link;
+			//Disp tdisp = t.getDisposition();
+			//if (!t.isShallow() && !(tdisp == Disp.C) && !(tdisp == Disp.FC)) output += "(" + t.toString() + ")" + link;
+			//else
+			output += t.toString() + link;
 		}
 		return output.substring(0, output.length()-link.length()) + closing;
 	}

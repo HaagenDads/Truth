@@ -1,0 +1,8 @@
+Theorem Name:Induction Package:Logic{
+\let P \be \function \setnatural -> \boolean;
+\let k \in \setnatural;
+\let n \in \setnatural;
+
+\state (P(1) \and \forall k \follows (P(k) \implies P(k + 1))) \then (\forall (n > 0) \follows (P(n) \eq \true));
+}
+

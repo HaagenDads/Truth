@@ -1,6 +1,6 @@
 package Elements;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import Operation.Op;
 import Operation.Operator;
@@ -48,9 +48,9 @@ public class Link {
 	}
 	
 	
-	static public Link reduceSerie (LinkedList<Link> linkserie) {
+	static public Link reduceSerie (ArrayList<Link> arrayList) {
 		Link reduction = null;
-		for (Link b: linkserie) {
+		for (Link b: arrayList) {
 			reduction = reduceLinks(reduction, b);
 			if (reduction == null) return new Link();
 		}

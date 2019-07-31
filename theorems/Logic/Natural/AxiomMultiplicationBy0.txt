@@ -1,0 +1,5 @@
+Theorem Name:MultBy0 Package:Logic{
+\let x \in \setnatural;
+\state x * 0 = 0;
+}
+

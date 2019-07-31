@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 import javax.swing.JTextPane;
 
+import Elements.ArrayString;
+
 abstract public class StringOperations extends JTextPane {
 
 	protected String join(String[] expression, String sep) {
@@ -103,4 +105,47 @@ abstract public class StringOperations extends JTextPane {
 		while (n-- > 0) result += a;
 		return result;
 	}
+	
+	
+	/* 
+	 *  General String operations
+	 */
+	
+	public static String getString (ArrayList<Character> list) {    
+	    StringBuilder builder = new StringBuilder(list.size());
+	    for(Character ch: list) { builder.append(ch); }
+	    return builder.toString();
+	}
+	
+	public static int getParenthesisDifferential(String x) {
+		int result = 0;
+		for (char c: x.toCharArray()) {
+			if (c == '(' || c == '[') result++;
+			if (c == ')' || c == ']') result--;
+		}
+		return result;
+	}
+
+	public static ArrayString split(String text, char[] cs) {
+		ArrayString result = new ArrayString();
+		String buffer = "";
+		for (char c: text.toCharArray()) {
+			if (isPartOfList(c, cs)) {
+				result.add(buffer);
+				buffer = "";
+			} else {
+				buffer += c;
+			}
+		}
+		result.add(buffer);
+		return result;
+	}
+	
+	private static boolean isPartOfList(char t, char[] list) {
+		for (char s: list) {
+			if (t == s) return true;
+		}
+		return false;
+	}
+	
 }

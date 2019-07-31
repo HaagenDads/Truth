@@ -37,6 +37,10 @@ public class BooleanLogic {
 			if (ab.equals(bool.FALSE) || bb.equals(bool.TRUE)) return "\\true";
 			else return "\\false";
 		}
+		else if (op.equals(Op.equiv)) {
+			if (ab.equals(bb)) return "\\true";
+			return "\\false";
+		}
 		return null;
 	}
 	

@@ -5,8 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
-import Elements.Function.ExceptionSetInvalid;
+import Elements.ArrayString.Sequence;
 import Graphics.TextZone;
 
 
@@ -81,97 +82,40 @@ public class Compiler {
 	
 	private void readHeader(String header, Theorem thm) {
 		
-		String[] items = header.split(";");
-		for (String statement: items) {
+		Body head = new Body(header);
+		for (Sequence seq: head.body) {
 			
-			statement = statement.trim();
-			String[] elements = statement.split(" ");
-			String headToken = elements[0];
-			
-			if (headToken.equals("\\let")) {
-				
-				ArrayList<String> varname = new ArrayList<String>();
-				int i = 1;
-				while (!(elements[i].equals("\\in") || elements[i].equals("\\be"))) {
-					varname.add(elements[i++]);
-				}
-				varname = parseVarnames(varname);
-				String connection = elements[i++];
-
-				if (connection.equals("\\in")) {
-					String set = elements[i];
-					for (String var: varname) thm.variables.add(new Variable(var, set));
-				} else if (connection.equals("\\be") && elements[i].equals("\\set")) {
-					for (String var: varname) thm.variables.add(new Variable(var, "\\set"));
-				} else if (connection.equals("\\be") && elements[i].equals("\\function")) {
-					i++;
-					if (elements.length > i) {
-						ArrayList<String> domain = new ArrayList<String>();
-						ArrayList<String> image = new ArrayList<String>();
-						boolean todomain = true;
-						
-						for (; i<elements.length; i++) {
-							if (elements[i].equals("->")) todomain = false;
-							else {
-								if (todomain) domain.add(elements[i]);
-								else image.add(elements[i]);
-							}
-						}
-						
-						try {
-							for (String var: varname) {
-								Function func = new Function(var);
-								func.setDomain(Term.compileTerms(domain), thm);
-								func.setImage(Term.compileTerms(image), thm);
-								thm.variables.add(func);
-							}
-						} catch (ExceptionSetInvalid e) {
-							printout(3, e.getError());
-						}
-					} else {
-						for (String var: varname) {
-							Function func = new Function(var);
-							thm.variables.add(func);
-						}
-					}
-					
-				} else { 
-					printout(3, "Could not comprehend variable initialization from: " + statement);
-				}
+			String headToken = seq.getHeadtoken();
+			if (seq.isAssignment()) {
+				for (Variable v: Term.parseLetStatement(seq.getV(0), thm)) thm.variables.add(v);
 				
 			} else if (headToken.equals("\\where")) {
-				Statement st = parseStatementFromLine(elements);
+				Statement st = parseStatementFromSequence(seq);
 				thm.assumptions.acceptAssumptionFromHypothesis(st);
 				
 			} else if (headToken.equals("\\state")) {
-				thm.statement = parseStatementFromLine(elements);
+				if (seq.size() != 2) System.out.println("[FATAL] Couldn't find a TOT disp in declaration for theorem " + thm.name);
+				thm.statement = parseStatementFromSequence(seq);
 			}
 		}
 		
 	}
 	
-	private ArrayList<String> parseVarnames (ArrayList<String> varname) {
-		ArrayList<String> output = new ArrayList<String>();
-		for (String var: varname) {
-			for (String v: var.split(",")) if (!v.equals("")) output.add(v);
-		}
-		
-		return output;
-	}
-	
-	/* Specifically disregard the first element of the String[], as it corresponds to the head token. */
-	private Statement parseStatementFromLine (String[] tokens) {
-		ArrayList<String> als = new ArrayList<String>();
-		for (String s: tokens) als.add(s);
-		als.remove(0);
-		Term terms = Term.compileTerms(als);
-		//System.out.println(terms.toString());
-		return new Statement(new Link(terms.get(1).s), terms.get(0), terms.get(2));
+	private Statement parseStatementFromSequence(Sequence seq) {
+		ArrayString lside = seq.getV(0);
+		lside.remove(0);
+		Term t1 = Term.compileTerms(lside);
+		Term t2 = Term.compileTerms(seq.getV(1));
+		return new Statement(seq.getL(0), t1, t2);
 	}
 	
 	
 	private void readBody(String body, Theorem thm) {
-		thm.compileDemonstration(body);
+		try {
+			thm.compileDemonstration(body);
+		} catch (ExceptionCaseNonvalid e) {
+			System.out.println("[[ TERMINAL ]] Couldn't compile demonstration.");
+		}
 	}
 	
 	

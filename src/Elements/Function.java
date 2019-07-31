@@ -53,7 +53,7 @@ public class Function extends Variable {
 			String set;
 			if (isdomain) set = "domain";
 			else set = "image";
-			return "[ FATAL ] Could not comprehend initialisation of " + set + " from :" + invalidset.toString();
+			return "[ FNC ] Could not comprehend initialisation of " + set + " from :" + invalidset.toString();
 		}
 	}
 }

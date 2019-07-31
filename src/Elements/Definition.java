@@ -1,7 +1,8 @@
 package Elements;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+
+import Core.StringOperations;
 
 
 public class Definition extends Term {
@@ -25,14 +26,14 @@ public class Definition extends Term {
 				variable = new ArrayList<Character>();
 			}
 			else if (c == ']' && (--openedbrackets == 0)) {
-				String[] var = getStringRepresentation(variable).split(" ");
-				col.addTerm(Term.compileTerms(new ArrayList<String>(Arrays.asList(var))));
+				String[] var = StringOperations.getString(variable).split(" ");
+				col.addTerm(Term.compileTerms(new ArrayString(var)));
 				parsed.add(c);
 			} 
 			else if (openedbrackets != 0) variable.add(c);
 		}
 		
-		addTerm(new Term(getStringRepresentation(parsed)));
+		addTerm(new Term(StringOperations.getString(parsed)));
 		addTerm(col);
 	}
 	
@@ -61,7 +62,7 @@ public class Definition extends Term {
 			}
 		}
 		
-		output += Term.getStringRepresentation(res);
+		output += StringOperations.getString(res);
 		return output;
 	}
 	

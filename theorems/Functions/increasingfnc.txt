@@ -1,5 +1,5 @@
 Theorem Name:Unit Package:Logic{
 \let I \be \set;
 \let f \be \function;
-\state \true \eq (\forall (\tuple(a, b) \in \cartprod(I, I)) \follows ((a >= b) \eq (f(a) >= f(b))));
+\state f is increasing on [I] \eq (\forall (\tuple(a, b) \in \cartprod(I, I)) \follows ((a >= b) \eq (f(a) >= f(b))));
 }

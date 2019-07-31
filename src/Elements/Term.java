@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Stack;
 
+import Core.Demonstration;
+import Core.StringOperations;
+import Core.Theorem;
+import Elements.Function.ExceptionSetInvalid;
 import Operation.Op;
 import Operation.Operator;
 
@@ -286,43 +290,29 @@ public class Term {
 	/*
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
-	static public Term compileTerms (ArrayList<String> seq) {
-		ArrayList<String> cleaned = sepwithComma(seq);
-		return compileTermsClean(cleaned);
+	static public Term compileTerms (ArrayString seq) {
+		seq = seq.sepwithComma();
+		seq.removeVoid();
+		return compileTermsClean(seq);
 	}
+
+	
+	
 	
 	/* Separates terms with commas without removing them */
-	static private ArrayList<String> sepwithComma (ArrayList<String> seq) {
-		ArrayList<String> commasep = new ArrayList<String>();
-		for (String s: seq) {
-			ArrayList<Character> newstr = new ArrayList<Character>();
-			for (char c: s.toCharArray()) {
-				newstr.add(c);
-				if (c == ',') {
-					commasep.add(getStringRepresentation(newstr));
-					newstr = new ArrayList<Character>();
-				}
-			}
-			if (newstr.size() != 0) commasep.add(getStringRepresentation(newstr));
-		}
-		return commasep;
-	}
 	
-	static private Term compileTermsClean(ArrayList<String> seq) {
+	
+	static private Term compileTermsClean(ArrayString seq) {
 		//System.out.println("___");
 		//for (String s: seq) System.out.println(s);
 		
 		Term result = new Term();
-		ArrayList<String> innerBuffer = new ArrayList<String>();
+		ArrayString innerBuffer = new ArrayString();
 		int openedParenthesis = 0;
 		
 		// In case of redundant parenthesis
-		while (seq.get(0).equals("")) seq.remove(0);
-		while (isSurroundedByParenthesis(seq)) {
-			seq.set(0, seq.get(0).substring(1));
-			String lastString = seq.get(seq.size()-1);
-			seq.set(seq.size()-1, lastString.substring(0, lastString.length()-1));
-		}
+		Demonstration.printout(seq.toString());
+		seq.unpeelParenthesis();
 		
 		if (seq.size() == 1) {
 			String element = seq.get(0);
@@ -336,7 +326,7 @@ public class Term {
 			x = x.trim();
 			
 			if (openedParenthesis > 0) {
-				openedParenthesis += getParenthesisDifferential(x);
+				openedParenthesis += StringOperations.getParenthesisDifferential(x);
 				innerBuffer.add(x);
 				
 				if (openedParenthesis < 0) System.out.println("[FATAL] Problem with parenthesis in: " + x);
@@ -348,11 +338,11 @@ public class Term {
 					}
 					else innerterm = compileTermsClean(innerBuffer);
 					result.addTerm(innerterm);
-					innerBuffer = new ArrayList<String>();
+					innerBuffer = new ArrayString();
 				}
 				
 			} else {
-				openedParenthesis += getParenthesisDifferential(x);
+				openedParenthesis += StringOperations.getParenthesisDifferential(x);
 				if (isSingletonCollection(x)) result.addTerm(compileSingletonCollection(x));
 				else if (openedParenthesis > 0) {
 					if (isCollectionHeader(x)) inCollection = true;
@@ -420,25 +410,25 @@ public class Term {
 	}
 	
 	static private Term compileSingletonCollection (String s) {
-		ArrayList<ArrayList<String>> collections = new ArrayList<ArrayList<String>>();
-		ArrayList<String> innercoll = new ArrayList<String>();
+		ArrayList<ArrayString> collections = new ArrayList<ArrayString>();
+		ArrayString innercoll = new ArrayString();
 		innercoll.add(s);
 		collections.add(innercoll);
 		return compileCollectionParsed(collections);
 	}
 	
 	// expect a space after a comma
-	static private Term compileCollection (ArrayList<String> as) {
-		ArrayList<ArrayList<String>> parsed = new ArrayList<ArrayList<String>>();
-		ArrayList<String> inner = new ArrayList<String>();
+	static private Term compileCollection (ArrayString as) {
+		ArrayList<ArrayString> parsed = new ArrayList<ArrayString>();
+		ArrayString inner = new ArrayString();
 		int openedParenthesis = 0;
 		
 		for (String s: as) {
-			openedParenthesis += getParenthesisDifferential(s);
+			openedParenthesis += StringOperations.getParenthesisDifferential(s);
 			if (openedParenthesis == 1 && s.endsWith(",")) {
 				inner.add(s.substring(0, s.length()-1));
 				parsed.add(inner);
-				inner = new ArrayList<String>();
+				inner = new ArrayString();
 			} else {
 				inner.add(s);
 			}
@@ -447,28 +437,20 @@ public class Term {
 		return compileCollectionParsed(parsed);
 	}
 	
-	protected static String getStringRepresentation(ArrayList<Character> list) {    
-	    StringBuilder builder = new StringBuilder(list.size());
-	    for(Character ch: list)
-	    {
-	        builder.append(ch);
-	    }
-	    return builder.toString();
-	}
 	
-	static private Term compileCollectionParsed (ArrayList<ArrayList<String>> aas) {
+	static private Term compileCollectionParsed (ArrayList<ArrayString> aas) {
 		// Remove the collection header
 		String[] firstelement = aas.get(0).get(0).split("\\(", 2);
 		assertProperParenthesis(firstelement[1], aas.size() == 1);
 		aas.get(0).set(0, firstelement[1]);
 		
 		// Remove last element closing parenthesis
-		ArrayList<String> lastAs = aas.get(aas.size()-1);
+		ArrayString lastAs = aas.get(aas.size()-1);
 		String lastelement = lastAs.get(lastAs.size()-1);
 		lastAs.set(lastAs.size()-1, lastelement.substring(0, lastelement.length()-1));
 		
 		Collection coll = new Collection();
-		for (ArrayList<String> as: aas) coll.addTerm(compileTermsClean(as));
+		for (ArrayString as: aas) coll.addTerm(compileTermsClean(as));
 		if (firstelement[0].equals("\\cartprod")) coll.iscartesian = true;
 		else if (firstelement[0].equals("\\set")) coll.isset = true;
 		else if (firstelement[0].equals("\\tuple"));
@@ -496,32 +478,61 @@ public class Term {
 			}
 		}
 	}
-	static private boolean isSurroundedByParenthesis(ArrayList<String> seq) {
-		if (seq.get(0).charAt(0) != '(') return false;
-		int openedParenthesis = 0;
-		for (int i=0; i<seq.size(); i++) {
-			char[] x = seq.get(i).trim().toCharArray();
-			for (int j=0; j<x.length; j++) {
-				if (x[j] == '(') openedParenthesis++;
-				if (x[j] == ')') {
-					openedParenthesis--;
-					if (openedParenthesis == 0) return (i==(seq.size()-1)) && (j==x.length-1);
-					if (openedParenthesis < 0) System.out.println("[FATAL] Error in parenthesis comprehension.");
+		
+	static public ArrayList<Variable> parseLetStatement (ArrayString strings, Theorem thm) {
+		ArrayList<Variable> results = new ArrayList<Variable>();
+		
+		ArrayString varname = new ArrayString();
+		int i = 1;
+		while (!(strings.get(i).equals("\\in") || strings.get(i).equals("\\be"))) {
+			varname.add(strings.get(i++));
+		}
+		varname = varname.parseCollections();
+		String connection = strings.get(i++);
+	
+		if (connection.equals("\\in")) {
+			String set = strings.get(i);
+			for (String var: varname) results.add(new Variable(var, set));
+		} else if (connection.equals("\\be") && strings.get(i).equals("\\set")) {
+			for (String var: varname) results.add(new Variable(var, "\\set"));
+		} else if (connection.equals("\\be") && strings.get(i).equals("\\function")) {
+			i++;
+			if (strings.size() > i) {
+				ArrayString domain = new ArrayString();
+				ArrayString image = new ArrayString();
+				boolean todomain = true;
+				
+				for (; i<strings.size(); i++) {
+					if (strings.get(i).equals("->")) todomain = false;
+					else {
+						if (todomain) domain.add(strings.get(i));
+						else image.add(strings.get(i));
+					}
+				}
+				
+				try {
+					for (String var: varname) {
+						Function func = new Function(var);
+						func.setDomain(compileTerms(domain), thm);
+						func.setImage(compileTerms(image), thm);
+						results.add(func);
+					}
+				} catch (ExceptionSetInvalid e) {
+					Demonstration.printout(3, e.getError());
+				}
+			} else {
+				for (String var: varname) {
+					Function func = new Function(var);
+					results.add(func);
 				}
 			}
+			
+		} else { 
+			Demonstration.printout(3, "Could not comprehend variable initialization from: " + strings.toString());
 		}
-		System.out.println("[FATAL] Error in parenthesis comprehension.");
-		return false;		
+		return results;
 	}
 	
-	static private int getParenthesisDifferential(String x) {
-		int result = 0;
-		for (char c: x.toCharArray()) {
-			if (c == '(') result++;
-			if (c == ')') result--;
-		}
-		return result;
-	}
 	
 	
 	/*

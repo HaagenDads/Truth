@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import Elements.*;
+import Elements.ArrayString.Sequence;
 import Elements.Term.ExceptionTheoremNotApplicable;
 import Elements.Term.ExceptionTrivialEquality;
 import Elements.Term.Permutations;
@@ -28,14 +29,16 @@ public class Demonstration {
 	Theorem source;
 	
 
-	public Demonstration (String body, Theorem thm) {
+	public Demonstration (String fulltext, Theorem thm) {
 		proposition = thm.statement;
 		assumptions = thm.assumptions;
 		
+		/*
 		ArrayList<String> arrbody = new ArrayList<String>();
 		for (String x: body.split(" ")) { if (!x.equals("")) arrbody.add(x.trim()); }
 		
-		init(new Body(arrbody), thm);
+		init(new Body(arrbody), thm);*/
+		init(new Body(fulltext), thm);
 	}
 	public Demonstration (Body body, Statement proposition, Assumptions assumptions, Theorem thm) {
 		this.proposition = proposition;
@@ -51,15 +54,15 @@ public class Demonstration {
 	}
 	
 	
-	public boolean solveDemonstration() {
+	public boolean solveDemonstration() throws ExceptionCaseNonvalid {
 		
-		for (ArrayList<String> subBody: body.parseBody()) {
+		for (Sequence sequence: body.body) {
 			
-			if (subBody.get(0).equals("\\startcase")) {
-				
+			ArrayString subbody = sequence.getV(0);
+			if (sequence.isSubbody()) {
 				nlog.createCase();
-				Cases cases = new Cases(subBody.get(1));
-				cases.parseCase(subBody);
+				Cases cases = new Cases(subbody.get(1));
+				cases.parseCase(subbody);
 				
 				for (int i=0; i<cases.nested.size(); i++) {
 					Demonstration d = cases.nested.get(i);
@@ -71,16 +74,13 @@ public class Demonstration {
 				ArrayList<Assump> caseConclusions = acceptCasesCommunProvenStatements(cases);
 				nlog.closeCase(caseConclusions);
 				
-			
-			} else if (subBody.get(0).equalsIgnoreCase("\\let")) {
-				if (subBody.get(2).equals("\\in")) {
-					source.variables.add(new Variable(subBody.get(1), subBody.get(3)));
-				} else {
-					printout(3, "Could not comprehend variable initialization from: " + subBody); 
-				}
-				
+
+			} else if (sequence.isAssignment()) {
+				// TODO add checking
+				source.variables.addAll(Term.parseLetStatement(subbody,	source));
+
 			} else {
-				compileProposition(subBody);
+				compileProposition(sequence);
 			}
 		}
 		
@@ -93,72 +93,41 @@ public class Demonstration {
 		return false;		
 	}
 	
-	private void compileProposition (ArrayList<String> subbody) {
+	private void compileProposition (Sequence sequence) {
 			
 		boolean proposition = true;
-		Term first_exp = null;
-		ArrayList<String> exp_right = new ArrayList<String>();
+		Term firstexp = null;
 		Term t1 = null;
-		Term t2;
-		Link currentlink = null;
+		Term t2 = null;
 		
-		LinkedList<Link> linkserie = new LinkedList<Link>();
-		for (String token: subbody) {
-			if (Link.isLink(token) && assertGroundParenthesis(exp_right)) {
-				linkserie.add(new Link(token));
-				t2 = Term.compileTerms(exp_right);
-				if (t1 != null) {
-					boolean innerState = validateStatement(t1, t2, currentlink);
-					proposition = proposition && innerState;
-					if (!innerState) printout(3, "Could not validate statement " + t1 + currentlink.toString() + t2);
-				} else {
-					// First expression - No need to validate anything
-					nlog.addLine(null, first_exp = t2, null);
-				}
-				t1 = t2;
-				currentlink = linkserie.getLast();
-				exp_right = new ArrayList<String>();
-			} else {
-				exp_right.add(token);
-			}
-		}
-
-		linkserie.add(currentlink);
-		t2 = Term.compileTerms(exp_right);
-		if (!validateStatement(t1, t2, currentlink)) {
-			printout(3, "Could not validate statement " + t1 + currentlink.toString() + t2);
-			proposition = false;
-		}
-		
-		Link conclusion = Link.reduceSerie(linkserie);
-		proposition = proposition && !conclusion.equals("");
-		if (proposition) {
+		for (int i=0; i<sequence.size(); i++) {
+			t2 = Term.compileTerms(sequence.getV(i));
 			
-			Statement takeaway = new Statement(conclusion, first_exp, t2);
+			if (t1 == null) {
+				nlog.addLine(null, t2, null);
+				firstexp = t2;
+			} else {
+				if (!validateStatement(t1, t2, sequence.getL(i-1))) {
+					proposition = false;
+					printout(3, "Could not validate statement " + t1 + sequence.getL(i-1).toString() + t2);
+				}
+			}
+			t1 = t2;
+		}
+		
+		Link conclusion = Link.reduceSerie(sequence.getLinks());
+		if (proposition && !conclusion.equals("")) {
+			
+			Statement takeaway = new Statement(conclusion, firstexp, t2);
 			
 			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
 			// the link to reflect this reality.
-			if (conclusion.equals(Op.then) && first_exp.equalsString("\\true")) {
-				takeaway = new Statement(new Link(Op.equiv), t2, first_exp);
+			if (conclusion.equals(Op.then) && firstexp.equalsString("\\true")) {
+				takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
 			} 
-			
+
 			assumptions.acceptAssumptionFromDemonstration(takeaway, nlog.blockstamp);
 		}
-	}
-	
-	
-	private boolean assertGroundParenthesis(ArrayList<String> exp) {
-		int openedParenthesis = 0;
-		for (String s: exp) {
-		    for (int i = 0; i < s.length(); i++) {
-		        if (s.charAt(i) == '(') {
-		        	openedParenthesis++;
-		        } else if (s.charAt(i) == ')') {
-		            if (openedParenthesis-- == 0)  printout(3, "Trying to close closed parenthesis in " + exp);
-		        }
-		    }
-		}
-		return openedParenthesis == 0;
 	}
 	
 	
@@ -406,8 +375,6 @@ public class Demonstration {
 				
 				// checking here for types - trueSubs ignores substitutions of non-variables (e.g. \true, 4)
 				// Case for 3 = 3, for example
-				// TODO: verify that it wont show up as "thm.3 = 3"
-			
 				ArrayList<Statement> trueSubs = new ArrayList<Statement>();
 				for (Statement st: substitutions) {
 					Variable v = th.getVariable(st.lside.s);
@@ -567,40 +534,38 @@ public class Demonstration {
 	/* =========================================================
 	 *  CASES
 	 */
-	private int parseCases(int initpos, Variable casevar, Cases cases) {
+	
+	private int parseCases(ArrayString subbody, int initpos, Variable casevar, Cases cases) throws ExceptionCaseNonvalid {
 
-		if (body.get(initpos).equals("\\case") && body.get(initpos+1).equals(casevar.name)) {
-			ArrayList<String> rightHand = new ArrayList<String>();
+		if (subbody.get(initpos).equals("\\case") && subbody.get(initpos+1).equals(casevar.name)) {
+			ArrayString assignment = new ArrayString();
 
 			// Extracting hypothesis
-			int pos = initpos + 2;
-			while (!body.get(pos+1).equals("{")) {
-				pos += 1;
-				rightHand.add(body.get(pos));
+			int pos = initpos;
+			while (!subbody.get(++pos).equals("{")) {
+				assignment.add(subbody.get(pos));
 			}
 			
-			// Assigning a partition element to the variable; we then need to use "=".
-			Statement hypothesis = new Statement(new Link("="), new Term(casevar.name), Term.compileTerms(rightHand));
+			Term assign = Term.compileTerms(assignment);
+			if (assign.getDisposition() != Term.Disp.TOT) throw new ExceptionCaseNonvalid();
+			
+			// TODO kill casevar - let complex cases live
+			Statement hypothesis = new Statement(new Link(assign.get(1).s), assign.get(0), assign.get(2));
 			
 			// Extracting the conditional body
-			ArrayList<String> nestedBody = new ArrayList<String>();
+			ArrayString nestedBody = new ArrayString();
 			int openedBrackets = 1;
 			pos += 2; // pos+1 is the bracket, pos+2 is the next token
 			
 			while (openedBrackets > 0) {
-				if (pos == body.size()) printout(3, "There has to be an opened bracket somewhere! (" + openedBrackets + ")");
+				if (pos == subbody.size()) printout(3, "There has to be an opened bracket somewhere! (" + openedBrackets + ")");
 				
-				String next = body.get(pos);
-				if (next.equals("{")) {
-					openedBrackets += 1;
-				} else if (next.equals("}")) {
-					openedBrackets -= 1;
-				} else {
-					nestedBody.add(next);
-				}
-				pos += 1;
-				
+				String next = subbody.get(pos++);
+				if (next.equals("{")) openedBrackets += 1;
+				else if (next.equals("}")) openedBrackets -= 1;
+				else nestedBody.add(next);
 			}
+			
 			Assumptions nestedAssumptions = assumptions.copy();
 			nestedAssumptions.acceptAssumptionFromCasesHypothesis(hypothesis);
 			Demonstration nested = new Demonstration(new Body(nestedBody), proposition, nestedAssumptions, source);
@@ -610,7 +575,7 @@ public class Demonstration {
 			return pos;
 		}
 		printout(3, "Couldn't match '\\case " + casevar.name + "'");
-		return body.size();
+		return subbody.size();
 		
 	}
 	
@@ -699,21 +664,21 @@ public class Demonstration {
 			return result;
 		}
 		
-		public void parseCase(ArrayList<String> body) {
+		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {
 			int pos = 2;
-			while (!(body.get(pos).equals("\\endcase"))) {
-				pos = parseCases(pos, casevar, this);
+			while (!(arr.get(pos).equals("\\endcase"))) {
+				pos = parseCases(arr, pos, casevar, this);
 			}
 		}
 		
 	}
 
 	
-	private void printout(String text) {
+	static public void printout(String text) {
 		printout(1, text);
 	}
 	
-	private void printout(int priority, String text) {
+	static public void printout(int priority, String text) {
 		if (printPriority > priority) return;
 		if (priority == 3) System.out.println("[FATAL]" + text);
 		else System.out.println(text);
@@ -721,4 +686,6 @@ public class Demonstration {
 	
 	private class ExceptionCantSolveMath extends Exception {}
 	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
+	
+	public class ExceptionCaseNonvalid extends Exception {}
 }

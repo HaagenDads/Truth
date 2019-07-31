@@ -12,6 +12,10 @@ public class Operator extends Term {
 	public boolean equals (Operator other) {
 		return this.s.equals(other.s);
 	}
+	public boolean equals (String str) {
+		return this.s.equals(s);
+	}
+	
 	public Operator copy () {
 		return new Operator(s);
 	}

@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import Core.Compiler.CompilerException;
-import Core.Compiler.CouldntFindDemonstrationException;
+import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
 
 public class Theorem {
@@ -44,9 +44,9 @@ public class Theorem {
 		try {
 			String body = Compiler.getDemonstrationFromUnit(unit);
 			compileDemonstration(body);
-		} catch (CouldntFindDemonstrationException e) {}
+		} catch (Exception e) {}
 	}
-	public void compileDemonstration (String body) {
+	public void compileDemonstration (String body) throws ExceptionCaseNonvalid {
 		this.demonstration = new Demonstration(body, this);
 		this.demonstration.solveDemonstration();
 	}

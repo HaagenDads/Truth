@@ -14,13 +14,12 @@ public class Main {
         frame.setVisible(true);
         //frame.loadTheorem("Logic/FirstOrder/OrImplication.txt");
         //frame.loadTheorem("AndImpliesOrTautology.txt");
-        //frame.loadTheorem("TrivialAnd.txt");
         //frame.loadTheorem("Logic/FirstOrder/PartitionImplication.txt");
         //frame.loadTheorem("QuantifierTesting.txt");
         //frame.loadTheorem("EmbededQuantifier.txt");
         //frame.loadTheorem("Logic/Set/AxiomPowerset.txt");
-        //frame.loadTheorem("unsolvedQuant.txt");
-        frame.loadTheorem("Functions/basictrans.txt");
+        frame.loadTheorem("unsolvedQuant.txt");
+        //frame.loadTheorem("Functions/increasingfnc.txt");
 	}
 	
 	/*
