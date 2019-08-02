@@ -1,5 +1,7 @@
 package Elements;
 
+import java.util.ArrayList;
+
 import Core.Theorem;
 
 public class Function extends Variable {
@@ -12,12 +14,21 @@ public class Function extends Variable {
 	public Term definition;
 	public boolean defaultDomain, defaultImage;
 	
-	public Function(String name) {
-		super(name, "\\function");
+	private ArrayList<Definition> defs;
+	private boolean isdefinitionComplete;
+	private boolean isdefinitionExclusive;
+	private boolean haselsecondition;
+	
+	public Function(String name, boolean fromheader) {
+		super(name, "\\function", fromheader);
 		domain = new Set(this, "domain");
 		image = new Set(this, "image");
 		defaultDomain = true;
 		defaultImage = true;
+		defs = new ArrayList<Definition>();
+		isdefinitionComplete = false;
+		isdefinitionExclusive = false;
+		haselsecondition = false;
 	}
 	
 	public String toHeader() {
@@ -25,7 +36,19 @@ public class Function extends Variable {
 		if (!defaultDomain && !defaultImage) {
 			res += " of " + domain.toString() + " -> " + image.toString();
 		}
-		return res + "\n";
+		if (defs.size() == 0) return res + '\n';
+		for (Definition d: defs) {
+			res += "\n\t  ";
+			if (d.cond == null) res += d.def.toString();
+			else {
+				String end = "\t\t\t if  (" + d.cond.toString() + ")";
+				if (d.cond.equalsString("else")) end = "\t otherwise";
+				res += d.def.toString() + end;
+			}
+		}
+		
+		
+		return res + '\n';
 	}
 	
 	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid {
@@ -41,6 +64,71 @@ public class Function extends Variable {
 		image = new Set(term);
 		defaultImage = false;
 	}
+	
+
+	public void setDefinition(Theorem thm, ArrayString generalDef) throws ExceptionAssignDefinition {
+		if (defs.size() > 0) throw new ExceptionDefinitionMultipleUnconditional(Term.compileTerms(generalDef));
+		setDefinition(thm, null, generalDef);
+	}
+	public void setDefinition(Theorem thm, ArrayString condstring, ArrayString defstring) throws ExceptionAssignDefinition {
+		Term def = Term.compileTerms(defstring);
+		Term fnc = def.get(0);
+		
+		if (fnc.getDisposition() != Term.Disp.FC) throw new ExceptionDefinitionLeftsideUnclear(def);
+		if (!fnc.get(0).equalsString(name)) throw new ExceptionDefinitionLeftsideUnclear(def);
+		Collection args = (Collection) (fnc.get(1));
+		if (!domain.isElement(args, thm)) throw new ExceptionDomainDoesntMatch(def);
+		
+		// TODO for (Term t: def.get(2).enumerateVariables()) check();	
+		if (condstring == null) {
+			defs.add(new Definition(args, def));
+			isdefinitionComplete = true;
+			isdefinitionExclusive = true;
+		}
+		else {
+			Term cond = Term.compileTerms(condstring);
+			if (cond.equalsString("else")) {
+				if (haselsecondition) throw new ExceptionMultipleElseConditions(def);
+				defs.add(new Definition(args, cond, def));
+				isdefinitionComplete = true;
+				haselsecondition = true;
+				if (defs.size() == 2) isdefinitionExclusive = true;
+			}
+			else {
+				// TODO for (Term t: def.get(2).enumerateVariables()) check();	
+				defs.add(new Definition(args, cond, def));
+			}
+		}
+	}
+	
+	/* Complete partition: every point of the domain has a definition */
+	public boolean isDefinitionComplete() {
+		return isdefinitionComplete;
+	}
+	
+	/* No overlapping in definitions */
+	public boolean isDefinitionExclusive() {
+		return isdefinitionExclusive;
+	}
+
+
+	private class Definition {
+		Term cond;
+		Term def;
+		Collection var;
+
+		public Definition (Collection var, Term def) {
+			cond = null;
+			this.def = def;
+			this.var = var;
+		}
+		public Definition (Collection var, Term cond, Term def) {
+			this.cond = cond;
+			this.def = def;
+			this.var = var;
+		}
+	}
+	
 
 	public class ExceptionSetInvalid extends Exception {
 		public Term invalidset;
@@ -55,5 +143,27 @@ public class Function extends Variable {
 			else set = "image";
 			return "[ FNC ] Could not comprehend initialisation of " + set + " from :" + invalidset.toString();
 		}
+	}
+	static abstract public class ExceptionAssignDefinition extends Exception {
+		Term t;
+		public ExceptionAssignDefinition (Term t) {this.t = t;}
+		String printError() { return "[DefError] " + getError() + " in: " + t.toString(); }
+		abstract String getError();
+	}
+	static public class ExceptionDefinitionLeftsideUnclear extends ExceptionAssignDefinition {
+		public ExceptionDefinitionLeftsideUnclear(Term t) {super(t);}
+		String getError () { return "Left side of definition should be a function evaluated at a known variable";}
+	}
+	static public class ExceptionDomainDoesntMatch extends ExceptionAssignDefinition {
+		public ExceptionDomainDoesntMatch(Term t) {super(t);}
+		String getError () { return  "Elements of definition didn't fit the domain of the function";}
+	}
+	static public class ExceptionDefinitionMultipleUnconditional extends ExceptionAssignDefinition {
+		public ExceptionDefinitionMultipleUnconditional(Term t) {super(t);}
+		String getError () { return  "Can't have more than one unconditional definition";}
+	}
+	static public class ExceptionMultipleElseConditions extends ExceptionAssignDefinition {
+		public ExceptionMultipleElseConditions(Term t) {super(t);}
+		String getError () { return "Can't have more than one 'else' unconditional definition";}
 	}
 }

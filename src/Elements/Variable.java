@@ -4,10 +4,12 @@ public class Variable {
 
 	public String name;
 	public Type type;
+	public boolean fromheader;
 	
-	public Variable(String name, String type) {
+	public Variable(String name, String type, boolean fromheader) {
 		this.name = name;
 		this.type = new Type(type);
+		this.fromheader = fromheader;
 	}
 	
 	public String toHeader() {
@@ -28,7 +30,7 @@ public class Variable {
 	}
 
 	public Variable copy() {
-		return new Variable(name, type.type);
+		return new Variable(name, type.type, fromheader);
 	}
 
 	

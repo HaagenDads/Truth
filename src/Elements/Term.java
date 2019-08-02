@@ -8,6 +8,7 @@ import java.util.Stack;
 import Core.Demonstration;
 import Core.StringOperations;
 import Core.Theorem;
+import Elements.Function.ExceptionAssignDefinition;
 import Elements.Function.ExceptionSetInvalid;
 import Operation.Op;
 import Operation.Operator;
@@ -230,27 +231,61 @@ public class Term {
 		return output;
 	}
 	
+	static private Stack<Term> toStack (Term[] array) {
+		Stack<Term> result = new Stack<Term>();
+		for (Term o: array) result.add(o);
+		return result;
+	}
+	
+	static private Term parseTerms (Term termarray) {
+		if (termarray.size < 4 || termarray.getDisposition() != Disp.ERR) return termarray;
+		Term term = reduce(termarray);
+		if (term.size < 4 || term.getDisposition() != Disp.ERR) return term;
+		
+		Term parsed = new Term();
+		for (int i=0; i<term.size; i++) {
+			Term ith = term.get(i);
+			if (ith.isOperator() && Link.isLink(ith.s)) {
+
+				// Left
+				Term tleft = new Term();
+				for (int j=0; j<i; j++) {
+					tleft.addTerm(term.get(j));
+				}
+				
+				// Right
+				Term tright = new Term();
+				for (int j=i+1; j<term.size; j++) {
+					tright.addTerm(term.get(j));
+				}
+				parsed.addTerm(parseTerms(tleft));
+				parsed.addTerm(term.get(i));
+				parsed.addTerm(parseTerms(tright));
+			}
+		}
+		return parsed;
+	}
 	
 	static private Term reduce (Term termarray) {
 		if (termarray.isShallow() || termarray.isCollection()) {
 			return termarray;
 		}
-		Term result = new Term();
-		LinkedList<Term> output = new LinkedList<Term>();
 		
-		Stack<Term> input = new Stack<Term>();
-		for (Term inner: termarray.v) input.add(inner);
+		Stack<Term> input = toStack(termarray.v);
+		LinkedList<Term> output = new LinkedList<Term>();
 
+		//System.out.println(":input stack:");
+		//for (Term t: termarray.v) System.out.println(t.toString());
 		while (!input.isEmpty()) {
 			Term ith = input.pop(); // Reversed order
 			if (ith.isOperator()) {
 				if (ith.equals(Op.forall)) {
 					// TODO collection as syntatxic sugar
-					output = extractQuantifiers(output, Op.forall, "\\follows");
+					output = extractQuantifiers(output, Op.forall);
 					if (output == null) return null;
 					
 				} else if (ith.equals(Op.exists)) {
-					output = extractQuantifiers(output, Op.exists, "\\suchthat");
+					output = extractQuantifiers(output, Op.exists);
 					if (output == null) return null;
 					
 				} else if (ith.equals(Op.not)) {
@@ -263,44 +298,41 @@ public class Term {
 			} else output.addFirst(ith);
 		}
 		
+		Term result = new Term();
 		for (Term t: output) result.addTerm(t);
 		return result;
 	}
 	
-	static private LinkedList<Term> extractQuantifiers (LinkedList<Term> output, Operator quantop, String token) {
+	static private LinkedList<Term> extractQuantifiers (LinkedList<Term> output, Operator quantop) {
 		try {
 			int followsPos=1;
-			while (!output.get(followsPos).equalsString(token)) followsPos++;
+			//System.out.println(":extractQuantifiers:");
+			//for (Term t: output) System.out.println(t);
+			while (!output.get(followsPos).equalsString(":")) followsPos++;
 			Term quantterm = new Term();
 			Term condition = new Term();
 			Term proposition = new Term();
 			
 			for (int i=0; i<followsPos; i++) condition.addTerm(output.pop());
-			output.pop(); // removal of the "follows" term
+			output.pop(); // removal of the ":" term
 			while (!output.isEmpty()) proposition.addTerm(output.pop());
 						
-			quantterm.addTerm(quantop.copy());
-			quantterm.addTerm(condition);
-			quantterm.addTerm(proposition);
+			quantterm.addTerm(quantop);
+			quantterm.addTerm(parseTerms(condition));
+			quantterm.addTerm(parseTerms(proposition));
 			output.addFirst(quantterm);
 			return output;
-		} catch (IndexOutOfBoundsException e) { System.out.println("Couldn't find '" + token + "' token"); return null;}
+		} catch (IndexOutOfBoundsException e) { System.out.println("Couldn't find ':' token"); return null;}
 	}
 	
 	/*
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
 	static public Term compileTerms (ArrayString seq) {
-		seq = seq.sepwithComma();
+		//seq = seq.sepwithComma();
 		seq.removeVoid();
 		return compileTermsClean(seq);
 	}
-
-	
-	
-	
-	/* Separates terms with commas without removing them */
-	
 	
 	static private Term compileTermsClean(ArrayString seq) {
 		//System.out.println("___");
@@ -311,7 +343,6 @@ public class Term {
 		int openedParenthesis = 0;
 		
 		// In case of redundant parenthesis
-		Demonstration.printout(seq.toString());
 		seq.unpeelParenthesis();
 		
 		if (seq.size() == 1) {
@@ -372,29 +403,9 @@ public class Term {
 			result = reduce(result);
 		}
 		if (foundlink && result.size > 3) {
-			
-			Term parsed = new Term();
-			for (int i=0; i<result.size; i++) {
-				Term ith = result.get(i);
-				if (ith.isOperator() && Link.isLink(ith.s)) {
-
-					// Left
-					Term tleft = new Term();
-					for (int j=0; j<i; j++) {
-						tleft.addTerm(result.get(j));
-					}
-					
-					// Right
-					Term tright = new Term();
-					for (int j=i+1; j<result.size; j++) {
-						tright.addTerm(result.get(j));
-					}
-					parsed.addTerm(reduce(tleft));
-					parsed.addTerm(result.get(i));
-					parsed.addTerm(reduce(tright));
-				}
-			}
-			return parsed;
+			//System.out.println(":result term (size=" + result.size + "):  " + result.toString());
+			result = parseTerms(result);
+			//System.out.println(":into (size=" + result.size + "):   " + result.toString());
 		}
 		return result;
 	}
@@ -479,7 +490,7 @@ public class Term {
 		}
 	}
 		
-	static public ArrayList<Variable> parseLetStatement (ArrayString strings, Theorem thm) {
+	static public ArrayList<Variable> parseLetStatement (ArrayString strings, Theorem thm, boolean fromheader) {
 		ArrayList<Variable> results = new ArrayList<Variable>();
 		
 		ArrayString varname = new ArrayString();
@@ -492,37 +503,53 @@ public class Term {
 	
 		if (connection.equals("\\in")) {
 			String set = strings.get(i);
-			for (String var: varname) results.add(new Variable(var, set));
+			for (String var: varname) results.add(new Variable(var, set, fromheader));
 		} else if (connection.equals("\\be") && strings.get(i).equals("\\set")) {
-			for (String var: varname) results.add(new Variable(var, "\\set"));
+			for (String var: varname) results.add(new Variable(var, "\\set", fromheader));
 		} else if (connection.equals("\\be") && strings.get(i).equals("\\function")) {
 			i++;
 			if (strings.size() > i) {
-				ArrayString domain = new ArrayString();
-				ArrayString image = new ArrayString();
-				boolean todomain = true;
 				
-				for (; i<strings.size(); i++) {
-					if (strings.get(i).equals("->")) todomain = false;
-					else {
-						if (todomain) domain.add(strings.get(i));
-						else image.add(strings.get(i));
-					}
-				}
-				
+				ArrayList<Function> funcs = new ArrayList<Function>();
+				ArrayString[] domain = splitArrayBy(strings, "->", i);
+				ArrayString[] args = splitArrayBy(domain[1], "{", 0);
+				ArrayString image = args[0];
+				ArrayString defineSts = args[1];
 				try {
 					for (String var: varname) {
-						Function func = new Function(var);
-						func.setDomain(compileTerms(domain), thm);
+						Function func = new Function(var, fromheader);
+						func.setDomain(compileTerms(domain[0]), thm);
 						func.setImage(compileTerms(image), thm);
-						results.add(func);
+						funcs.add(func);
 					}
-				} catch (ExceptionSetInvalid e) {
-					Demonstration.printout(3, e.getError());
+				} catch (ExceptionSetInvalid e) { Demonstration.printout(3, e.getError()); }
+				if (defineSts.size() == 0) {
+					results.addAll(funcs);
+					return results;
 				}
+				
+				// deal with \define statements
+				if (varname.size() > 1) System.out.println("[Error] Can't assign definitions to multiple functions at the same time");
+				Function func = funcs.get(0);
+				
+				try {
+					for (ArrayString define: defineSts.getDefineSequences()) {
+						if (!define.get(0).equals("\\define")) System.out.println("[Error] Couldnt find 'define' token in: " + define.toString());
+						ArrayString[] sts = splitArrayBy(define, ":", 1);
+						if (sts[1].size() == 0) func.setDefinition(thm, sts[0]);
+						else func.setDefinition(thm, sts[0], sts[1]);					
+					}
+				
+					results.add(func);
+					return results;
+				} catch (ExceptionAssignDefinition e) {
+					System.out.println(e.printError());
+				}
+				
+				
 			} else {
 				for (String var: varname) {
-					Function func = new Function(var);
+					Function func = new Function(var, fromheader);
 					results.add(func);
 				}
 			}
@@ -533,6 +560,20 @@ public class Term {
 		return results;
 	}
 	
+	static private ArrayString[] splitArrayBy (ArrayString array, String by, int from) {
+		ArrayString arr1 = new ArrayString();
+		ArrayString arr2 = new ArrayString();
+		boolean tosecond = true;
+		
+		for (int i=from; i<array.size(); i++) {
+			if (array.get(i).equals(by)) tosecond = false;
+			else {
+				if (tosecond) arr1.add(array.get(i));
+				else arr2.add(array.get(i));
+			}
+		}
+		return new ArrayString[]{arr1, arr2};
+	}
 	
 	
 	/*

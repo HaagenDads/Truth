@@ -1,6 +1,6 @@
 Theorem Name:NegativeQuantifier Package:Logic{
 \let x \in \setnatural;
 \let p \in \boolean;
-\state \not \exists x \suchthat p \eq \forall x \follows \not p;
+\state \not \exists x: p \eq \forall x: \not p;
 }
 

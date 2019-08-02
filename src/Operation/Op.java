@@ -17,6 +17,7 @@ public final class Op {
 	public static final Operator minus = new Operator("-");
 	public static final Operator mult = new Operator("*");
 	public static final Operator div = new Operator("/");
+	public static final Operator exp = new Operator("^");
 
 	public static final Operator eq = new Operator("=");
 	public static final Operator lt = new Operator("<");
@@ -37,12 +38,12 @@ public final class Op {
 	
 	private static final HashMap<String, Operator> hashmap = new HashMap<String, Operator>() {{
 		Operator[] oplist = new Operator[]{not, and, or, implies, iff, equiv, then, assign,
-										   plus, minus, mult, div,
+										   plus, minus, mult, div, exp,
 										   eq, lt, gt, le, ge, ineq,
 										   intersection, union, subset, psubset, in, notin,
 										   exists, forall};
 		String[] strlist = new String[]{"\\not", "\\and", "\\or", "\\implies", "\\iff", "\\eq", "\\then", ":=",
-										"+", "-", "*", "/",
+										"+", "-", "*", "/", "^",
 										"=", "<", ">", "<=", ">=", "!=",
 										"\\intersection", "\\union", "\\subset", "\\psubset", "\\in", "\\notin",
 										"\\exists", "\\forall"};

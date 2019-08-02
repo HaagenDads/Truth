@@ -61,9 +61,13 @@ public class Compiler {
 		Logging nlog = new Logging();
 		thm.nlog = nlog;
 		
-		String identification = unit.substring(8, unit.indexOf("{")).trim();
-		String header = unit.substring(unit.indexOf("{") + 1, unit.indexOf("}")).trim();
-		String body = unit.substring(unit.indexOf("}") + 1).trim();
+		char[] chars = unit.toCharArray();
+		int pos_identification = unit.indexOf("{");
+		int pos_header = getHeaderPos(chars, pos_identification+1);
+		
+		String identification = unit.substring(8, pos_identification).trim();
+		String header = unit.substring(pos_identification+1, pos_header).trim();
+		String body = unit.substring(pos_header+1).trim();
 		
 		findFields(identification, thm);
 		readHeader(header, thm);
@@ -79,15 +83,27 @@ public class Compiler {
 		return thm;
 	}
 	
+	private int getHeaderPos (char[] chars, int pos) {
+		int openedbracket = 1;
+		for (; pos<chars.length; pos++) {
+			if (chars[pos] == '{') openedbracket++;
+			else if (chars[pos] == '}') {
+				if (--openedbracket == 0) return pos;
+			}
+		}
+		return pos;
+	}
+	
 	
 	private void readHeader(String header, Theorem thm) {
 		
+		//System.out.println(":thm name:  " + thm.name);
 		Body head = new Body(header);
 		for (Sequence seq: head.body) {
 			
 			String headToken = seq.getHeadtoken();
 			if (seq.isAssignment()) {
-				for (Variable v: Term.parseLetStatement(seq.getV(0), thm)) thm.variables.add(v);
+				for (Variable v: Term.parseLetStatement(seq.getV(0), thm, true)) thm.variables.add(v);
 				
 			} else if (headToken.equals("\\where")) {
 				Statement st = parseStatementFromSequence(seq);

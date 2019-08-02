@@ -3,6 +3,6 @@ Theorem Name:AxiomPowerset Package:Logic{
 \let Y \be \set;
 \let Z \be \set;
 
-\state \exists Y \suchthat (\forall Z \subset X \follows Z \in Y) \eq \true;
+\state \exists Y: (\forall Z \subset X: Z \in Y) \eq \true;
 }
 

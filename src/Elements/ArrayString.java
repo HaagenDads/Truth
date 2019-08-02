@@ -20,6 +20,15 @@ public class ArrayString extends ArrayList<String>{
 		for (String s: var) add(s);
 	}
 
+	public ArrayString(String x) {
+		super();
+		add(x);
+	}
+	
+	public void removeLast () {
+		remove(size()-1);
+	}
+	
 	public String[] toStringlist() {
 		String[] res = new String[size()];
 		for (int i=0; i<size(); i++) res[i] = get(i);
@@ -28,16 +37,27 @@ public class ArrayString extends ArrayList<String>{
 	
 	public ArrayString sepwithComma () {
 		ArrayString commasep = new ArrayString();
+		boolean foundchar;
 		for (String s: this) {
 			ArrayList<Character> newstr = new ArrayList<Character>();
+			foundchar = false;
 			for (char c: s.toCharArray()) {
-				newstr.add(c);
-				if (c == ',') {
+				if (c == ':') {
+					foundchar = true;
 					commasep.add(StringOperations.getString(newstr));
+					commasep.add(":");
 					newstr = new ArrayList<Character>();
+				} else {
+					newstr.add(c);
+					if (c == ',') {
+						foundchar = true;
+						commasep.add(StringOperations.getString(newstr));
+						newstr = new ArrayList<Character>();
+					}
 				}
 			}
-			if (newstr.size() != 0) commasep.add(StringOperations.getString(newstr));
+			if (!foundchar) commasep.add(s); // fasttrack
+			else if (newstr.size() != 0) commasep.add(StringOperations.getString(newstr));
 		}
 		return commasep;
 	}
@@ -80,7 +100,6 @@ public class ArrayString extends ArrayList<String>{
 		int openedparenthesis = 0;
 		
 		for (String s: this) {
-			
 			openedparenthesis += StringOperations.getParenthesisDifferential(s);
 			if (openedparenthesis == 0 && isPartOfList(s, precedence)) {
 				result.add(buffer, new Link(s));
@@ -109,6 +128,25 @@ public class ArrayString extends ArrayList<String>{
 		}
 		return false;
 	}
+	
+	
+	public ArrayList<ArrayString> getDefineSequences() {
+		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
+		ArrayString buffer = new ArrayString();
+		removeLast(); // it's a '}'
+		
+		for (String x: this) {
+			String endline = StringOperations.getEndLine(x);
+			if (endline != null) {
+				buffer.add(endline);
+				result.add(buffer);
+				buffer = new ArrayString();
+			} 
+			else buffer.add(x);
+		}
+		return result;
+	}
+	
 	
 	public class Sequence {
 		

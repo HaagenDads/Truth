@@ -8,6 +8,7 @@ import Elements.Justification;
 import Elements.Link;
 import Elements.Statement;
 import Elements.Term;
+import Elements.Variable;
 
 public class Logging {
 
@@ -99,6 +100,17 @@ public class Logging {
 		activeLog.args.add(new Arg(term, link, expl));
 	}
 	
+	public void addLine(ArrayList<Variable> sts) {
+		blockstamp.increment();
+		Logging st = new Logging(type.statement, activeLog, blockstamp);
+		st.blocID = blockstamp.getStamp();
+		activeLog.v.add(st);
+		activeLog = st;
+	
+		activeLog.args.add(new Arg(sts));
+		
+	}
+	
 	public void conclude(boolean state) {
 		solved = state;
 	}
@@ -119,6 +131,7 @@ public class Logging {
 		public Term term;
 		public Link link;
 		public Justification expl;
+		public ArrayList<Variable> vars;
 		
 		public Arg(Term term, Link link, Justification expl) {
 			this.term = term;
@@ -126,10 +139,13 @@ public class Logging {
 			this.expl = expl;
 		}
 		
+		public Arg(ArrayList<Variable> sts) {
+			this.vars = sts;
+		}
+
 		public String toString() {
 			return link.toString() + term.toString() + " (" + expl.toString() + ")";
 		}
 		
 	}
-
 }

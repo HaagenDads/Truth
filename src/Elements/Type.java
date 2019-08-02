@@ -76,6 +76,7 @@ public class Type {
 			Function fnc = (Function) (thm.getVariable(t.get(0).s));
 			Collection coll = (Collection) (t.get(1));
 			if (fnc.domain.isElement(coll, thm)) return fnc.image;
+			System.out.println(":coll " + coll.toString() + " isnt element of " + fnc.domain.toString());
 			return null;
 		}
 		else return null;
@@ -95,7 +96,7 @@ public class Type {
 				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies})) return a;
 			}
 			if (a.equals(NaturalNumbers.genericType)) {
-				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult})) return a;
+				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp})) return a;
 				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
 					return new Type(BooleanLogic.genericType);
 				}

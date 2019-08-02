@@ -2,6 +2,6 @@ Theorem Name:AxiomEquivalence Package:Logic{
 \let X \be \set;
 \let Y \be \set;
 
-\state (\forall a \follows (a \in X \iff a \in Y)) \then (X = Y);
+\state (\forall a: (a \in X \iff a \in Y)) \then (X = Y);
 }
 

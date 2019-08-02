@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Collection extends Term {
 	
-	ArrayList<Term> items;
+	public ArrayList<Term> items;
 	boolean iscartesian;
 	boolean isset;
 	public Collection () {
@@ -136,6 +136,6 @@ public class Collection extends Term {
 	
 	/*
 	public boolean isElementOfSet (Set S) {
-		
+		return false;
 	}*/
 }

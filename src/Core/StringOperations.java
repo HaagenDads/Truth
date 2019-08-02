@@ -84,9 +84,9 @@ abstract public class StringOperations extends JTextPane {
 		String result = s;
 		String[] from = new String[]{"\\not ", "\\false", "\\true", "\\and", "\\or", "\\implies", "\\eq", 
 				"\\forall", "\\exists", "\\setnatural", "\\in", "\\notin", "\\then", "\\subset", "\\psubset", "\\notsubset", 
-				"\\intersection", "\\union", "\\emptyset", "\\pset"};
+				"\\intersection", "\\union", "\\emptyset", "\\pset", "->"};
 		String[] to = new String[]{"¬", "\\$bold{F}", "\\$bold{T}", "∧", "∨", "→", "≡", "∀", "∃", "ℕ", "∈", "∉", "⇒", "⊆", "⊂", "⊆ ?", "⋂", "⋃", "∅",
-				"\\$ital{P"};
+				"\\$ital{P", "→"};
 		for (int i=0; i<from.length; i++) {
 			result = result.replace((CharSequence) from[i], (CharSequence) to[i]);
 		}
@@ -131,21 +131,33 @@ abstract public class StringOperations extends JTextPane {
 		String buffer = "";
 		for (char c: text.toCharArray()) {
 			if (isPartOfList(c, cs)) {
-				result.add(buffer);
+				if (!buffer.equals(""))	result.add(buffer);
 				buffer = "";
 			} else {
 				buffer += c;
 			}
 		}
-		result.add(buffer);
+		if (!buffer.equals(""))	result.add(buffer);
 		return result;
 	}
 	
-	private static boolean isPartOfList(char t, char[] list) {
+	static private boolean isPartOfList(char t, char[] list) {
 		for (char s: list) {
 			if (t == s) return true;
 		}
 		return false;
+	}
+	
+	static public String getEndLine(String token) {
+		int backslash = 0;
+		String result = "";
+		for (char x: token.toCharArray()) {
+			if (x == '\\') backslash += 1;
+			else if (x == ';' && backslash % 2 == 0) return result;
+			else backslash = 0;
+			result += x;
+		}
+		return null;
 	}
 	
 }

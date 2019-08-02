@@ -1,6 +1,7 @@
 package Core;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import Elements.ArrayString.Sequence;
 import Operation.Op;
@@ -26,8 +27,15 @@ public class Body {
 	
 	private void init (ArrayString texttokens) {
 		body = new ArrayList<Sequence>();
-		ArrayList<ArrayString> lines = splitSequences(texttokens);
-		for (ArrayString as: lines) body.add(splitPrecedence(as));
+		try {
+			ArrayList<ArrayString> lines = splitSequences(texttokens);
+			for (ArrayString as: lines) {
+				as = as.sepwithComma();
+				body.add(splitPrecedence(as));
+			}
+		} catch (ExceptionSequenceParsing e) {
+			System.out.println(e.printError());
+		}
 	}
 	
 	private Sequence splitPrecedence (ArrayString as) {
@@ -49,60 +57,71 @@ public class Body {
 		return res;
 	}
 	
-	private ArrayList<ArrayString> splitSequences (ArrayString texttokens) {
+	private ArrayList<ArrayString> splitSequences (ArrayString texttokens) throws ExceptionSequenceParsing {
 		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
 		ArrayString buffer = new ArrayString();
 		
-		int caseLevels = 0;
-		for (String x: texttokens) {
+		String x;
+		Iterator<String> it = texttokens.iterator();
+		while (it.hasNext()) {
+			x = it.next();
 			if (! (x==null || x=="")) {
 				x = x.trim();
-				if (x.equals("\\startcase")) {
-					caseLevels += 1;
-					buffer = new ArrayString(); // sub body must begin with the startcase token
-					buffer.add(x);
+				
+				if (x.equals("\\startcase")) {  // sub body must begin with the startcase token
+					int caselevel = 1;
+					buffer = new ArrayString(x);
+					do {
+						x = it.next();
+						buffer.add(x);
+						if (x.equals("\\startcase")) caselevel++;
+						else if (x.equals("\\endcase") && --caselevel == 0) {
+							result.add(buffer);
+							buffer = new ArrayString();
+							break;
+						}
+					} while (it.hasNext());
+					if (caselevel > 0) throw new ExceptionCouldntCloseCases();
 				}
-				else if (x.equals("\\endcase")) {
-					caseLevels -= 1;
-					buffer.add(x);
-					if (caseLevels == 0) {
+				
+				else if (x.equals("{")) {
+					int bracketlevel = 1;
+					buffer.add(x); // we keep adding it to the \let statement
+					do {
+						x = it.next();
+						buffer.add(x);
+						if (x.equals("{")) bracketlevel++;
+						else if (x.equals("}") && --bracketlevel == 0) {
+							result.add(buffer);
+							buffer = new ArrayString();
+							break;
+						}
+					} while (it.hasNext());
+					if (bracketlevel > 0) throw new ExceptionCouldntCloseDefinitionBrackets();
+				}
+				else {
+					String endline = StringOperations.getEndLine(x);
+					if (endline != null) {
+						buffer.add(endline);
 						result.add(buffer);
 						buffer = new ArrayString();
-					}
+					} 
+					else buffer.add(x);
 				}
-				else if (caseLevels == 0 && isEndLine(x)) {
-					buffer.add(getEndLine(x));
-					result.add(buffer);
-					buffer = new ArrayString();
-				} 
-				else {
-					buffer.add(x);
-				}	
 			}
 		}
 		return result;
 	}
 	
-
-	private String getEndLine(String token) {
-		int backslash = 0;
-		String result = "";
-		for (char x: token.toCharArray()) {
-			if (x == '\\') backslash += 1;
-			else if (x == ';' && backslash % 2 == 0) return result;
-			else backslash = 0;
-			result += x;
-		}
-		return result;
-	}
 	
-	private boolean isEndLine(String token) {
-		int backslash = 0;
-		for (char x: token.toCharArray()) {
-			if (x == '\\') backslash += 1;
-			else if (x == ';' && backslash % 2 == 0) return true;
-			else backslash = 0;
-		}
-		return false;
-	}
+	static abstract public class ExceptionSequenceParsing extends Exception {
+		abstract String printError ();
+	};
+	static public class ExceptionCouldntCloseCases extends ExceptionSequenceParsing {
+		String printError() { return "Couldn't close cases while parsing. Missing an '\\endcase' token."; }
+	};
+	static public class ExceptionCouldntCloseDefinitionBrackets extends ExceptionSequenceParsing {
+		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token."; }
+	};
+	
 }

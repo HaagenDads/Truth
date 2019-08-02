@@ -18,8 +18,9 @@ public class Main {
         //frame.loadTheorem("QuantifierTesting.txt");
         //frame.loadTheorem("EmbededQuantifier.txt");
         //frame.loadTheorem("Logic/Set/AxiomPowerset.txt");
-        frame.loadTheorem("unsolvedQuant.txt");
+        //frame.loadTheorem("unsolvedQuant.txt");
         //frame.loadTheorem("Functions/increasingfnc.txt");
+        frame.loadTheorem("Functions/ExponentUnit.txt");
 	}
 	
 	/*

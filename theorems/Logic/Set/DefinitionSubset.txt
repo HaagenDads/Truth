@@ -2,6 +2,6 @@ Theorem Name:DefinitionSubset Package:Logic{
 \let S \be \set;
 \let U \be \set;
 
-\state S \subset U \eq \forall x \in S \follows x \in U;
+\state S \subset U \eq \forall x \in S: x \in U;
 }
 

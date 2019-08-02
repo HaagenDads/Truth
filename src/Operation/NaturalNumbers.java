@@ -9,7 +9,7 @@ import Elements.Variable;
 public class NaturalNumbers {
 	
 	public static final String genericType = "\\setnatural";
-	public static final Operator[] oplist = new Operator[]{Op.plus, Op.minus, Op.mult};
+	public static final Operator[] oplist = new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp};
 	public static final Operator[] opcomparaison = new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq};
 	
 	
@@ -29,6 +29,11 @@ public class NaturalNumbers {
 			if (op.equals(Op.plus)) return "" + (stra.v + strb.v);
 			if (op.equals(Op.minus)) return "" + (stra.v - strb.v);
 			if (op.equals(Op.mult)) return "" + (stra.v * strb.v);
+			if (op.equals(Op.exp)) {
+				int res = 1;
+				for (int i=0; i<strb.v; i++) res *= stra.v;
+				return "" + res;
+			}
 			
 			if (op.equals(Op.eq)) return toBooleanString(stra.v == strb.v);
 			if (op.equals(Op.ineq)) return toBooleanString(stra.v != strb.v);

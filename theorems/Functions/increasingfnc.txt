@@ -1,5 +1,8 @@
-Theorem Name:Unit Package:Logic{
-\let I \be \set;
-\let f \be \function;
-\state f is increasing on [I] \eq (\forall (\tuple(a, b) \in \cartprod(I, I)) \follows ((a >= b) \eq (f(a) >= f(b))));
+Theorem Name:ExponentUnit Package:Logic{
+\let n \in \setnatural;
+\let f \be \function \setnatural -> \setnatural;
+\where f(0) = 1;
+\where \true \eq \forall n > 0: f(n) = 2 * f(n - 1);
+\state \true \eq \forall n: f(n) = 2 ^ n 
 }
+

@@ -46,7 +46,7 @@ public class Operator extends Term {
 	}
 	
 	public boolean isBinary() {
-		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.minus,
+		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.minus, Op.exp,
 										  Op.intersection, Op.union, Op.subset, Op.psubset, Op.in, Op.notin, Op.equiv, Op.iff, Op.then};
 		return isPartOfList(opSet);
 	}

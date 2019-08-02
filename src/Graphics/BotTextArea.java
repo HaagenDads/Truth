@@ -9,6 +9,7 @@ import javax.swing.text.*;
 import Elements.Assump;
 import Elements.Justification;
 import Core.Logging;
+import Core.Logging.Arg;
 import Core.StringOperations;
 import Core.Theorem;
 import Elements.Statement;
@@ -156,15 +157,17 @@ public class BotTextArea extends StringOperations {
 	}
 	
 	private void drawLoggingStatement(Logging lg, int ntab) throws BadLocationException {
-		int maxsize = 0;
-		for (int i=1; i<lg.args.size(); i++) {
-			int currentsize = len(lg.args.get(i).term.toString());
-			if (currentsize > maxsize) maxsize = currentsize;
-		}
 		
+		int maxsize = computeMaxsize(lg.args);
 		appendString(getTab(ntab-1) + "(" + lg.blocID + ")", sbold);
 		
-		String firstLine = "    " + lg.args.get(0).term.toString();
+		Arg firstarg = lg.args.get(0);
+		if (firstarg.vars != null) {
+			drawLoggingLetstatement(firstarg, ntab);
+			return;
+		}
+			
+		String firstLine = "    " + firstarg.term.toString();
 		appendString(firstLine + "\n");
 		
 		String tab = getTab(ntab) + "     ";
@@ -188,6 +191,25 @@ public class BotTextArea extends StringOperations {
 		}
 	}
 	
+	private void drawLoggingLetstatement(Arg firstarg, int ntab) throws BadLocationException {
+		String tab = "    Let ";
+		for (Variable v: firstarg.vars) {
+			appendString(tab);
+			appendString(v.name, sred);
+			appendString(v.toHeader());
+			tab = getTab(ntab) + "        ";
+		}
+		
+	}
+
+	private int computeMaxsize (ArrayList<Arg> args) {
+		int maxsize = 0;
+		for (int i=1; i<args.size(); i++) {
+			int currentsize = len(args.get(i).term.toString());
+			if (currentsize > maxsize) maxsize = currentsize;
+		}
+		return maxsize;
+	}
 	
 	private void appendString(String s, SimpleAttributeSet set) throws BadLocationException {
 		ArrayList<Styledsequence> list = parseVisualText(s);

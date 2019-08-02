@@ -2,6 +2,6 @@ Theorem Name:AxiomExtensionality Package:Logic{
 \let X \be \set;
 \let Y \be \set;
 
-\state \forall z \in X \follows z \in Y \then X \subset Y;
+\state \forall z \in X: z \in Y \then X \subset Y;
 }
 

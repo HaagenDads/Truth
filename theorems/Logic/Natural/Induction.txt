@@ -3,6 +3,6 @@ Theorem Name:Induction Package:Logic{
 \let k \in \setnatural;
 \let n \in \setnatural;
 
-\state (P(1) \and \forall k \follows (P(k) \implies P(k + 1))) \then (\forall (n > 0) \follows (P(n) \eq \true));
+\state (P(1) \and \forall k > 1: (P(k) \implies P(k + 1))) \then (\forall (n > 0): (P(n) \eq \true));
 }
 

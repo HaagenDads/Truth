@@ -9,7 +9,7 @@ public class Set extends Type {
 	Collection c;
 	
 	public Set (Term t) {
-		super(null);
+		super(t.toString());
 		if (t.isCollection()) c = (Collection) t;
 		else {
 			c = new Collection();

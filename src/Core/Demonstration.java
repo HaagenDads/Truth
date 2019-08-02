@@ -2,10 +2,10 @@ package Core;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 
 import Elements.*;
 import Elements.ArrayString.Sequence;
+import Elements.Term.Disp;
 import Elements.Term.ExceptionTheoremNotApplicable;
 import Elements.Term.ExceptionTrivialEquality;
 import Elements.Term.Permutations;
@@ -76,9 +76,10 @@ public class Demonstration {
 				
 
 			} else if (sequence.isAssignment()) {
-				// TODO add checking
-				source.variables.addAll(Term.parseLetStatement(subbody,	source));
-
+				// TODO add checking for overloading and validating
+				ArrayList<Variable> sts = Term.parseLetStatement(subbody, source, false);
+				source.variables.addAll(sts);
+				nlog.addLine(sts);
 			} else {
 				compileProposition(sequence);
 			}
@@ -94,7 +95,6 @@ public class Demonstration {
 	}
 	
 	private void compileProposition (Sequence sequence) {
-			
 		boolean proposition = true;
 		Term firstexp = null;
 		Term t1 = null;
@@ -132,7 +132,10 @@ public class Demonstration {
 	
 	
 	private boolean isTheoremDemonstrated() {
-		for (Assump a: assumptions) {
+		printout(":end of demonstation. Known assumptions:");
+		for (Assump a: assumptions) printout("-   " + a.st.toString());
+
+		for (Assump a: assumptions) {	
 			if (a.st.equals(proposition)) return true;
 		}
 		return false;
@@ -466,18 +469,24 @@ public class Demonstration {
 	}
 	
 	
-	private Term substitute(Term from, Term key, Term into) {
+	static private Term substitute(Term from, Term key, Term into) {
 		Term result = new Term();
 		if (from.isShallow()) {
 			if (key.isShallow() && from.equals(key)) return into;
 			else return from;
 		}
 		if (from.equals(key)) return into;
-		for (Term x: from.v) {
-			result.addTerm(substitute(x, key, into));
+		if (from.getDisposition() != Disp.C) {
+			for (Term x: from.v) result.addTerm(substitute(x, key, into));
+			return result;
+		} else {
+			Collection coll = (Collection) from;
+			Collection res = new Collection();
+			for (Term x: coll.items) res.addTerm(substitute(x, key, into));
+			return res;
 		}
 		
-		return result;
+		
 	}
 	
 	
