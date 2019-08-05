@@ -3,6 +3,7 @@ package Elements;
 import java.util.ArrayList;
 
 import Core.Theorem;
+import Operation.Op;
 
 public class Function extends Variable {
 
@@ -109,6 +110,50 @@ public class Function extends Variable {
 	/* No overlapping in definitions */
 	public boolean isDefinitionExclusive() {
 		return isdefinitionExclusive;
+	}
+	
+	public Term getEvaluation (Collection col, Theorem thm) {
+		Definition def = getDefinition(col, thm);
+		if (def == null) return null;
+		System.out.println(":defdef: " + def.toString());
+		Term result = def.def.get(2).copy();
+		for (int i=0; i<def.var.size; i++) {
+			Term defarg = def.var.get(i);
+			Term colarg = col.get(i);
+			result = Term.replace(result, defarg, colarg);
+		}
+		return result;
+	}
+	
+	private Definition getDefinition (Collection col, Theorem thm) {
+		// Get unconditional
+		for (Definition d: defs) {
+			if (d.cond == null) return d;
+		}
+		
+		// If it's a number to replace
+		for (Definition d: defs) {
+			System.out.println(":defs cond: " + d.cond.toString());
+			Term op = d.cond.get(1);
+			Term comp = d.cond.get(2);
+			if (op.equalsString(Op.eq.s) && comp.equals(col.get(0))) return d;
+		}
+		
+		// Get conditional
+		ArrayList<Term> assumps = thm.assumptions.getRelevantAssump(col.get(0));
+		for (Term t: assumps) {
+			for (Definition d: defs) {
+				if (d.cond.equals(t)) return d;
+			}
+			if (this.haselsecondition) {
+				// TODO make it happen
+			}
+		}
+		
+		// Get based on type
+		//Type t = Type.getType(col, thm);
+		// TODO idk
+		return null;
 	}
 
 

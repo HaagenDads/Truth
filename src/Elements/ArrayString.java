@@ -3,6 +3,7 @@ package Elements;
 import java.util.ArrayList;
 
 import Core.StringOperations;
+import Operation.Op;
 import Operation.Operator;
 
 public class ArrayString extends ArrayList<String>{
@@ -93,7 +94,21 @@ public class ArrayString extends ArrayList<String>{
 	}
 
 	// TODO add space after parenthsis	
-	public Sequence splitPrecedence (Operator[] precedence) {
+	static private final Operator[] precedence1 = new Operator[]{Op.equiv, Op.then};
+	static private final Operator[] precedence2 = new Operator[]{Op.eq, Op.gt, Op.ge, Op.lt, Op.le, Op.ineq,
+																 Op.in, Op.psubset, Op.subset};
+	
+	public Sequence splitPrecedence () {
+		for (Operator[] oplist: new Operator[][]{precedence1, precedence2}) {
+			Sequence seq = splitPrecedence(oplist);
+			if (seq.size() > 1) return seq;
+		}
+		Sequence res = new Sequence();
+		res.add(this, null);
+		return res;
+	}
+	
+	private Sequence splitPrecedence (Operator[] precedence) {
 		Sequence result = new Sequence();
 		
 		ArrayString buffer = new ArrayString();
@@ -145,6 +160,21 @@ public class ArrayString extends ArrayList<String>{
 			else buffer.add(x);
 		}
 		return result;
+	}
+	
+	public ArrayString[] splitArrayBy (String by, int from) {
+		ArrayString arr1 = new ArrayString();
+		ArrayString arr2 = new ArrayString();
+		boolean toFirst = true;
+		
+		for (int i=from; i<size(); i++) {
+			if (get(i).equals(by)) toFirst = false;
+			else {
+				if (toFirst) arr1.add(get(i));
+				else arr2.add(get(i));
+			}
+		}
+		return new ArrayString[]{arr1, arr2};
 	}
 	
 	
@@ -199,6 +229,10 @@ public class ArrayString extends ArrayList<String>{
 			}
 			res.remove(null);
 			return res;
+		}
+		public Statement toStatement () {
+			if (v.size() != 2) return null;
+			return new Statement(links.get(0), Term.compileTerms(v.get(0)), Term.compileTerms(v.get(1)));
 		}
 	}
 }

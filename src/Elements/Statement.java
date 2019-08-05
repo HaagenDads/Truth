@@ -2,6 +2,8 @@ package Elements;
 
 import java.util.ArrayList;
 
+import Operation.Op;
+
 public class Statement {
 	
 	public Link link;
@@ -54,5 +56,25 @@ public class Statement {
 	public void removeEmbeding() {
 		lside.removeEmbeding();
 		rside.removeEmbeding();
+	}
+	public boolean isTrueImplication() {
+		if (link.equals(Op.equiv) || link.equals(Op.then)) {
+			if (lside.equalsString("\\true")) return true;
+			if (rside.equalsString("\\true")) return true;
+		}
+		return false;
+	}
+	public Term getTrueImplication() {
+		if (lside.equalsString("\\true")) return rside;
+		if (rside.equalsString("\\true")) return lside;
+		return null;
+	}
+	
+	public Term toTerm() {
+		Term res = new Term();
+		res.addTerm(lside);
+		res.addTerm(Op.getOperator(link.link));
+		res.addTerm(rside);
+		return res;
 	}
 }

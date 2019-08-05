@@ -2,6 +2,8 @@ package Elements;
 
 import java.util.ArrayList;
 
+import Operation.Op;
+
 
 
 public class Collection extends Term {
@@ -91,7 +93,8 @@ public class Collection extends Term {
 	}
 	
 	static boolean extractDiffInner(Term t1, Term t2, Link clink, DifferencesLedger dL) {
-		if (!(clink.equals("="))) return false;
+
+		if (!(clink.equals(Op.eq) || clink.equals(Op.equiv))) return false;
 		Collection c1 = (Collection) t1;
 		Collection c2 = (Collection) t2;
 		if (c1.size != c2.size) return false;
@@ -103,8 +106,11 @@ public class Collection extends Term {
 				else return false; // Won't deal with several differences
 			}
 		}
+		
 		if (singleDifference == -1) return true;
-		else return Term.extractDiffInner(c1.get(singleDifference), c2.get(singleDifference), clink, dL);
+		else {
+			return Term.extractDiffInner(c1.get(singleDifference), c2.get(singleDifference), clink, dL);
+		}
 		
 	}
 	

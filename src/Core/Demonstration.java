@@ -17,7 +17,7 @@ import Operation.Operator;
 
 public class Demonstration {
 
-	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
+	private final static int printPriority = 3; // 3 = [FATAL] only; 1 = broad;
 	private static final String debugthm = "";
 	
 	boolean isNested;
@@ -32,12 +32,6 @@ public class Demonstration {
 	public Demonstration (String fulltext, Theorem thm) {
 		proposition = thm.statement;
 		assumptions = thm.assumptions;
-		
-		/*
-		ArrayList<String> arrbody = new ArrayList<String>();
-		for (String x: body.split(" ")) { if (!x.equals("")) arrbody.add(x.trim()); }
-		
-		init(new Body(arrbody), thm);*/
 		init(new Body(fulltext), thm);
 	}
 	public Demonstration (Body body, Statement proposition, Assumptions assumptions, Theorem thm) {
@@ -60,19 +54,23 @@ public class Demonstration {
 			
 			ArrayString subbody = sequence.getV(0);
 			if (sequence.isSubbody()) {
+				
 				nlog.createCase();
-				Cases cases = new Cases(subbody.get(1));
+				Cases cases = new Cases();
 				cases.parseCase(subbody);
 				
+				/*
 				for (int i=0; i<cases.nested.size(); i++) {
 					Demonstration d = cases.nested.get(i);
 					Statement casehypothesis = cases.hypothesis.get(i);
 					nlog.addCase(casehypothesis);
 					d.solveDemonstration();
-				}
-					
-				ArrayList<Assump> caseConclusions = acceptCasesCommunProvenStatements(cases);
-				nlog.closeCase(caseConclusions);
+				}*/
+				nlog.addCase(cases.hypothesis);
+				cases.nested.solveDemonstration();
+				
+				acceptCasesCommunProvenStatements(cases);
+				nlog.closeCase();
 				
 
 			} else if (sequence.isAssignment()) {
@@ -87,6 +85,7 @@ public class Demonstration {
 		
 		// Check if we have demonstrated the proposition
 		if (!isNested) {
+			nlog.rawPrint();
 			boolean demonstrated = isTheoremDemonstrated();
 			nlog.conclude(demonstrated);
 			return demonstrated;
@@ -176,6 +175,7 @@ public class Demonstration {
 				printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
 				solution = validateStatementSpecificDifference(st);
 				if (solution != null) {
+					printout(":success!:");
 					nlog.addLine(link, t2, solution);
 					return true;
 				}
@@ -276,6 +276,24 @@ public class Demonstration {
 		if (solution != null) return solution;
 		solution = validateTrivialImplication(diff.rside, diff.lside, diff.link);
 		if (solution != null) return solution;
+		
+		// Function evaluation
+		if (diff.lside.getDisposition() == Term.Disp.FC) {
+			Function fnc = (Function) source.getVariable(diff.lside.get(0).s);
+			Collection col = (Collection) diff.lside.get(1);
+			if (fnc.domain.isElement(col, source)) {
+				Term eval = fnc.getEvaluation(col, source);
+				if (eval != null) {
+					printout(":fnceval: " + eval.toString() + ",  :rside:  " + diff.rside.toString());
+					if (eval.equals(diff.rside)) {
+						return new Justification("Evaluating function");
+					}
+				} else {
+					printout(":null fnceval");
+				}
+			}
+			
+		}
 		
 		// Using assumptions
 		for (Assump a: assumptions) {
@@ -439,6 +457,7 @@ public class Demonstration {
 	*/
 	
 	private boolean matchTheoremTypes(Variable v, Term t) {
+		//System.out.println(" :term: " + Type.getType(t, source) + " - " + t.toString() + " - " + t.getDisposition());
 		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
 	
@@ -544,6 +563,7 @@ public class Demonstration {
 	 *  CASES
 	 */
 	
+	/*
 	private int parseCases(ArrayString subbody, int initpos, Variable casevar, Cases cases) throws ExceptionCaseNonvalid {
 
 		if (subbody.get(initpos).equals("\\case") && subbody.get(initpos+1).equals(casevar.name)) {
@@ -586,24 +606,39 @@ public class Demonstration {
 		printout(3, "Couldn't match '\\case " + casevar.name + "'");
 		return subbody.size();
 		
-	}
+	} */
 	
 	public class Cases {
 		
-		Variable casevar;
-		Type set;
-		ArrayList<Statement> hypothesis;
-		ArrayList<Demonstration> nested;
+		Statement hypothesis;
+		Demonstration nested;
 		boolean valid;
 		
-		public Cases(String casename) {
-			hypothesis = new ArrayList<Statement>();
-			nested = new ArrayList<Demonstration>();
-			casevar = source.getVariable(casename);
-			set = casevar.type;
-			valid = true;
+		public Cases() {
+			//hypothesis = new ArrayList<Statement>();
+			//nested = new ArrayList<Demonstration>();
+			//casevar = source.getVariable(casename);
+			//set = casevar.type;
+			//valid = true;
 		}
 		
+		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {			
+			ArrayString[] split = arr.splitArrayBy("{", 1);
+			ArrayString hypo = split[0];
+			ArrayString subbody = split[1];
+			subbody.removeLast();
+			
+			hypothesis = hypo.splitPrecedence().toStatement();
+			if (hypothesis == null) throw new ExceptionCaseNonvalid();
+			
+			Assumptions nestedAssumptions = assumptions.copy();
+			nestedAssumptions.acceptAssumptionFromCasesHypothesis(hypothesis);
+			
+			nested = new Demonstration(new Body(subbody), proposition, nestedAssumptions, source);
+			nested.isNested = true;
+		}
+		
+		/*
 		public void addCase(Statement hypothesis, Demonstration nested) {
 			String err = assertCase(hypothesis);
 			if (err != null) {
@@ -612,8 +647,8 @@ public class Demonstration {
 	
 			this.hypothesis.add(hypothesis);
 			this.nested.add(nested);
-		}
-		
+		}*/
+		/*
 		private String assertCase(Statement hypothesis) {
 			String err = "Error in case hypothesis; ";
 			
@@ -621,7 +656,7 @@ public class Demonstration {
 			else if (!hypothesis.lside.equalsString(casevar.name)) return err + "case variable invalid.";
 			else if (!Type.matchtypes(new Term(casevar.name), hypothesis.rside, source)) return "types non-matching";
 			return null;
-		}
+		}*/
 		
 		// TODO 
 		public void compilePartition() {
@@ -646,6 +681,7 @@ public class Demonstration {
 		 *   Find commun statements proven in every case in order to make a general statement, given a partition of cases
 		 *   Returns every commun assumptions
 		 */
+		/*
 		public ArrayList<Assump> enumerateCommunStatements() {
 			ArrayList<Assump> result = new ArrayList<Assump>();
 			for (Assump x: nested.get(0).assumptions) {
@@ -671,15 +707,14 @@ public class Demonstration {
 				}
 			}
 			return result;
-		}
-		
-		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {
-			int pos = 2;
-			while (!(arr.get(pos).equals("\\endcase"))) {
-				pos = parseCases(arr, pos, casevar, this);
+		}*/
+		public ArrayList<Assump> enumerateCommunStatements() {
+			ArrayList<Assump> result = new ArrayList<Assump>();
+			for (Assump x: nested.assumptions) {
+				result.add(x);
 			}
+			return result;
 		}
-		
 	}
 
 	

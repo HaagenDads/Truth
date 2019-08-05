@@ -29,7 +29,8 @@ public class Type {
 	public boolean equals (Set other) {
 		if (other.c.size == 1) {
 			Term s = other.c.get(0);
-			return s.equals(this);
+			//System.out.println(":eql: " + s.toString() + ":" + this.type + ":" + s.equals(this));
+			return s.equalsString(type);
 		}
 		return false;
 	}
@@ -65,12 +66,12 @@ public class Type {
 		if (termdisp == Term.Disp.DEF) return new Type(BooleanLogic.genericType);
 		if (termdisp == Term.Disp.OT) {
 			Type x = getType(t.get(1), thm);
-			return solveUnary((Operator) (t.get(0)), x);
+			return solveUnary(Op.getOperator(t.get(0).s), x);
 		}
 		if (termdisp == Term.Disp.TOT) {
 			Type x = getType(t.get(0), thm);
 			Type y = getType(t.get(2), thm);
-			return solveBinary(x, (Operator) (t.get(1)), y);
+			return solveBinary(x, Op.getOperator(t.get(1).s), y);
 		}
 		if (termdisp == Term.Disp.FC) {
 			Function fnc = (Function) (thm.getVariable(t.get(0).s));
@@ -78,6 +79,9 @@ public class Type {
 			if (fnc.domain.isElement(coll, thm)) return fnc.image;
 			System.out.println(":coll " + coll.toString() + " isnt element of " + fnc.domain.toString());
 			return null;
+		}
+		if (termdisp == Term.Disp.C) {
+			return new Type("Collection");
 		}
 		else return null;
 	}

@@ -4,15 +4,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import Elements.ArrayString.Sequence;
-import Operation.Op;
-import Operation.Operator;
 import Elements.ArrayString;
 
 public class Body {
-
-	static private final Operator[] precedence1 = new Operator[]{Op.equiv, Op.then};
-	static private final Operator[] precedence2 = new Operator[]{Op.eq, Op.gt, Op.ge, Op.lt, Op.le, Op.ineq,
-																 Op.in, Op.psubset, Op.subset};
 	
 	ArrayList<Sequence> body;
 	
@@ -33,13 +27,11 @@ public class Body {
 				as = as.sepwithComma();
 				body.add(splitPrecedence(as));
 			}
-		} catch (ExceptionSequenceParsing e) {
-			System.out.println(e.printError());
-		}
+		} catch (ExceptionSequenceParsing e) { System.out.println(e.printError()); }
 	}
 	
 	private Sequence splitPrecedence (ArrayString as) {
-		if (as.get(0).equals("\\startcase")) {
+		if (as.get(0).equals("\\case")) {
 			Sequence res = as.new Sequence();
 			res.addSubbody(as);
 			return res;
@@ -48,13 +40,7 @@ public class Body {
 			res.addAssignment(as);
 			return res;
 		}
-		for (Operator[] oplist: new Operator[][]{precedence1, precedence2}) {
-			Sequence seq = as.splitPrecedence(oplist);
-			if (seq.size() > 1) return seq;
-		}
-		Sequence res = as.new Sequence();
-		res.add(as, null);
-		return res;
+		return as.splitPrecedence();
 	}
 	
 	private ArrayList<ArrayString> splitSequences (ArrayString texttokens) throws ExceptionSequenceParsing {
@@ -68,7 +54,8 @@ public class Body {
 			if (! (x==null || x=="")) {
 				x = x.trim();
 				
-				if (x.equals("\\startcase")) {  // sub body must begin with the startcase token
+				/*
+				if (x.equals("\\case")) {  // sub body must begin with the startcase token
 					int caselevel = 1;
 					buffer = new ArrayString(x);
 					do {
@@ -82,9 +69,9 @@ public class Body {
 						}
 					} while (it.hasNext());
 					if (caselevel > 0) throw new ExceptionCouldntCloseCases();
-				}
+				}*/
 				
-				else if (x.equals("{")) {
+				if (x.equals("{")) {
 					int bracketlevel = 1;
 					buffer.add(x); // we keep adding it to the \let statement
 					do {
@@ -117,9 +104,10 @@ public class Body {
 	static abstract public class ExceptionSequenceParsing extends Exception {
 		abstract String printError ();
 	};
+	/*
 	static public class ExceptionCouldntCloseCases extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close cases while parsing. Missing an '\\endcase' token."; }
-	};
+	};*/
 	static public class ExceptionCouldntCloseDefinitionBrackets extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token."; }
 	};

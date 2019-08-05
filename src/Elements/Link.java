@@ -49,32 +49,33 @@ public class Link {
 	
 	
 	static public Link reduceSerie (ArrayList<Link> arrayList) {
-		Link reduction = null;
+		Operator reduction = null;
 		for (Link b: arrayList) {
-			reduction = reduceLinks(reduction, b);
+			Operator op = Op.getOperator(b.link);
+			reduction = reduceLinks(reduction, op);
 			if (reduction == null) return new Link();
 		}
-		return reduction;
+		return new Link(reduction);
 	}
 	
-	static private Link reduceLinks (Link a, Link b) {
+	static public Operator reduceLinks (Operator a, Operator b) {
 		if (a == null) return b;
-		if (a.equals(b)) return a;
-		if (a.equals(Op.lt)) {
-			if (b.equals(Op.eq) || b.equals(Op.le)) return a;
-		} else if (a.equals(Op.le)) {
-			if (b.equals(Op.eq) || b.equals(Op.le)) return a;
-		} else if (a.equals(Op.gt)) {
-			if (b.equals(Op.eq) || b.equals(Op.ge)) return a;
-		} else if (a.equals(Op.ge)) {
-			if (b.equals(Op.eq) || b.equals(Op.ge)) return a;
-		} else if (a.equals(Op.equiv)) {
-			if (b.equals(Op.then)) return b;
-		} else if (a.equals(Op.then)) {
-			if (b.equals(Op.equiv)) return a;
+		if (a == b) return a;
+		if (a == Op.lt) {
+			if (b == Op.eq || b == Op.le) return a;
+		} else if (a == Op.le) {
+			if (b == (Op.eq) || b == Op.le) return a;
+		} else if (a == Op.gt) {
+			if (b == Op.eq || b == Op.ge) return a;
+		} else if (a == Op.ge) {
+			if (b == Op.eq || b == Op.ge) return a;
+		} else if (a == Op.equiv) {
+			if (b == Op.then) return b;
+		} else if (a == Op.then) {
+			if (b == Op.equiv) return a;
 		}
 		System.out.println("NO LINK CONTINUITY BETWEEN '" + a + "' AND '" + b + "'");		
-		return new Link();
+		return null;
 	}
 	
 	public String toString() {

@@ -87,10 +87,12 @@ public class BotTextArea extends StringOperations {
 		
 		String tab = "    Let ";
 		for (Variable v: thm.variables) {
-			appendString(tab);
-			appendString(v.name, svar);
-			appendString(v.toHeader());
-			tab = "        ";
+			if (v.fromheader) {
+				appendString(tab);
+				appendString(v.name, svar);
+				appendString(v.toHeader());
+				tab = "        ";
+			}
 		}
 		appendString("\n");
 		
@@ -120,6 +122,7 @@ public class BotTextArea extends StringOperations {
 	private void drawLogging(Logging lg, int ntab) throws BadLocationException {
 		
 		if (lg.t.equals(Logging.type.cases)) {
+			System.out.println(":drawing cases:");
 			drawLoggingInitialCaseStatement(lg, ntab);
 			for (Logging prop: lg.v) {
 				drawLoggingCases(prop.caseStatement, ntab+1);

@@ -59,6 +59,7 @@ public class Term {
 		try {
 			return v[i];
 		} catch (Exception e) {
+			if (v == null) System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from empty term");
 			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + v.toString());
 			throw new IndexOutOfBoundsException();
 		}
@@ -90,6 +91,7 @@ public class Term {
 			if (this.s == null && t.s == null) return true;
 			return s.equals(t.s);
 		} else {
+			if (size != t.size) return false;
 			for (Term tperm: Term.permute(t).vs) {
 				boolean result = true;
 				for (int i=0; i<size; i++) result = result && (get(i).equals(tperm.get(i)));
@@ -511,8 +513,8 @@ public class Term {
 			if (strings.size() > i) {
 				
 				ArrayList<Function> funcs = new ArrayList<Function>();
-				ArrayString[] domain = splitArrayBy(strings, "->", i);
-				ArrayString[] args = splitArrayBy(domain[1], "{", 0);
+				ArrayString[] domain = strings.splitArrayBy("->", i);
+				ArrayString[] args = domain[1].splitArrayBy("{", 0);
 				ArrayString image = args[0];
 				ArrayString defineSts = args[1];
 				try {
@@ -535,7 +537,7 @@ public class Term {
 				try {
 					for (ArrayString define: defineSts.getDefineSequences()) {
 						if (!define.get(0).equals("\\define")) System.out.println("[Error] Couldnt find 'define' token in: " + define.toString());
-						ArrayString[] sts = splitArrayBy(define, ":", 1);
+						ArrayString[] sts = define.splitArrayBy(":", 1);
 						if (sts[1].size() == 0) func.setDefinition(thm, sts[0]);
 						else func.setDefinition(thm, sts[0], sts[1]);					
 					}
@@ -560,20 +562,6 @@ public class Term {
 		return results;
 	}
 	
-	static private ArrayString[] splitArrayBy (ArrayString array, String by, int from) {
-		ArrayString arr1 = new ArrayString();
-		ArrayString arr2 = new ArrayString();
-		boolean tosecond = true;
-		
-		for (int i=from; i<array.size(); i++) {
-			if (array.get(i).equals(by)) tosecond = false;
-			else {
-				if (tosecond) arr1.add(array.get(i));
-				else arr2.add(array.get(i));
-			}
-		}
-		return new ArrayString[]{arr1, arr2};
-	}
 	
 	
 	/*
@@ -654,6 +642,13 @@ public class Term {
 		public boolean isTrivial() {
 			return trivial;
 		}
+		public void addNestedComparaison(ArrayList<Statement> sts) {
+			if (sts != null) {
+				for (Statement st: sts) {
+					addDifference(st);
+				}
+			}
+		}
 	}
 	
 	/*
@@ -665,6 +660,7 @@ public class Term {
 	static public ArrayList<Statement> extractDiff(Term t1, Term t2, Link link) throws ExceptionTrivialEquality {
 		DifferencesLedger dlg = new DifferencesLedger(t1, t2);
 		
+		// TODO equiv only makes sense for booleans
 		if (link.equals(Op.eq)) {
 			dlg.extractDiff(link);
 		} else if (link.equals(Op.equiv)) {
@@ -690,9 +686,42 @@ public class Term {
 			dlg.extractDiff(link);
 		}
 		
+		dlg.addNestedComparaison(extract4TOTdiff(t1, t2, link));
 		if (dlg.isTrivial()) throw new ExceptionTrivialEquality();
 		Collections.reverse(dlg.diffs);
 		return dlg.diffs;
+	}
+	
+	/* For the frequent case of a = b \eq c = b, or a < b \eq b < c */
+	static private ArrayList<Statement> extract4TOTdiff (Term t1, Term t2, Link link) throws ExceptionTrivialEquality {
+		if (link.equals(Op.equiv) || link.equals(Op.then)) {
+			if (t1.getDisposition() == Disp.TOT && t2.getDisposition() == Disp.TOT) {
+				Term a, b, c, d; a = t1.get(0); b = t1.get(2); c = t2.get(0); d = t2.get(1);
+				Operator op1, op2; op1 = (Operator) t1.get(1); op2 = (Operator) t2.get(1);
+				int eqlt = 0;
+				if (a.equals(c)) eqlt = 11;
+				else if (a.equals(d)) eqlt = 12;
+				else if (b.equals(c)) eqlt = 21;
+				else if (b.equals(d)) eqlt = 22;
+				if (eqlt != 0) {
+					boolean reverseIneq = (eqlt == 12 || eqlt == 21);
+					Operator newop2 = op2;
+					if (reverseIneq && op2 == Op.lt) newop2 = Op.gt;
+					if (reverseIneq && op2 == Op.le) newop2 = Op.ge;
+					if (reverseIneq && op2 == Op.gt) newop2 = Op.lt;
+					if (reverseIneq && op2 == Op.ge) newop2 = Op.le;
+					
+					if (op1 == newop2) {
+						Link eqlink = new Link(Op.eq);
+						if (eqlt == 11)	return extractDiff(b, d, eqlink);
+						if (eqlt == 12)	return extractDiff(b, c, eqlink);
+						if (eqlt == 21)	return extractDiff(a, d, eqlink);
+						if (eqlt == 22)	return extractDiff(a, c, eqlink);
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
 	static boolean extractDiffInner(Term t1, Term t2, Link clink, DifferencesLedger dL) {
@@ -802,7 +831,6 @@ public class Term {
 	static public class ExceptionTrivialEquality extends Exception {};
 	
 	static public class Permutations {
-		
 		public ArrayList<Term> vs;
 		public Permutations() {
 			vs = new ArrayList<Term>();
@@ -810,6 +838,26 @@ public class Term {
 		public void add(Term t) {
 			vs.add(t);
 		}
+	}
+	
+	static public Term replace(Term term, Term from, Term into) {
+		
+		Disp d = term.getDisposition();
+		if (d == Disp.F) {
+			if (term.equals(from)) return into;
+			return term;
+		}
+		if (d != Disp.C) {
+			Term res = new Term();
+			for (Term t: term.v) res.addTerm(replace(t, from, into));
+			return res;
+		} else {
+			Collection col = new Collection();
+			Collection tc = (Collection) term;
+			for (Term t: tc.items) col.addTerm(replace(t, from, into));
+			return col;
+		}
+		
 	}
 	
 }

@@ -60,5 +60,13 @@ public class Operator extends Term {
 		Operator[] opSet = new Operator[]{Op.minus, Op.div};
 		return isPartOfList(opSet);
 	}
+	
+	public Operator reverse() {
+		if (this == Op.lt) return Op.gt;
+		if (this == Op.le) return Op.ge;
+		if (this == Op.gt) return Op.lt;
+		if (this == Op.ge) return Op.le;
+		return this;
+	}
 
 }

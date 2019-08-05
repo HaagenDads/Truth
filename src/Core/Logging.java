@@ -53,19 +53,18 @@ public class Logging {
 		activeLog = nv;
 	}
 	
-	public void closeCase(ArrayList<Assump> caseConclusions) {
+	public void closeCase() {
 		while (!activeLog.t.equals(type.cases)) {
 			activeLog = activeLog.parent;
 		}
 		
 		blockstamp.leavelevel();
 		activeLog = activeLog.parent;
-		if (caseConclusions == null) return;
+		/*
 		for (Assump a: caseConclusions) {
 			activeLog.addLine(null, a.st.lside, null);
 			activeLog.addLine(new Link("\\eq"), a.st.rside, new Justification(a));
-		}
-		
+		}*/
 	}
 	
 	public void addCase(Statement s) {
