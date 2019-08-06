@@ -6,7 +6,7 @@ import Elements.Statement;
 import Elements.Type;
 import Elements.Variable;
 
-public class NaturalNumbers {
+public class NaturalNumbers extends RealNumbers {
 	
 	public static final String genericType = "\\setnatural";
 	public static final Operator[] oplist = new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp};
@@ -42,7 +42,7 @@ public class NaturalNumbers {
 			if (op.equals(Op.gt)) return toBooleanString(stra.v > strb.v);
 			if (op.equals(Op.ge)) return toBooleanString(stra.v >= strb.v);
 			
-			return "null";
+			return null;
 		} else return null;
 	}
 	
@@ -149,20 +149,6 @@ public class NaturalNumbers {
 		else return null;
 	}
 	
-	static private int getNumeric(String s) {
-		s = s.trim();
-		int result = 0;
-		for (char c: s.toCharArray()) {
-			if (c >= 48 && c <= 57) {
-				result *= 10;
-				result += c - 48;
-			} else {
-				return -1;
-			}
-		}
-		return result;
-	}
-	
 	
 	static private class NatItem {
 		int v;
@@ -183,7 +169,7 @@ public class NaturalNumbers {
 	};
 	
 	static public boolean isValid (String t) {
-		if (getNumeric(t) >= 0) return true;
+		if (readString(t) != null) return true;
 		return false;
 	}
 	

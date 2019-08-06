@@ -1,0 +1,7 @@
+Theorem Name:Associativity Package:Logic{
+\let a \in \setreal;
+\let b \in \setreal;
+\let c \in \setreal;
+\state a + (b + c) = (a + b) + c;
+}
+

@@ -58,7 +58,7 @@ public class Compiler {
 		assertTheoremExists(unit);
 		
 		Theorem thm = new Theorem();
-		Logging nlog = new Logging();
+		Logging nlog = new Logging(thm);
 		thm.nlog = nlog;
 		
 		char[] chars = unit.toCharArray();

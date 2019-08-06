@@ -36,10 +36,8 @@ public class Assumptions implements Iterable<Assump>{
 	/*
 	 *     There's a difference because I need all of these assumptions to have the same ID
 	 */
-	public void acceptAssumptionFromDemonstrationThroughCases(ArrayList<Assump> assumpList, BlockStamp blockstamp) {
-		for (Assump a: assumpList) {
-			addtolist(new Assump(a.st, blockstamp.getStamp()));
-		}
+	public void acceptAssumptionFromDemonstrationThroughCases(Assump a) {
+		addtolist(a);
 	}
 	
 	private void addtolist(Assump a) {

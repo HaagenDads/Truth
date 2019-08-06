@@ -1,5 +1,7 @@
 Theorem Name:AxiomMultiplicationEq Package:Logic{
-\let x \in \setnatural;
+\let x \in \setreal;
+\let y \in \setreal;
+\let z \in \setreal;
 \state (x = y) \eq (x * z = y * z);
 }
 

@@ -15,6 +15,7 @@ public class Function extends Variable {
 	public Term definition;
 	public boolean defaultDomain, defaultImage;
 	
+	private Term defvar;
 	private ArrayList<Definition> defs;
 	private boolean isdefinitionComplete;
 	private boolean isdefinitionExclusive;
@@ -112,10 +113,10 @@ public class Function extends Variable {
 		return isdefinitionExclusive;
 	}
 	
-	public Term getEvaluation (Collection col, Theorem thm) {
-		Definition def = getDefinition(col, thm);
+	public Term getEvaluation (Collection col, Assumptions assumptions) {
+		Definition def = getDefinition(col, assumptions);
 		if (def == null) return null;
-		System.out.println(":defdef: " + def.toString());
+		System.out.println(":defdef: " + def.def.toString());
 		Term result = def.def.get(2).copy();
 		for (int i=0; i<def.var.size; i++) {
 			Term defarg = def.var.get(i);
@@ -125,7 +126,7 @@ public class Function extends Variable {
 		return result;
 	}
 	
-	private Definition getDefinition (Collection col, Theorem thm) {
+	private Definition getDefinition (Collection col, Assumptions assumptions) {
 		// Get unconditional
 		for (Definition d: defs) {
 			if (d.cond == null) return d;
@@ -133,17 +134,21 @@ public class Function extends Variable {
 		
 		// If it's a number to replace
 		for (Definition d: defs) {
-			System.out.println(":defs cond: " + d.cond.toString());
 			Term op = d.cond.get(1);
 			Term comp = d.cond.get(2);
 			if (op.equalsString(Op.eq.s) && comp.equals(col.get(0))) return d;
 		}
 		
 		// Get conditional
-		ArrayList<Term> assumps = thm.assumptions.getRelevantAssump(col.get(0));
+		ArrayList<Term> assumps = assumptions.getRelevantAssump(col.get(0));
 		for (Term t: assumps) {
+			System.out.println(":relevant assumption for " + col.get(0).toString() + " : " + t.toString() + " :defvar: " + defvar.toString());
+			// TODO URGENT! do some embedings on fnc.n;
+			
+			Term transformed = Term.replace(t, col.get(0), defvar);
+			System.out.println(":into: " +  transformed.toString());
 			for (Definition d: defs) {
-				if (d.cond.equals(t)) return d;
+				if (d.cond.equals(transformed)) return d;
 			}
 			if (this.haselsecondition) {
 				// TODO make it happen
@@ -166,11 +171,13 @@ public class Function extends Variable {
 			cond = null;
 			this.def = def;
 			this.var = var;
+			if (defvar == null) defvar = var.get(0);
 		}
 		public Definition (Collection var, Term cond, Term def) {
 			this.cond = cond;
 			this.def = def;
 			this.var = var;
+			if (defvar == null) defvar = var.get(0);
 		}
 	}
 	

@@ -1,5 +1,5 @@
 Theorem Name:Irreflexive Package:Logic{
-\let x \in \setnatural;
+\let x \in \setreal;
 \state (x < x) \eq \false;
 }
 

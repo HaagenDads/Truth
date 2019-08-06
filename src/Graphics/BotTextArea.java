@@ -12,7 +12,6 @@ import Core.Logging;
 import Core.Logging.Arg;
 import Core.StringOperations;
 import Core.Theorem;
-import Elements.Statement;
 import Elements.Variable;
 
 public class BotTextArea extends StringOperations {
@@ -122,17 +121,16 @@ public class BotTextArea extends StringOperations {
 	private void drawLogging(Logging lg, int ntab) throws BadLocationException {
 		
 		if (lg.t.equals(Logging.type.cases)) {
-			System.out.println(":drawing cases:");
 			drawLoggingInitialCaseStatement(lg, ntab);
-			for (Logging prop: lg.v) {
-				drawLoggingCases(prop.caseStatement, ntab+1);
-				drawLogging(prop, ntab+2);
+			for (Logging l: lg.v) {
+				drawLogging(l, ntab+2);
 			}
+			/*
 		} else if (lg.t.equals(Logging.type.specificCase)) {
 			for (Logging innerlg: lg.v) {
 				drawLogging(innerlg, ntab);
 			}
-			appendString("\n");
+			appendString("\n");*/
 			
 		} else if (lg.t.equals(Logging.type.statement)) {
 			drawLoggingStatement(lg, ntab);
@@ -142,7 +140,12 @@ public class BotTextArea extends StringOperations {
 				drawLogging(l, ntab);
 			}
 			if (lg.solved) appendString("CQFD.", sbold);
-			else appendString("<Could not match theorem proposition with any proven assumptions>", sbold);
+			else {
+				appendString("<Could not match theorem proposition with the proven assumptions>\n", sbold);
+				for (Assump a: lg.thm.assumptions) {
+					appendString(" -) " + a.st.toString() + "\n");
+				}
+			}
 			appendString("\n");
 		}
 	}
@@ -150,14 +153,15 @@ public class BotTextArea extends StringOperations {
 	
 	private void drawLoggingInitialCaseStatement(Logging lg, int ntab) throws BadLocationException {
 		appendString(getTab(ntab-1) + "(" + lg.blocID + ")", sbold);
-		appendString("    " + "Cases on ");
-		appendString(lg.v.get(0).caseStatement.lside.toString(), svar);
+		appendString("    " + "Case where ");
+		appendString(lg.caseStatement.toString());
 		appendString(":\n\n");
 	}
 	
+	/*
 	private void drawLoggingCases(Statement st, int ntab) throws BadLocationException {
 		appendString(getTab(ntab) + "Let " + st.toString() + ":\n\n");
-	}
+	}*/
 	
 	private void drawLoggingStatement(Logging lg, int ntab) throws BadLocationException {
 		
@@ -198,7 +202,7 @@ public class BotTextArea extends StringOperations {
 		String tab = "    Let ";
 		for (Variable v: firstarg.vars) {
 			appendString(tab);
-			appendString(v.name, sred);
+			appendString(v.name, svar);
 			appendString(v.toHeader());
 			tab = getTab(ntab) + "        ";
 		}

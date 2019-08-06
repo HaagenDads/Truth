@@ -1,0 +1,6 @@
+Theorem Name:IdentityExponent Package:Logic{
+\let a \in \setreal;
+\let x \in \setreal;
+\state a * (a ^ x) = a ^ (x + 1);
+}
+

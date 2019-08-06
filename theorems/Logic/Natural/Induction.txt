@@ -2,7 +2,8 @@ Theorem Name:Induction Package:Logic{
 \let P \be \function \setnatural -> \boolean;
 \let k \in \setnatural;
 \let n \in \setnatural;
+\let a \in \setnatural;
 
-\state (P(1) \and \forall k > 1: (P(k) \implies P(k + 1))) \then (\forall (n > 0): (P(n) \eq \true));
+\state (P(a) \and \forall k > a: (P(k) \then P(k + 1))) \then (\forall n >= a: P(n));
 }
 

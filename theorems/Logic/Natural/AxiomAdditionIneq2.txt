@@ -1,0 +1,10 @@
+Theorem Name:AxiomAdditionIneq Package:Logic{
+\let x \in \setreal;
+\let a \in \setreal;
+\where a > 0;
+\state x < x + a;
+} 
+Demonstration {
+    a > 0 \eq x + a > x + 0 \eq x + a > x;
+}
+

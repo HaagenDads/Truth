@@ -28,7 +28,7 @@ public class Theorem {
 		assumptions = new Assumptions();
 		loadedTheorems = new ArrayList<Theorem>();
 		variables = new ArrayList<Variable>();
-		nlog = new Logging();
+		nlog = new Logging(this);
 		isEmbeded = false;
 		demonstration = null;
 		filepath = "";

@@ -14,11 +14,12 @@ import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers;
 import Operation.Op;
 import Operation.Operator;
+import Operation.RealNumbers;
 
 public class Demonstration {
 
-	private final static int printPriority = 3; // 3 = [FATAL] only; 1 = broad;
-	private static final String debugthm = "";
+	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
+	private static final String debugthm = "AxiomAdditionIneq";
 	
 	boolean isNested;
 	
@@ -55,7 +56,7 @@ public class Demonstration {
 			ArrayString subbody = sequence.getV(0);
 			if (sequence.isSubbody()) {
 				
-				nlog.createCase();
+				
 				Cases cases = new Cases();
 				cases.parseCase(subbody);
 				
@@ -66,7 +67,7 @@ public class Demonstration {
 					nlog.addCase(casehypothesis);
 					d.solveDemonstration();
 				}*/
-				nlog.addCase(cases.hypothesis);
+				nlog.createCase(cases.hypothesis);
 				cases.nested.solveDemonstration();
 				
 				acceptCasesCommunProvenStatements(cases);
@@ -85,7 +86,6 @@ public class Demonstration {
 		
 		// Check if we have demonstrated the proposition
 		if (!isNested) {
-			nlog.rawPrint();
 			boolean demonstrated = isTheoremDemonstrated();
 			nlog.conclude(demonstrated);
 			return demonstrated;
@@ -147,6 +147,16 @@ public class Demonstration {
 		// TODO generalise for QTT exists statements
 		// TODO make this work
 		//if (cases.validatePartition().equals("true")) {
+		Assumptions nestedasmp = cases.nested.assumptions;
+		for (int i=assumptions.size()+1; i<nestedasmp.size(); i++) {
+			Assump a = nestedasmp.get(i);
+			Term qtt = new Term();
+			qtt.addTerm(Term.makeNewTerm("\\forall")); qtt.addTerm(cases.hypothesis.toTerm()); qtt.addTerm(a.st.toTerm());
+			a.st = new Statement(new Link(Op.equiv), new Term("\\true"), qtt);
+			System.out.println(": new statement!!!: " + a.st.toString());
+			assumptions.acceptAssumptionFromDemonstrationThroughCases(a);
+		}
+		/*
 		if (cases.isPartitionComplete()) {
 			ArrayList<Assump> bulkResults = new ArrayList<Assump>();
 			for (Assump x: cases.enumerateCommunStatements()) {
@@ -154,7 +164,7 @@ public class Demonstration {
 			}
 			assumptions.acceptAssumptionFromDemonstrationThroughCases(bulkResults, nlog.blockstamp);
 			return bulkResults;
-		}
+		}*/
 		return null;
 	}
 	
@@ -171,6 +181,7 @@ public class Demonstration {
 		Justification solution;
 		try {
 			ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
+			
 			for (Statement st: diffLedger) {
 				printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
 				solution = validateStatementSpecificDifference(st);
@@ -278,22 +289,8 @@ public class Demonstration {
 		if (solution != null) return solution;
 		
 		// Function evaluation
-		if (diff.lside.getDisposition() == Term.Disp.FC) {
-			Function fnc = (Function) source.getVariable(diff.lside.get(0).s);
-			Collection col = (Collection) diff.lside.get(1);
-			if (fnc.domain.isElement(col, source)) {
-				Term eval = fnc.getEvaluation(col, source);
-				if (eval != null) {
-					printout(":fnceval: " + eval.toString() + ",  :rside:  " + diff.rside.toString());
-					if (eval.equals(diff.rside)) {
-						return new Justification("Evaluating function");
-					}
-				} else {
-					printout(":null fnceval");
-				}
-			}
-			
-		}
+		solution = SolveFunctionEvaluation(diff);
+		if (solution != null) return solution;
 		
 		// Using assumptions
 		for (Assump a: assumptions) {
@@ -325,6 +322,26 @@ public class Demonstration {
 		return null;
 	}
 	
+	private Justification SolveFunctionEvaluation (Statement diff) {
+		for (Statement st: new Statement[]{diff, diff.switchSides()}) {
+			if (st.lside.getDisposition() == Term.Disp.FC) {
+				Function fnc = (Function) source.getVariable(st.lside.get(0).s);
+				Collection col = (Collection) st.lside.get(1);
+				if (fnc.domain.isElement(col, source)) {
+					Term eval = fnc.getEvaluation(col, assumptions);
+					if (eval != null) {
+						printout(":fnceval: " + eval.toString() + ",  :rside:  " + st.rside.toString());
+						if (eval.equals(st.rside)) {
+							return new Justification("Evaluating function");
+						}
+					} else {
+						printout(":null fnceval");
+					}
+				}
+			}
+		}
+		return null;
+	}
 	
 	private boolean matchTheorem (Theorem th, Statement prop) {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
@@ -344,6 +361,7 @@ public class Demonstration {
 	 * We first find permutations from the left side, make sure the types match.
 	 */
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
+		//for (Term tt: perms) System.out.println("- " + tt.toString());
 		Permutations pmleft = Term.permute(prop.lside);
 		Permutations pmright = Term.permute(prop.rside);
 		
@@ -389,6 +407,8 @@ public class Demonstration {
 	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) {
 		ValidPermutations validperms = new ValidPermutations();
 		for (Term propPermutation: perms) { 
+			
+			
 			try {
 				// extractDiffArray already checks for surjectivity
 				ArrayList<Statement> substitutions = Term.extractDiffArray(thside, propPermutation);
@@ -456,8 +476,9 @@ public class Demonstration {
 	}
 	*/
 	
+	/* v is the theorem type, t corresponds to the demonstration type */
 	private boolean matchTheoremTypes(Variable v, Term t) {
-		//System.out.println(" :term: " + Type.getType(t, source) + " - " + t.toString() + " - " + t.getDisposition());
+		//System.out.println(" :term: " + t.toString() + " - " + t.getDisposition());
 		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
 	
@@ -534,7 +555,12 @@ public class Demonstration {
 	
 	private Term solveBinaryOperator(Operator op, Term t1, Term t2) {
 		if (!t1.isShallow() || !t2.isShallow()) return null;
-		String result = NaturalNumbers.applyBinaryLogic(t1.s, op, t2.s);
+		String result;
+		
+		result = NaturalNumbers.applyBinaryLogic(t1.s, op, t2.s);
+		if (result != null) return new Term(result);
+		
+		result = RealNumbers.applyBinaryLogic(t1.s, op, t2.s);
 		if (result != null) return new Term(result);
 		
 		result = BooleanLogic.applyBinaryLogic(t1.s, op, t2.s);

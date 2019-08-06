@@ -2,7 +2,6 @@ package Core;
 
 import java.util.ArrayList;
 
-import Elements.Assump;
 import Elements.BlockStamp;
 import Elements.Justification;
 import Elements.Link;
@@ -14,7 +13,7 @@ public class Logging {
 
 	Logging activeLog, parent;
 	public ArrayList<Logging> v;
-	public enum type {cases, specificCase, statement, ground};
+	public enum type {cases, statement, ground};
 	public type t;
 	public Statement caseStatement;
 	public ArrayList<Arg> args;
@@ -22,13 +21,15 @@ public class Logging {
 	
 	public BlockStamp blockstamp;
 	public String blocID;
+	public Theorem thm;
 	
 	
-	public Logging() {
+	public Logging(Theorem thm) {
 		v = new ArrayList<Logging>();
 		activeLog = this;
 		this.t = type.ground;
 		blockstamp = new BlockStamp();
+		this.thm = thm;
 	}
 	public Logging(type t, Logging parent, BlockStamp blockstamp) {
 		v = new ArrayList<Logging>();
@@ -44,19 +45,20 @@ public class Logging {
 		return v.size() == 0 && t == type.ground;
 	}
 	
-	public void createCase() {
+	public void createCase(Statement s) {
+		getActivelogToGround();
 		blockstamp.increment();
 		Logging nv = new Logging(type.cases, activeLog, blockstamp);
 		nv.blocID = blockstamp.getStamp();
+		nv.caseStatement = s;
+		
 		blockstamp.enterlevel();
 		activeLog.v.add(nv);
 		activeLog = nv;
 	}
 	
 	public void closeCase() {
-		while (!activeLog.t.equals(type.cases)) {
-			activeLog = activeLog.parent;
-		}
+		while (!activeLog.t.equals(type.cases)) activeLog = activeLog.parent;
 		
 		blockstamp.leavelevel();
 		activeLog = activeLog.parent;
@@ -67,29 +69,12 @@ public class Logging {
 		}*/
 	}
 	
-	public void addCase(Statement s) {
-		while (!activeLog.t.equals(type.cases)) {
-			activeLog = activeLog.parent;
-		}
-		Logging nv = new Logging(type.specificCase, activeLog, blockstamp);
-		nv.caseStatement = s;
-		activeLog.v.add(nv);
-		activeLog = nv;
-	}
-	
 	public void addLine(Link link, Term term, Justification expl) {
 		
-		if (activeLog.t.equals(type.cases)) {
-			System.out.println("[LOGS] Found line in cases : " + term + "  " + expl);
-			return;
-		}
-		
 		if (link == null) {
-			if (activeLog.t.equals(type.statement)) { 
-				activeLog = activeLog.parent;
-			}
-			
+			getActivelogToGround();
 			blockstamp.increment();
+			
 			Logging st = new Logging(type.statement, activeLog, blockstamp);
 			st.blocID = blockstamp.getStamp();
 			activeLog.v.add(st);
@@ -99,15 +84,17 @@ public class Logging {
 		activeLog.args.add(new Arg(term, link, expl));
 	}
 	
+	/* 'let' statements */
 	public void addLine(ArrayList<Variable> sts) {
+		getActivelogToGround();
 		blockstamp.increment();
+		
 		Logging st = new Logging(type.statement, activeLog, blockstamp);
 		st.blocID = blockstamp.getStamp();
 		activeLog.v.add(st);
 		activeLog = st;
 	
 		activeLog.args.add(new Arg(sts));
-		
 	}
 	
 	public void conclude(boolean state) {
@@ -116,13 +103,17 @@ public class Logging {
 	
 	public void rawPrint() {
 		System.out.println(t);
-		if (t.equals(type.specificCase)) {System.out.println(caseStatement.toString()); }
+		if (t.equals(type.cases)) {System.out.println(caseStatement.toString()); }
 		if (t.equals(type.statement)) {
 			for (Arg x: args) {
 				if (x.expl!=null) System.out.println(x.toString());
 			}
 		}
 		for (Logging x: v) { x.rawPrint(); }
+	}
+	
+	private void getActivelogToGround () {
+		while (activeLog.t.equals(type.statement)) activeLog = activeLog.parent;
 	}
 	
 	public class Arg {

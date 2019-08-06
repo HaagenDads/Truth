@@ -5,8 +5,15 @@ import Core.Theorem;
 import Operation.NaturalNumbers;
 import Operation.Op;
 import Operation.Operator;
+import Operation.RealNumbers;
 
 public class Type {
+	
+	private static final Type Real = new Type(RealNumbers.genericType);
+	private static final Type Nat = new Type(NaturalNumbers.genericType);
+	private static final Type Bool = new Type(BooleanLogic.genericType);
+	private static final Type Sets = new Type(Set.genericType);
+	
 
 	public String type;
 	public Type (String t) {
@@ -41,9 +48,10 @@ public class Type {
 		return this.type.equals(str);
 	}
 	
-	static public boolean matchtypes (Type t1, Type t2) {
-		if (t1.type == null || t2.type == null) return false;
-		if (t1.equals(t2)) return true;
+	static public boolean matchtypes (Type deftype, Type demotype) {
+		if (deftype.type == null || demotype.type == null) return false;
+		if (deftype.equals(demotype)) return true;
+		if (deftype.type.equals(RealNumbers.genericType)) return matchtypes(Nat, demotype);
 		return false;
 	}
 	
@@ -52,18 +60,22 @@ public class Type {
 	}
 	
 	static public Type getType(Term t, Theorem thm) {
+		//System.out.println(":getting type of: " + t.toString());
 		Term.Disp termdisp = t.getDisposition();
 		if (termdisp == Term.Disp.F) {
-			if (isin(t.s, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, Set.genericType})) return new Type(Set.genericType);
+			if (isin(t.s, new String[]{BooleanLogic.genericType, NaturalNumbers.genericType, 
+					                   Set.genericType, RealNumbers.genericType})) return Sets;
 			Variable v = thm.getVariable(t.s);
 			if (v != null) return v.type;
-			if (BooleanLogic.isValid(t.s)) return new Type(BooleanLogic.genericType);
-			if (NaturalNumbers.isValid(t.s)) return new Type(NaturalNumbers.genericType);
-			if (Set.isValid(t.s)) return new Type(Set.genericType);
+			if (BooleanLogic.isValid(t.s)) return Bool;
+			if (NaturalNumbers.isValid(t.s)) return Nat;
+			if (RealNumbers.isValid(t.s)) return Real;
+			
+			if (Set.isValid(t.s)) return Sets;
 			return null;
 		}
-		if (termdisp == Term.Disp.QTT) return new Type(BooleanLogic.genericType);
-		if (termdisp == Term.Disp.DEF) return new Type(BooleanLogic.genericType);
+		if (termdisp == Term.Disp.QTT) return Bool;
+		if (termdisp == Term.Disp.DEF) return Bool;
 		if (termdisp == Term.Disp.OT) {
 			Type x = getType(t.get(1), thm);
 			return solveUnary(Op.getOperator(t.get(0).s), x);
@@ -102,15 +114,18 @@ public class Type {
 			if (a.equals(NaturalNumbers.genericType)) {
 				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp})) return a;
 				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
-					return new Type(BooleanLogic.genericType);
+					return Bool;
 				}
 			}
 			if (b.equals(Set.genericType)) {
 				if (a.equals(b)) {
 					if (isin(op, new Operator[]{Op.intersection, Op.union})) return a;
-					if (isin(op, new Operator[]{Op.subset, Op.psubset, Op.eq})) return new Type(BooleanLogic.genericType);
-				} else if (isin(op, new Operator[]{Op.in, Op.notin})) return new Type(BooleanLogic.genericType);
+					if (isin(op, new Operator[]{Op.subset, Op.psubset, Op.eq})) return Bool;
+				} else if (isin(op, new Operator[]{Op.in, Op.notin})) return Bool;
 			}
+		} else {
+			if (a.equals(Real)) return solveBinary(Nat, op, b);
+			if (b.equals(Real)) return solveBinary(a, op, Nat);
 		}
 		return null;
 	}

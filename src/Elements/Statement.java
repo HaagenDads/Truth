@@ -43,10 +43,7 @@ public class Statement {
 	}
 	
 	public Statement switchSides() {
-		Term temp = lside;
-		lside = rside;
-		rside = temp;
-		return this;
+		return new Statement(link, rside, lside);
 	}
 	
 	public void embedVariableNames(String head, ArrayList<String> vars) {

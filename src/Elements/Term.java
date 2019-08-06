@@ -696,7 +696,7 @@ public class Term {
 	static private ArrayList<Statement> extract4TOTdiff (Term t1, Term t2, Link link) throws ExceptionTrivialEquality {
 		if (link.equals(Op.equiv) || link.equals(Op.then)) {
 			if (t1.getDisposition() == Disp.TOT && t2.getDisposition() == Disp.TOT) {
-				Term a, b, c, d; a = t1.get(0); b = t1.get(2); c = t2.get(0); d = t2.get(1);
+				Term a, b, c, d; a = t1.get(0); b = t1.get(2); c = t2.get(0); d = t2.get(2);
 				Operator op1, op2; op1 = (Operator) t1.get(1); op2 = (Operator) t2.get(1);
 				int eqlt = 0;
 				if (a.equals(c)) eqlt = 11;
@@ -842,20 +842,20 @@ public class Term {
 	
 	static public Term replace(Term term, Term from, Term into) {
 		
+		if (term.equals(from)) return into;
 		Disp d = term.getDisposition();
 		if (d == Disp.F) {
 			if (term.equals(from)) return into;
 			return term;
-		}
-		if (d != Disp.C) {
-			Term res = new Term();
-			for (Term t: term.v) res.addTerm(replace(t, from, into));
-			return res;
-		} else {
+		} else if (d == Disp.C) {
 			Collection col = new Collection();
 			Collection tc = (Collection) term;
 			for (Term t: tc.items) col.addTerm(replace(t, from, into));
 			return col;
+		} else {
+			Term res = new Term();
+			for (Term t: term.v) res.addTerm(replace(t, from, into));
+			return res;
 		}
 		
 	}
