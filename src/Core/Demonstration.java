@@ -21,14 +21,13 @@ public class Demonstration {
 	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
 	private static final String debugthm = "AxiomAdditionIneq";
 	
-	boolean isNested;
+	private boolean isNested;
 	
 	private Body body;
-	Statement proposition;
-	Assumptions assumptions;
-	Logging nlog;
-	Theorem source;
-	
+	private Statement proposition;
+	private Assumptions assumptions;
+	private Logging nlog;
+	private Theorem source;
 
 	public Demonstration (String fulltext, Theorem thm) {
 		proposition = thm.statement;
@@ -51,36 +50,27 @@ public class Demonstration {
 	
 	public boolean solveDemonstration() throws ExceptionCaseNonvalid {
 		
-		for (Sequence sequence: body.body) {
-			
-			ArrayString subbody = sequence.getV(0);
+		for (Sequence sequence: body.seqarray) {
 			if (sequence.isSubbody()) {
-				
-				
 				Cases cases = new Cases();
-				cases.parseCase(subbody);
-				
-				/*
-				for (int i=0; i<cases.nested.size(); i++) {
-					Demonstration d = cases.nested.get(i);
-					Statement casehypothesis = cases.hypothesis.get(i);
-					nlog.addCase(casehypothesis);
-					d.solveDemonstration();
-				}*/
+				cases.parseCase(sequence.getV(0));
+
 				nlog.createCase(cases.hypothesis);
-				cases.nested.solveDemonstration();
-				
+				if (!cases.nested.solveDemonstration()) return false;
 				acceptCasesCommunProvenStatements(cases);
 				nlog.closeCase();
-				
-
 			} else if (sequence.isAssignment()) {
 				// TODO add checking for overloading and validating
-				ArrayList<Variable> sts = Term.parseLetStatement(subbody, source, false);
+				ArrayList<Variable> sts = Term.parseLetStatement(sequence.getV(0), source, false);
 				source.variables.addAll(sts);
 				nlog.addLine(sts);
 			} else {
-				compileProposition(sequence);
+				try {
+					compileProposition(sequence);
+				} catch (ExceptionComprehension e) {
+					e.explain();
+					return false;
+				}
 			}
 		}
 		
@@ -93,7 +83,7 @@ public class Demonstration {
 		return false;		
 	}
 	
-	private void compileProposition (Sequence sequence) {
+	private void compileProposition (Sequence sequence) throws ExceptionComprehension {
 		boolean proposition = true;
 		Term firstexp = null;
 		Term t1 = null;
@@ -176,7 +166,7 @@ public class Demonstration {
 	 *  
 	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
-	private boolean validateStatement(Term t1, Term t2, Link link) {
+	private boolean validateStatement(Term t1, Term t2, Link link) throws ExceptionComprehension {
 		
 		Justification solution;
 		try {
@@ -202,18 +192,17 @@ public class Demonstration {
 	}
 	
 	/* Resolution for statements of the sort:
-	 *    T <==> \exists x (x > 0)
+	 *    T <==> \exists x (x > 0)     where here, quant="\exists", cond="x", prop="(x > 0)"
 	 */
-	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) {
-		boolean isexist = quant.equals(Op.exists);
-		boolean isforall = quant.equals(Op.forall);
-		if (!isexist && !isforall) System.out.println("Fatal error in QTT identification.");
+	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) throws ExceptionComprehensionInQuantifier, Type.ExceptionTypeUnknown {
+		boolean isexist = quant.equals(Op.exists); // isforall implied by the negation
 	
 		// TODO check if cond matches the set, eg x < 0 should be invalid if x in naturals
-		if (cond.getDisposition() == Term.Disp.TOT && Link.isConditional(cond.get(1).s) && cond.equals(prop)) {
-			return new Justification("Self evident");
-		}
-		
+
+		// Self evident x s.t. x
+		if (Type.matchtypes(cond, Type.Bool, source) && cond.equals(prop)) return new Justification("Self evident");
+
+		// Have we seen assumptions of the sort: x=4 -> x>0,  or x<y -> x<3   or  P <-> Q
 		for (Assump a: assumptions) {
 			boolean linkeq = a.st.link.equals(Op.equiv);
 			if (linkeq || a.st.link.equals(Op.then)) {
@@ -234,20 +223,18 @@ public class Demonstration {
 		return null;
 	}
 
-	
-	private boolean matchConditionalExistentialStatement (Term assumpLside, Term cond, boolean isexist) {
+	/** Trying to assert whether x=4 -> P   can imply that  \exists x s.t. P */
+	private boolean matchConditionalExistentialStatement (Term assumpLside, Term cond, boolean isexist) throws Type.ExceptionTypeUnknown {
 		if (assumpLside.getDisposition() == Term.Disp.TOT && Link.isConditional(assumpLside.get(1).s)) {
 			
-			Statement assign = new Statement(new Link(assumpLside.get(1).s), assumpLside.get(0), assumpLside.get(2));
+			Statement assign = assumpLside.toStatement();
 			
 			// Exact match between conditions
-			if (cond.getDisposition() == Term.Disp.TOT) {
-				if (assign.equals(new Statement(new Link(cond.get(1).s), cond.get(0), cond.get(2)))) return true;
-			}
+			if (cond.getDisposition() == Term.Disp.TOT && assign.equals(cond.toStatement())) return true;
 			
 			// Partial match between conditions
 			if (assign.link.equals(Op.eq) && isexist) {
-				if (assign.lside.equalsString(cond.s) && Type.matchtypes(assign.rside, cond, source)) {
+				if (assign.lside.equals(cond) && Type.matchtypes(assign.rside, cond, source)) {
 					return true;
 				}
 			}
@@ -257,13 +244,19 @@ public class Demonstration {
 	}
 	
 	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
-	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
+	private Justification validateTrivialImplication(Term t1, Term t2, Link link) throws ExceptionComprehension {
 		t1.flatten();
 		if (link.equals(Op.equiv) && t1.equalsString("\\true")) {
 			Term.Disp disp = t2.getDisposition();
 			//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
 			//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
+
 			if (disp == Term.Disp.QTT) {
+				Term cond = t2.get(1);
+				Term prop = t2.get(2);
+				// Makes the distinction between x > 6 and x + 6 as a condition
+				if (cond.getDisposition() == Term.Disp.TOT && !Link.isConditional(cond.get(1).s)) throw new ExceptionComprehensionInQuantifier(cond);
+				if (!Type.matchtypes(prop, Type.Bool, source)) throw new ExceptionComprehensionInQuantifier(prop);
 				return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
 			}
 			if (disp == Term.Disp.TOT) {
@@ -279,7 +272,7 @@ public class Demonstration {
 	}
 	
 
-	private Justification validateStatementSpecificDifference(Statement diff) {
+	private Justification validateStatementSpecificDifference(Statement diff) throws ExceptionComprehension {
 	
 		// Trivial proposition
 		Justification solution;
@@ -343,7 +336,7 @@ public class Demonstration {
 		return null;
 	}
 	
-	private boolean matchTheorem (Theorem th, Statement prop) {
+	private boolean matchTheorem (Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
 		if (matchTheoremUnilateral(th, prop)) return true;
 		if (Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides())) return true;
@@ -360,7 +353,7 @@ public class Demonstration {
 	/*
 	 * We first find permutations from the left side, make sure the types match.
 	 */
-	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
+	private boolean matchTheoremUnilateral(Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		//for (Term tt: perms) System.out.println("- " + tt.toString());
 		Permutations pmleft = Term.permute(prop.lside);
 		Permutations pmright = Term.permute(prop.rside);
@@ -404,7 +397,7 @@ public class Demonstration {
 	}	
 	
 	// TODO assert that a thm cant have an undeclared variable ever
-	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) {
+	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) throws Type.ExceptionTypeUnknown {
 		ValidPermutations validperms = new ValidPermutations();
 		for (Term propPermutation: perms) { 
 			
@@ -477,7 +470,7 @@ public class Demonstration {
 	*/
 	
 	/* v is the theorem type, t corresponds to the demonstration type */
-	private boolean matchTheoremTypes(Variable v, Term t) {
+	private boolean matchTheoremTypes(Variable v, Term t) throws Type.ExceptionTypeUnknown {
 		//System.out.println(" :term: " + t.toString() + " - " + t.getDisposition());
 		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
@@ -758,4 +751,15 @@ public class Demonstration {
 	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
 	
 	public class ExceptionCaseNonvalid extends Exception {}
+
+	abstract static public class ExceptionComprehension extends Exception {
+		abstract public void explain();
+	}
+	static public class ExceptionComprehensionInQuantifier extends ExceptionComprehension {
+		Term t;
+		public ExceptionComprehensionInQuantifier (Term _t) { t = _t; }
+		public void explain() {
+			System.out.println("[COMPREHENSION ERROR] In quantifier " + t.toString() + ", condition wasn't comprenhended.");
+		}
+	}
 }

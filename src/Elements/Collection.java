@@ -51,7 +51,7 @@ public class Collection extends Term {
 	public String toString() {
 		if (isEmpty()) return "()";
 		String link = ", ";
-		if (iscartesian) link = " × ";
+		if (iscartesian) link = " Ã— ";
 		String output = "(";
 		String closing = ")";
 		if (isset) {

@@ -8,7 +8,7 @@ import java.util.Scanner;
 import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
 import Elements.ArrayString.Sequence;
-import Graphics.TextZone;
+import Graphics.Application;
 
 
 public class Compiler {
@@ -16,9 +16,9 @@ public class Compiler {
 	private final static int printPriority = 3;
 	
 	public ArrayList<Theorem> Theorems;
-	TextZone source;
+	Application source;
 	
-	public Compiler(TextZone source) {
+	public Compiler(Application source) {
 		Theorems = new ArrayList<Theorem>();
 		this.source = source;
 	}
@@ -99,7 +99,7 @@ public class Compiler {
 		
 		//System.out.println(":thm name:  " + thm.name);
 		Body head = new Body(header);
-		for (Sequence seq: head.body) {
+		for (Sequence seq: head.seqarray) {
 			
 			String headToken = seq.getHeadtoken();
 			if (seq.isAssignment()) {

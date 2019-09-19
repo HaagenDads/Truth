@@ -41,9 +41,9 @@ public class Term {
 		else return op;
 	}
 	
-	public boolean isCollection () {return iscollection; }
-	public boolean isOperator () {return isoperator; }
-	public boolean isDefinition() {return isdefinition; }
+	public boolean isCollection () { return iscollection; }
+	public boolean isOperator () { return isoperator; }
+	public boolean isDefinition() { return isdefinition; }
 	
 	public void addTerm(Term t) {
 		Term[] oldv = v;
@@ -52,6 +52,16 @@ public class Term {
 			for (int i=0; i<oldv.length; i++) v[i] = oldv[i];
 		}
 		v[size-1] = t;
+		disp = null;
+	}
+
+	/* hacky way of fitting collections and function calls to the term compilation */
+	private void removeLastterm() {
+		Term [] oldv = v;
+		v = new Term[--size];
+		if (oldv != null) {
+			for (int i=0; i<size; i++) v[i] = oldv[i];
+		}
 		disp = null;
 	}
 	
@@ -64,7 +74,14 @@ public class Term {
 			throw new IndexOutOfBoundsException();
 		}
 	}
-	
+
+	public Statement toStatement() {
+		if (getDisposition() == Disp.TOT)
+			return new Statement(new Link(get(1).s), get(0), get(2));
+		else
+			return null;
+	}
+
 	// I don't want 'Term' to be iterable...
 	/*
 	public class TermArrayIterator implements Iterable<Term> {
@@ -223,7 +240,6 @@ public class Term {
 			for (Term x: v) x.removeEmbeding();
 		}
 	}
-
 	
 	static private Term glueTerms(Term[] ts) {
 		Term output = new Term();
@@ -331,59 +347,90 @@ public class Term {
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
 	static public Term compileTerms (ArrayString seq) {
-		//seq = seq.sepwithComma();
 		seq.removeVoid();
 		return compileTermsClean(seq);
 	}
+
+	/*
+	static private String unpeelParenthesis(String s) {
+		int lastindex = s.length()-1;
+		while (s.charAt(0) == '(' && s.charAt(lastindex) == ')') {
+			int openedparenthesis = 0;
+			for (char c: s.substring(0, lastindex-1).toCharArray()) {
+				if (c == '(') openedparenthesis++;
+				if (c == ')') openedparenthesis--;
+				if (openedparenthesis == 0) return s;
+			}
+			s = s.substring(1, --lastindex);
+		}
+		return s;
+	}*/
 	
 	static private Term compileTermsClean(ArrayString seq) {
-		//System.out.println("___");
-		//for (String s: seq) System.out.println(s);
-		
 		Term result = new Term();
 		ArrayString innerBuffer = new ArrayString();
 		int openedParenthesis = 0;
 		
 		// In case of redundant parenthesis
-		seq.unpeelParenthesis();
-		
+		seq.removeSpacedParenthesis();
+
+		/*
 		if (seq.size() == 1) {
 			String element = seq.get(0);
 			if (isSingletonCollection(element)) return compileSingletonCollection(element);
 			else return makeNewTerm(element);
-		}
-		
-		boolean inCollection = false;
+		}*/
 		boolean foundlink = false;
+
+		String prev = null;
 		for (String x: seq) {
 			x = x.trim();
-			
+
 			if (openedParenthesis > 0) {
-				openedParenthesis += StringOperations.getParenthesisDifferential(x);
+				if (x.equals("(")) openedParenthesis++;
+				else if (x.equals(")")) openedParenthesis--;
 				innerBuffer.add(x);
 				
-				if (openedParenthesis < 0) System.out.println("[FATAL] Problem with parenthesis in: " + x);
+				if (openedParenthesis < 0) System.out.println("[FATAL] Problem with parenthesis in: " + x); // TODO do this elsewhere
 				if (openedParenthesis == 0) {
 					Term innerterm;
-					if (inCollection) {
-						innerterm = compileCollection(innerBuffer);
-						inCollection = false;
+					if (isCollectionHeader(prev)) {
+						innerterm = compileCollection(innerBuffer, prev); // TODO tuples not admited
+						result.removeLastterm();
 					}
-					else innerterm = compileTermsClean(innerBuffer);
+					else {
+						innerterm = compileTermsClean(innerBuffer);
+					}
 					result.addTerm(innerterm);
 					innerBuffer = new ArrayString();
 				}
 				
 			} else {
-				openedParenthesis += StringOperations.getParenthesisDifferential(x);
-				if (isSingletonCollection(x)) result.addTerm(compileSingletonCollection(x));
-				else if (openedParenthesis > 0) {
-					if (isCollectionHeader(x)) inCollection = true;
+				if (x.equals("(")) openedParenthesis++;
+				else if (x.equals(")")) openedParenthesis--;
+
+				//if (isSingletonCollection(x)) result.addTerm(compileSingletonCollection(x));
+				if (openedParenthesis > 0) {
 					innerBuffer.add(x);
 				}
 				else {
+					if (isUnaryHeader(x)) {
+						String[] unary = getUnaryHeader(x);
+						Term inner = new Term(unary[1]);
+						char[] chararray = unary[0].toCharArray();
+						for (int i=chararray.length-1; i>=0; i-- ) {
+							char c = chararray[i];
+							Term newinner = new Term();
+							newinner.addTerm(makeNewTerm(Character.toString(c)));
+							newinner.addTerm(inner);
+							newinner.disp = Disp.OT;
+							inner = newinner;
+						}
+						prev = unary[1];
+						result.addTerm(inner);
+					}
 					// Straight to a definition
-					if (x.equals("is")) {
+					else if (x.equals("is")) {
 						Definition def = new Definition();
 						String str = "";
 						boolean foundis = false;
@@ -394,51 +441,74 @@ public class Term {
 						def.parseTerms(result, str);
 						return def;
 					}
-					
-					if (Link.isLink(x)) foundlink = true;
-					result.addTerm(makeNewTerm(x));
+					else {
+						if (Link.isLink(x)) foundlink = true;
+						prev = x;
+						result.addTerm(makeNewTerm(x));
+					}
+
 				}
 			}
 		}
 		
-		if (!foundlink) {
-			result = reduce(result);
-		}
+		if (!foundlink) result = reduce(result);
 		if (foundlink && result.size > 3) {
 			//System.out.println(":result term (size=" + result.size + "):  " + result.toString());
 			result = parseTerms(result);
 			//System.out.println(":into (size=" + result.size + "):   " + result.toString());
 		}
+		System.out.println(result.toString());
 		return result;
 	}
-	
+
+	static private boolean isUnaryHeader (String s) {
+		return (s.charAt(0) == '-' && s.charAt(s.length()-1) != '-');
+	}
+
+	static private String[] getUnaryHeader (String s) {
+		String unaryhead = "";
+		while (s.charAt(0) == '-') {
+			unaryhead += "-";
+			s = s.substring(1);
+		}
+		String[] res = new String[]{unaryhead, s};
+		return res;
+	}
+
 	static private boolean isCollectionHeader (String s) {
 		if (s == null || s.equals("")) return false;
 		char first = s.charAt(0);
-		return Character.isLetter(first) || first == '\\';
+		return Character.isLetter(first) || s.startsWith("\\cartprod") || s.startsWith("\\set") || s.startsWith("\\tuple");
 		//return s.startsWith("\\set(") || s.startsWith("\\cartprod(");
 	}
+
+
+	/** Identifies simple calls like 'f (x)' or '\set (x)' */
+	/* dead by spacing
 	static private boolean isSingletonCollection (String s) {
 		return isCollectionHeader(s) && s.endsWith(")");
-	}
-	
+	}*/
+	/*
 	static private Term compileSingletonCollection (String s) {
 		ArrayList<ArrayString> collections = new ArrayList<ArrayString>();
 		ArrayString innercoll = new ArrayString();
 		innercoll.add(s);
 		collections.add(innercoll);
 		return compileCollectionParsed(collections);
-	}
+	}*/
 	
 	// expect a space after a comma
-	static private Term compileCollection (ArrayString as) {
+	static private Term compileCollection (ArrayString as, String prev) {
 		ArrayList<ArrayString> parsed = new ArrayList<ArrayString>();
 		ArrayString inner = new ArrayString();
+		as.removeSpacedParenthesis();
+
 		int openedParenthesis = 0;
-		
 		for (String s: as) {
-			openedParenthesis += StringOperations.getParenthesisDifferential(s);
-			if (openedParenthesis == 1 && s.endsWith(",")) {
+			if (s.equals("(")) openedParenthesis++;
+			else if (s.equals(")")) openedParenthesis--;
+
+			if (openedParenthesis == 0 && s.endsWith(",")) {
 				inner.add(s.substring(0, s.length()-1));
 				parsed.add(inner);
 				inner = new ArrayString();
@@ -447,29 +517,20 @@ public class Term {
 			}
 		}
 		parsed.add(inner);
-		return compileCollectionParsed(parsed);
+		return compileCollectionParsed(parsed, prev);
 	}
 	
 	
-	static private Term compileCollectionParsed (ArrayList<ArrayString> aas) {
-		// Remove the collection header
-		String[] firstelement = aas.get(0).get(0).split("\\(", 2);
-		assertProperParenthesis(firstelement[1], aas.size() == 1);
-		aas.get(0).set(0, firstelement[1]);
-		
-		// Remove last element closing parenthesis
-		ArrayString lastAs = aas.get(aas.size()-1);
-		String lastelement = lastAs.get(lastAs.size()-1);
-		lastAs.set(lastAs.size()-1, lastelement.substring(0, lastelement.length()-1));
-		
+	static private Term compileCollectionParsed (ArrayList<ArrayString> aas, String coll_header) {
+
 		Collection coll = new Collection();
 		for (ArrayString as: aas) coll.addTerm(compileTermsClean(as));
-		if (firstelement[0].equals("\\cartprod")) coll.iscartesian = true;
-		else if (firstelement[0].equals("\\set")) coll.isset = true;
-		else if (firstelement[0].equals("\\tuple"));
+		if (coll_header.equals("\\cartprod")) coll.iscartesian = true;
+		else if (coll_header.equals("\\set")) coll.isset = true;
+		else if (coll_header.equals("\\tuple"));
 		else {
 			Term fc = new Term();
-			fc.addTerm(makeNewTerm(firstelement[0]));
+			fc.addTerm(makeNewTerm(coll_header));
 			fc.addTerm(coll);
 			fc.disp = Disp.FC;
 			return fc;
@@ -478,6 +539,7 @@ public class Term {
 	}
 	
 	/* Flags wrong construction of the form a()()(x, y, z) but not a(()x, y, z) */
+	/*
 	static private void assertProperParenthesis (String str, boolean isSingleton) {
 		int result = 1;
 		boolean reached0 = false;
@@ -490,7 +552,7 @@ public class Term {
 				else System.out.println("[[[ FATAL ]]] Parenthesis error in " + str);
 			}
 		}
-	}
+	}*/
 		
 	static public ArrayList<Variable> parseLetStatement (ArrayString strings, Theorem thm, boolean fromheader) {
 		ArrayList<Variable> results = new ArrayList<Variable>();
@@ -511,7 +573,7 @@ public class Term {
 		} else if (connection.equals("\\be") && strings.get(i).equals("\\function")) {
 			i++;
 			if (strings.size() > i) {
-				
+
 				ArrayList<Function> funcs = new ArrayList<Function>();
 				ArrayString[] domain = strings.splitArrayBy("->", i);
 				ArrayString[] args = domain[1].splitArrayBy("{", 0);
@@ -524,7 +586,9 @@ public class Term {
 						func.setImage(compileTerms(image), thm);
 						funcs.add(func);
 					}
-				} catch (ExceptionSetInvalid e) { Demonstration.printout(3, e.getError()); }
+				}
+				catch (ExceptionSetInvalid e) { Demonstration.printout(3, e.getError()); }
+				catch (Type.ExceptionTypeUnknown e) { e.explain(); }
 				if (defineSts.size() == 0) {
 					results.addAll(funcs);
 					return results;

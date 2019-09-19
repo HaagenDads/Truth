@@ -26,7 +26,7 @@ public class Set extends Type {
 	public String toString() {
 		if (c.size == 1) return c.get(0).toString();
 		String output = "";
-		for (int i=0; i<c.size-1; i++) output += c.get(i).toString() + " × ";
+		for (int i=0; i<c.size-1; i++) output += c.get(i).toString() + " ï¿½ ";
 		return output += c.get(c.size-1);
 	}
 	
@@ -44,7 +44,13 @@ public class Set extends Type {
 	public boolean isElement(Collection coll, Theorem thm) {
 		if (coll.size != c.size) return false;
 		for (int i=0; i<c.size; i++) {
-			Type arg = Type.getType(coll.get(i), thm);
+			Type arg = null;
+			try {
+				arg = Type.getType(coll.get(i), thm);
+			} catch (ExceptionTypeUnknown e) {
+				e.explain();
+				return false;
+			}
 			String setname = this.c.get(i).s;
 			if (!arg.equals(setname)) return false;
 		}

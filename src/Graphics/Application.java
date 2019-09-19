@@ -18,7 +18,7 @@ import java.util.Scanner;
 
 import javax.swing.*;
 
-public class TextZone extends JFrame {
+public class Application extends JFrame {
 	
 	public JTextArea topTextarea;
 	public BotTextArea botTextarea;
@@ -29,8 +29,9 @@ public class TextZone extends JFrame {
 	public TabList tablist;
 	private static final Font consolasFont = new Font("DialogInput", Font.PLAIN, 12);
 	private static final Font consolasFontButton = new Font("Consolas", Font.BOLD, 12);
+	public String openedfile_path;
 	
-	public TextZone() {
+	public Application() {
 		compiler = new Compiler(this);
 		getContentPane().setLayout(new BorderLayout());
 		
@@ -38,6 +39,7 @@ public class TextZone extends JFrame {
 		instantiateBotarea();
 		instantiateButtons();
 		instantiateMenubar();
+		openedfile_path = null;
 	}
 	
 	
@@ -140,8 +142,8 @@ public class TextZone extends JFrame {
 	
 
 	public void loadTheorem(String filename) {
-		
-		File fcselected = new File("theorems/" + filename);
+		openedfile_path = "theorems/" + filename;
+		File fcselected = new File(openedfile_path);
 		String contenu = "";
 		try {
 			Scanner sc = new Scanner(fcselected); 

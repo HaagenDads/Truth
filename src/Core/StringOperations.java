@@ -107,10 +107,11 @@ abstract public class StringOperations extends JTextPane {
 	}
 	
 	
-	/* 
+	/**
 	 *  General String operations
 	 */
-	
+
+	/** Build string from array of characters. */
 	public static String getString (ArrayList<Character> list) {    
 	    StringBuilder builder = new StringBuilder(list.size());
 	    for(Character ch: list) { builder.append(ch); }

@@ -29,28 +29,31 @@ public class ArrayString extends ArrayList<String>{
 	public void removeLast () {
 		remove(size()-1);
 	}
-	
+
+	/*
 	public String[] toStringlist() {
 		String[] res = new String[size()];
 		for (int i=0; i<size(); i++) res[i] = get(i);
 		return res;
-	}
-	
-	public ArrayString sepwithComma () {
+	}*/
+
+	/** Levels array string with '(', ')', ',' and ':'. */
+	public ArrayString addSpacing () {
 		ArrayString commasep = new ArrayString();
 		boolean foundchar;
 		for (String s: this) {
 			ArrayList<Character> newstr = new ArrayList<Character>();
 			foundchar = false;
 			for (char c: s.toCharArray()) {
-				if (c == ':') {
+				if (c == '(' || c == ')' || c == ':') {
 					foundchar = true;
 					commasep.add(StringOperations.getString(newstr));
-					commasep.add(":");
+					commasep.add(Character.toString(c));
 					newstr = new ArrayList<Character>();
-				} else {
+				}
+				else {
 					newstr.add(c);
-					if (c == ',') {
+					if (c == ',') {						// takes ['x,y,z'] into ['x,', 'y,', 'z']
 						foundchar = true;
 						commasep.add(StringOperations.getString(newstr));
 						newstr = new ArrayList<Character>();
@@ -62,7 +65,8 @@ public class ArrayString extends ArrayList<String>{
 		}
 		return commasep;
 	}
-	
+
+	/*
 	public boolean isSurroundedByParenthesis() {
 		if (get(0).charAt(0) != '(') return false;
 		int openedParenthesis = 0;
@@ -86,6 +90,20 @@ public class ArrayString extends ArrayList<String>{
 			set(0, get(0).substring(1));
 			String lastString = get(size()-1);
 			set(size()-1, lastString.substring(0, lastString.length()-1));
+		}
+	}*/
+
+	public void removeSpacedParenthesis () {
+		while (get(0).equals("(") && get(size()-1).equals(")")) {
+			int opndp = 1;
+			for (int i=1; i<size()-1; i++) {
+				String x = get(i);
+				if (x.equals("(")) opndp++;
+				else if (x.equals(")")) opndp--;
+				if (opndp == 0) return;
+			}
+			removeLast();
+			remove(0);
 		}
 	}
 	

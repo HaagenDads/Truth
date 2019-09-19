@@ -53,14 +53,14 @@ public class Function extends Variable {
 		return res + '\n';
 	}
 	
-	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid {
+	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
 		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, true);
 		domain = new Set(term);
 		defaultDomain = false;
 	}
 	
-	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid {
+	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
 		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, false);
 		image = new Set(term);
@@ -182,7 +182,7 @@ public class Function extends Variable {
 	}
 	
 
-	public class ExceptionSetInvalid extends Exception {
+	static public class ExceptionSetInvalid extends Exception {
 		public Term invalidset;
 		public boolean isdomain;
 		public ExceptionSetInvalid (Term set, boolean isdomain) {

@@ -1,4 +1,4 @@
-Theorem Name:OrImplication Package:Logic{
+Theorem Name:PartitionImplication Package:Logic{
 \let a \in \boolean;
 \let b \in \boolean;
 \let r \in \boolean;
