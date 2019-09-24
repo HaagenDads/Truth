@@ -59,9 +59,9 @@ public class Application extends JFrame {
 	}
 	
 	private void instantiateToparea() {
-		topTextarea = new JTextArea(){
+		topTextarea = new JTextArea(){ /*
             public boolean isManagingFocus(){ return false; }
-	    };
+	    */};
 		topTextarea.setLineWrap(true);
 		topPanel = new JScrollPane(topTextarea);
 		topPanel.setPreferredSize(new Dimension(200, 250));
@@ -189,9 +189,7 @@ public class Application extends JFrame {
 				Theorem thm = compiler.readUnitFromEditor();
 				tablist.addnew(thm);
 				
-			} catch (CompilerException e) {
-				e.printStackTrace();
-			}
+			} catch (CompilerException e) { e.explain(); }
 		}	
 	}
 	

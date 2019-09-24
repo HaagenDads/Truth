@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.Stack;
 
 import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
@@ -16,7 +17,7 @@ public class Compiler {
 	private final static int printPriority = 3;
 	
 	public ArrayList<Theorem> Theorems;
-	Application source;
+	private Application source;
 	
 	public Compiler(Application source) {
 		Theorems = new ArrayList<Theorem>();
@@ -29,14 +30,14 @@ public class Compiler {
 	
 	
 	static public String getUnitFromFile(File file) {
-		String unit = "";
+		StringBuilder unit = new StringBuilder();
 		try {
 			Scanner sc = new Scanner(file); 
-		    while (sc.hasNextLine()){ unit += sc.nextLine() + "\n"; }
+		    while (sc.hasNextLine()){ unit.append(sc.nextLine()).append("\n"); }
 		    sc.close();
-		} catch (IOException exp){}
+		} catch (IOException ignored){}
 		
-		return unit;
+		return unit.toString();
 	}
 	
 	public Theorem readUnitFromEditor() throws CompilerException {
@@ -54,7 +55,8 @@ public class Compiler {
 	}
 	
 	private Theorem readUnit (String unit) throws CompilerException {
-		
+
+		assertParenthesis(unit);
 		assertTheoremExists(unit);
 		
 		Theorem thm = new Theorem();
@@ -82,7 +84,8 @@ public class Compiler {
 		Theorems.add(thm);
 		return thm;
 	}
-	
+
+
 	private int getHeaderPos (char[] chars, int pos) {
 		int openedbracket = 1;
 		for (; pos<chars.length; pos++) {
@@ -124,8 +127,7 @@ public class Compiler {
 		Term t2 = Term.compileTerms(seq.getV(1));
 		return new Statement(seq.getL(0), t1, t2);
 	}
-	
-	
+
 	private void readBody(String body, Theorem thm) {
 		try {
 			thm.compileDemonstration(body);
@@ -133,8 +135,7 @@ public class Compiler {
 			System.out.println("[[ TERMINAL ]] Couldn't compile demonstration.");
 		}
 	}
-	
-	
+
 	private void findFields(String str, Theorem thm) throws CompilerException {
 		
 		int name_pos = str.toLowerCase().indexOf("name:");
@@ -159,7 +160,6 @@ public class Compiler {
 		
 	}
 	
-	
 	public void acceptTheorems(String packageName) throws CompilerException {
 		File[] files = new File("theorems/" + packageName + "/Axioms/").listFiles();
 		File[] files2 = new File("theorems/" + packageName + "/FirstOrder/").listFiles();
@@ -183,7 +183,6 @@ public class Compiler {
 		}
 	}
 	
-	
 	private void printout(String text) {
 		printout(1, text);
 	}
@@ -197,14 +196,33 @@ public class Compiler {
 	private void assertTheoremExists(String body) throws CouldntFindTheoremException {
 		if (!body.substring(0, 8).equalsIgnoreCase("theorem ")) throw new CouldntFindTheoremException();
 	}
+
+	private void assertParenthesis(String body) throws ErrorInParenthesisException {
+		char[] chars = body.toCharArray();
+		Stack<Character> stk = new Stack<Character>();
+		for (int i=0; i<chars.length; i++) {
+			char c = chars[i];
+			if (c == '(' || c == '{' ||  c == '[') {
+				stk.push(c);
+			} else if (c == ')' && stk.pop() != '(') throw new ErrorInParenthesisException(i);
+			else if (c == ']' && stk.pop() != '[') throw new ErrorInParenthesisException(i);
+			else if (c == '}' && stk.pop() != '{') throw new ErrorInParenthesisException(i);
+		}
+	}
+
 	static private boolean doesDemonstrationExist(String body) {
 		if (body.length() < 14) return false;
 		return body.substring(0, 13).trim().equalsIgnoreCase("demonstration");
 	}
-		
-	static public class CompilerException extends Exception {};
-	static class CouldntFindTheoremException extends CompilerException {};
-	static class CouldntFindTheoremNameException extends CompilerException {}
-	static class CouldntFindDemonstrationException extends CompilerException {}
+
+	abstract static public class CompilerException extends GenException { public String errorType() { return "Compiler";}};
+	static class CouldntFindTheoremException extends CompilerException { public String errorMessage() { return "Couldn't find theorem."; }};
+	static class CouldntFindTheoremNameException extends CompilerException { public String errorMessage() { return "Couldn't find theorem name."; }}
+	static class CouldntFindDemonstrationException extends CompilerException { public String errorMessage() { return "Couldn't find demonstration."; }}
+	static class ErrorInParenthesisException extends CompilerException {
+		int i;
+		ErrorInParenthesisException(int i) {this.i = i; }
+		public String errorMessage() { return "Error in parenthesis at position " + i + "."; }
+	}
 	
 }

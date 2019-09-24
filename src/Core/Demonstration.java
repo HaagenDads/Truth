@@ -302,7 +302,7 @@ public class Demonstration {
 			if (solveMath(matht).equalsString("\\true")) {
 				return new Justification("SolvingMath");
 			}
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 		
 		
 		// Applying previous theorems
@@ -355,8 +355,8 @@ public class Demonstration {
 	 */
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		//for (Term tt: perms) System.out.println("- " + tt.toString());
-		Permutations pmleft = Term.permute(prop.lside);
-		Permutations pmright = Term.permute(prop.rside);
+		Permutations pmleft = prop.lside.getPermutations();
+		Permutations pmright = prop.rside.getPermutations();
 		
 		// TODO think about 'is \true gonna yield an empty validperm?'
 		
@@ -518,8 +518,6 @@ public class Demonstration {
 			for (Term x: coll.items) res.addTerm(substitute(x, key, into));
 			return res;
 		}
-		
-		
 	}
 	
 	
@@ -540,9 +538,7 @@ public class Demonstration {
 		if (disp == Term.Disp.QTT) {
 			return solveQuantifierOperator(t.get(2));
 		}
-
 		return null;
-		
 	}
 	
 	
@@ -569,9 +565,9 @@ public class Demonstration {
 		if (result == null) return null;
 		return new Term(result);
 	}
-	
+
+	/** Solve trivial quantifier operator, e.g. for all x: false. */
 	private Term solveQuantifierOperator (Term term) {
-		term.flatten();
 		if (term.equalsString("\\true")) return term;
 		if (term.equalsString("\\false")) return term;
 		return null;
@@ -641,7 +637,7 @@ public class Demonstration {
 			//valid = true;
 		}
 		
-		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {			
+		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {
 			ArrayString[] split = arr.splitArrayBy("{", 1);
 			ArrayString hypo = split[0];
 			ArrayString subbody = split[1];
@@ -747,19 +743,15 @@ public class Demonstration {
 		else System.out.println(text);
 	}
 	
-	private class ExceptionCantSolveMath extends Exception {}
-	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
-	
-	public class ExceptionCaseNonvalid extends Exception {}
+	static private class ExceptionCantSolveMath extends Exception {}
+	static private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
+	static public class ExceptionCaseNonvalid extends Exception {}
 
-	abstract static public class ExceptionComprehension extends Exception {
-		abstract public void explain();
-	}
+
+	abstract static public class ExceptionComprehension extends GenException { public String errorType() { return "Comprehension";}};
 	static public class ExceptionComprehensionInQuantifier extends ExceptionComprehension {
 		Term t;
-		public ExceptionComprehensionInQuantifier (Term _t) { t = _t; }
-		public void explain() {
-			System.out.println("[COMPREHENSION ERROR] In quantifier " + t.toString() + ", condition wasn't comprenhended.");
-		}
+		 ExceptionComprehensionInQuantifier (Term _t) { t = _t; }
+		public String errorMessage() { return "In quantifier " + t.toString() + ", condition wasn't comprenhended."; }
 	}
 }

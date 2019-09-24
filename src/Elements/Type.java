@@ -1,6 +1,7 @@
 package Elements;
 
 import Core.Demonstration;
+import Core.GenException;
 import Operation.BooleanLogic;
 import Core.Theorem;
 import Operation.NaturalNumbers;
@@ -138,44 +139,42 @@ public class Type {
 		throw new ExceptionCouldntResolveBinaryType(op, a, b);
 	}
 	
-	public static boolean isin(Object t, Object[] list) {
+	private static boolean isin(Object t, Object[] list) {
 		for (Object s: list) {
 			if (t.equals(s)) return true;
 		}
 		return false;
 	}
 
+
 	static public class ExceptionTypeUnknown extends Demonstration.ExceptionComprehension {
 		Term t;
-		public ExceptionTypeUnknown(Term t) { this.t = t; }
-		public void explain() {	System.out.println("[TYPE EXCEPTION] Type couldn't be understood from term: " + t.toString()); }
+		ExceptionTypeUnknown(Term t) { this.t = t; }
+		public String errorType() { return "Type";}
+		public String errorMessage() { return "Type couldn't be understood from term: " + t.toString(); }
 	}
 
 	static public class ExceptionCollectionOutOfDomain extends ExceptionTypeUnknown {
 		Function f;
-		public ExceptionCollectionOutOfDomain(Function f, Collection c) { super(c); this.f = f; }
-		public void explain() {
-			System.out.println("[TYPE EXCEPTION] Collection " + t.toString() + " isn't element of domain of " + f.name);
-		}
+		ExceptionCollectionOutOfDomain(Function f, Collection c) { super(c); this.f = f; }
+		public String errorMessage() { return "Collection " + t.toString() + " isn't element of domain of " + f.name;}
 	}
 
 	static public class ExceptionVariableCouldntBeFound extends ExceptionTypeUnknown {
-		public ExceptionVariableCouldntBeFound(Term t) { super(t); }
-		public void explain() {	System.out.println("[TYPE EXCEPTION] Type couldn't be infered from flat unknown term " + t.toString()); }
+		ExceptionVariableCouldntBeFound(Term t) { super(t); }
+		public String errorMessage() { return "Type couldn't be infered from flat unknown term " + t.toString(); }
 	}
 
 	static public class ExceptionCouldntResolveUnaryType extends ExceptionTypeUnknown {
 		Type type; Operator op;
-		public ExceptionCouldntResolveUnaryType(Operator op, Type type) { super(op); this.type = type; }
-		public void explain() {	System.out.println("[TYPE EXCEPTION] Couldn't resolve unary type " + type + " with operator " + t.toString()); }
+		ExceptionCouldntResolveUnaryType(Operator op, Type type) { super(op); this.type = type; }
+		public String errorMessage() { return "Couldn't resolve unary type " + type + " with operator " + t.toString();}
 	}
 
 	static public class ExceptionCouldntResolveBinaryType extends ExceptionTypeUnknown {
 		Type t1, t2; Operator op;
-		public ExceptionCouldntResolveBinaryType(Operator op, Type type1, Type type2) { super(op); this.t1 = type1; this.t2 = type2; }
-		public void explain() {
-			System.out.println("[TYPE EXCEPTION] Couldn't resolve binary types " + t1 + " and " + t2 + " with operator " + t.toString());
-		}
+		ExceptionCouldntResolveBinaryType(Operator op, Type type1, Type type2) { super(op); this.t1 = type1; this.t2 = type2; }
+		public String errorMessage() { return "Couldn't resolve binary types " + t1 + " and " + t2 + " with operator " + t.toString();}
 	}
 }
 

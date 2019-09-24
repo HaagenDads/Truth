@@ -1,9 +1,6 @@
 package Elements;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Stack;
+import java.util.*;
 
 import Core.Demonstration;
 import Core.StringOperations;
@@ -24,15 +21,18 @@ public class Term {
 	public Term[] v;
 	public int size;
 	public String s;
+	protected Permutations permutations;
 
-	public Term() {
-		size = 0;
-		disp = null;
-	}
+	public Term() { __init__();	}
 	public Term(String s) {
 		this.s = s;
+		__init__();
+	}
+
+	private void __init__() {
 		size = 0;
 		disp = null;
+		permutations = null;
 	}
 	
 	public static Term makeNewTerm (String s) {
@@ -251,7 +251,7 @@ public class Term {
 	
 	static private Stack<Term> toStack (Term[] array) {
 		Stack<Term> result = new Stack<Term>();
-		for (Term o: array) result.add(o);
+		result.addAll(Arrays.asList(array));
 		return result;
 	}
 	
@@ -283,7 +283,8 @@ public class Term {
 		}
 		return parsed;
 	}
-	
+
+	/** Takes ['x', 'and', 'not', 'y'] into ['x', 'and', ['not', 'y']] */
 	static private Term reduce (Term termarray) {
 		if (termarray.isShallow() || termarray.isCollection()) {
 			return termarray;
@@ -298,9 +299,9 @@ public class Term {
 			Term ith = input.pop(); // Reversed order
 			if (ith.isOperator()) {
 				if (ith.equals(Op.forall)) {
-					// TODO collection as syntatxic sugar
+					// TODO collection as syntatxic sugar, from forall x: forall y: into forall (x, y)
 					output = extractQuantifiers(output, Op.forall);
-					if (output == null) return null;
+					if (output == null) return null; // TODO throw errors instead!
 					
 				} else if (ith.equals(Op.exists)) {
 					output = extractQuantifiers(output, Op.exists);
@@ -390,8 +391,7 @@ public class Term {
 				if (x.equals("(")) openedParenthesis++;
 				else if (x.equals(")")) openedParenthesis--;
 				innerBuffer.add(x);
-				
-				if (openedParenthesis < 0) System.out.println("[FATAL] Problem with parenthesis in: " + x); // TODO do this elsewhere
+
 				if (openedParenthesis == 0) {
 					Term innerterm;
 					if (isCollectionHeader(prev)) {
@@ -466,13 +466,12 @@ public class Term {
 	}
 
 	static private String[] getUnaryHeader (String s) {
-		String unaryhead = "";
+		StringBuilder unaryhead = new StringBuilder();
 		while (s.charAt(0) == '-') {
-			unaryhead += "-";
+			unaryhead.append("-");
 			s = s.substring(1);
 		}
-		String[] res = new String[]{unaryhead, s};
-		return res;
+		return new String[]{unaryhead.toString(), s};
 	}
 
 	static private boolean isCollectionHeader (String s) {
@@ -842,9 +841,13 @@ public class Term {
 		else return extractDiffInner(a, b, clink, dL);
 	}
 
+	/** Made so that permutations aren't calculated every time. */
+	public Permutations getPermutations() {
+		if (permutations == null) permutations = permute(this);
+		return permutations;
+	}
 
-	
-	static public Permutations permute(Term t) {
+	static protected Permutations permute(Term t) {
 		Permutations perm = new Permutations();
 		Disp disp = t.getDisposition();
 		
@@ -874,7 +877,7 @@ public class Term {
 			}
 		}
 		else if (disp == Disp.SET) {
-			
+			// TODO are sets still a thing? i'd think so?
 		}
 		else if (disp == Disp.C) {
 			return Collection.permute((Collection) t);
@@ -893,6 +896,9 @@ public class Term {
 	
 	static public class ExceptionTheoremNotApplicable extends Exception {};
 	static public class ExceptionTrivialEquality extends Exception {};
+
+	static public class TermSynthaxException extends Exception {};
+	static public class ExceptionQuantifierOperatorSynthax extends TermSynthaxException {};
 	
 	static public class Permutations {
 		public ArrayList<Term> vs;
