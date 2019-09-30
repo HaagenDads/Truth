@@ -1,7 +1,6 @@
 package Elements;
 
 import Core.Demonstration;
-import Core.GenException;
 import Operation.BooleanLogic;
 import Core.Theorem;
 import Operation.NaturalNumbers;
@@ -104,12 +103,14 @@ public class Type {
 	
 	
 	static private Type solveUnary(Operator op, Type a) throws ExceptionCouldntResolveUnaryType {
-		if (a.equals(BooleanLogic.genericType)) {
+		if (a.equals(Bool)) {
 			if (op.equals(Op.not)) return a;
 		}
-		else if (a.equals(RealNumbers.genericType)) {
+		else if (a.equals(Real)) {
 			if (op.equals(Op.minus)) return a;
 		}
+		
+		if (a.equals(Nat)) return solveUnary(op, Real);
 		throw new ExceptionCouldntResolveUnaryType(op, a);
 	}
 	
@@ -120,7 +121,7 @@ public class Type {
 				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies})) return a;
 			}
 			if (a.equals(NaturalNumbers.genericType)) {
-				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp})) return a;
+				if (isin(op, new Operator[]{Op.plus, Op.mult, Op.exp})) return a;
 				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
 					return Bool;
 				}

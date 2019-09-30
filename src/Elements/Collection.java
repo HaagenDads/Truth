@@ -114,9 +114,9 @@ public class Collection extends Term {
 		
 	}
 
-	public Permutations getPermutations() {
+	public ArrayList<Term> getPermutations() {
 		if (permutations == null) permutations = permute(this);
-		return permutations;
+		return permutations.vs;
 	}
 
 
@@ -128,7 +128,7 @@ public class Collection extends Term {
 		collectionPerms.add(new Collection());
 		for (Term t: c.items) {
 			ArrayList<Collection> newcolls = new ArrayList<Collection>();
-			for (Term p: Term.permute(t).vs) {
+			for (Term p: t.getPermutations()) {
 				for (Collection col: collectionPerms) {
 					Collection newcol = col.copy();
 					newcol.addTerm(p);

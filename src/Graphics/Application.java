@@ -2,6 +2,7 @@ package Graphics;
 
 import Core.Compiler;
 import Core.Compiler.CompilerException;
+import Core.GenException;
 import Core.Theorem;
 
 import java.awt.BorderLayout;
@@ -189,7 +190,7 @@ public class Application extends JFrame {
 				Theorem thm = compiler.readUnitFromEditor();
 				tablist.addnew(thm);
 				
-			} catch (CompilerException e) { e.explain(); }
+			} catch (GenException e) { e.explain(); }
 		}	
 	}
 	

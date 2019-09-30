@@ -1,8 +1,6 @@
 package Graphics;
 
-@SuppressWarnings("unused")
 public class Main {
-	
 	
 	public static void main(String[] args) {
         Application frame = new Application();
@@ -19,6 +17,9 @@ public class Main {
         //frame.loadTheorem("Functions/increasingfnc.txt");
         //frame.loadTheorem("Functions/ExponentUnit.txt");
         frame.loadTheorem("Logic/Natural/AxiomAdditionIneq2.txt");
+
+        // TODO save types in term (easy)
+        // TODO for every possible association !!!
 	}
 	
 }

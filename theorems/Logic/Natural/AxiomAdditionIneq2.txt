@@ -5,5 +5,5 @@ Theorem Name:AxiomAdditionIneq Package:Logic{
 \state x < x + a;
 } 
 Demonstration {
-    x < x + a \eq x + (-x) < (x + a) + (-x) \eq 0 < (x + a) + (-x) \eq 0 < a + 0 \eq 0 < a \eq \true;
+    x < x + a \eq x - x < (x + a) - x \eq 0 < (x + a) - x \eq 0 < a + 0 \eq 0 < a \eq \true;
 }

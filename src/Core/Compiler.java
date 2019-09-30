@@ -9,6 +9,7 @@ import java.util.Stack;
 import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
 import Elements.ArrayString.Sequence;
+import Elements.Term.TermSynthaxException;
 import Graphics.Application;
 
 
@@ -40,7 +41,7 @@ public class Compiler {
 		return unit.toString();
 	}
 	
-	public Theorem readUnitFromEditor() throws CompilerException {
+	public Theorem readUnitFromEditor() throws CompilerException, TermSynthaxException {
 		String unit = source.topTextarea.getText();
 		return readUnit(unit);
 	}
@@ -54,7 +55,7 @@ public class Compiler {
 		}
 	}
 	
-	private Theorem readUnit (String unit) throws CompilerException {
+	private Theorem readUnit (String unit) throws CompilerException, TermSynthaxException {
 
 		assertParenthesis(unit);
 		assertTheoremExists(unit);
@@ -98,7 +99,7 @@ public class Compiler {
 	}
 	
 	
-	private void readHeader(String header, Theorem thm) {
+	private void readHeader(String header, Theorem thm) throws TermSynthaxException {
 		
 		//System.out.println(":thm name:  " + thm.name);
 		Body head = new Body(header);
@@ -120,7 +121,7 @@ public class Compiler {
 		
 	}
 	
-	private Statement parseStatementFromSequence(Sequence seq) {
+	private Statement parseStatementFromSequence(Sequence seq) throws TermSynthaxException {
 		ArrayString lside = seq.getV(0);
 		lside.remove(0);
 		Term t1 = Term.compileTerms(lside);
@@ -131,8 +132,11 @@ public class Compiler {
 	private void readBody(String body, Theorem thm) {
 		try {
 			thm.compileDemonstration(body);
-		} catch (ExceptionCaseNonvalid e) {
-			System.out.println("[[ TERMINAL ]] Couldn't compile demonstration.");
+		} 
+		catch (GenException e) { e.explain(); } 
+		catch (ExceptionCaseNonvalid e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -160,7 +164,7 @@ public class Compiler {
 		
 	}
 	
-	public void acceptTheorems(String packageName) throws CompilerException {
+	public void acceptTheorems(String packageName) throws CompilerException, TermSynthaxException {
 		File[] files = new File("theorems/" + packageName + "/Axioms/").listFiles();
 		File[] files2 = new File("theorems/" + packageName + "/FirstOrder/").listFiles();
 		File[] files3 = new File("theorems/" + packageName + "/Natural/").listFiles();

@@ -3,7 +3,7 @@ package Elements;
 import java.util.*;
 
 import Core.Demonstration;
-import Core.StringOperations;
+import Core.GenException;
 import Core.Theorem;
 import Elements.Function.ExceptionAssignDefinition;
 import Elements.Function.ExceptionSetInvalid;
@@ -12,7 +12,7 @@ import Operation.Operator;
 
 public class Term {
 
-	public static enum Disp {SET, TOT, QTT, OT, F, C, FC, DEF, ERR};
+	public enum Disp {SET, TOT, QTT, OT, F, C, FC, DEF, ERR};
 	private Disp disp;
 	protected boolean iscollection = false;
 	protected boolean isoperator = false;
@@ -48,9 +48,7 @@ public class Term {
 	public void addTerm(Term t) {
 		Term[] oldv = v;
 		v = new Term[++size];
-		if (oldv != null) {
-			for (int i=0; i<oldv.length; i++) v[i] = oldv[i];
-		}
+		if (oldv != null) System.arraycopy(oldv, 0, v, 0, oldv.length);
 		v[size-1] = t;
 		disp = null;
 	}
@@ -59,9 +57,7 @@ public class Term {
 	private void removeLastterm() {
 		Term [] oldv = v;
 		v = new Term[--size];
-		if (oldv != null) {
-			for (int i=0; i<size; i++) v[i] = oldv[i];
-		}
+		if (oldv != null) System.arraycopy(oldv, 0, v, 0, size);
 		disp = null;
 	}
 	
@@ -105,11 +101,11 @@ public class Term {
 		Disp disp = this.getDisposition();
 		if (t.getDisposition() != disp) return false;
 		if (disp == Disp.F) {
-			if (this.s == null && t.s == null) return true;
+			if (s == null && t.s == null) return true;
 			return s.equals(t.s);
 		} else {
 			if (size != t.size) return false;
-			for (Term tperm: Term.permute(t).vs) {
+			for (Term tperm: t.getPermutations()) {
 				boolean result = true;
 				for (int i=0; i<size; i++) result = result && (get(i).equals(tperm.get(i)));
 				if (result) return true;
@@ -158,7 +154,8 @@ public class Term {
 			} else if (t1.isShallow() && t2.isCollection()) return Disp.FC;
 		} else if (size == 3) {
 			Term t3 = get(2);
-			if (t2.isOperator() && ((Operator) t2).isBinary() && !t1.isOperator() && !t3.isOperator()) {
+			boolean binary = t2.isOperator() && (((Operator) t2).isBinary() || Op.minus.equals(t2));
+			if (binary && !t1.isOperator() && !t3.isOperator()) {
 				return Disp.TOT;
 			}
 			if (t1.isOperator() && !t2.isOperator() && !t3.isOperator()) {
@@ -190,6 +187,14 @@ public class Term {
 		String output = "";
 		if (disp == Disp.ERR) output += "[disp error (size="+size+")] ";
 		
+		if (disp == Disp.OT && v[0] == Op.minus) return "-" + v[1].toString();
+		if (disp == Disp.TOT && Op.plus.equals(v[1]) && v[2].getDisposition() == Disp.OT && Op.minus.equals(v[2].v[0])) {
+			Term tempterm = new Term();
+			tempterm.addTerm(v[0]);
+			tempterm.addTerm(Op.minus);
+			tempterm.addTerm(v[2].v[1]);
+			return tempterm.toString();
+		}
 		for (Term x: v) {
 			Disp innerdisp = x.getDisposition();
 			if (innerdisp == Disp.F) output += x.s + " ";
@@ -255,10 +260,16 @@ public class Term {
 		return result;
 	}
 	
-	static private Term parseTerms (Term termarray) {
-		if (termarray.size < 4 || termarray.getDisposition() != Disp.ERR) return termarray;
+	static private Term parseTerms (Term termarray) throws TermSynthaxException {
+		if (termarray.size < 4 || termarray.getDisposition() != Disp.ERR) {
+			termarray = reduceBinaryMinus(termarray);
+			return termarray;
+		}
 		Term term = reduce(termarray);
-		if (term.size < 4 || term.getDisposition() != Disp.ERR) return term;
+		if (term.size < 4 || term.getDisposition() != Disp.ERR) {
+			termarray = reduceBinaryMinus(termarray);
+			return term;
+		}
 		
 		Term parsed = new Term();
 		for (int i=0; i<term.size; i++) {
@@ -281,11 +292,13 @@ public class Term {
 				parsed.addTerm(parseTerms(tright));
 			}
 		}
+		
 		return parsed;
 	}
 
-	/** Takes ['x', 'and', 'not', 'y'] into ['x', 'and', ['not', 'y']] */
-	static private Term reduce (Term termarray) {
+	/** Takes ['x', 'and', 'not', 'y'] into ['x', 'and', ['not', 'y']] 
+	 * @throws TermSynthaxException */
+	static private Term reduce (Term termarray) throws TermSynthaxException {
 		if (termarray.isShallow() || termarray.isCollection()) {
 			return termarray;
 		}
@@ -301,11 +314,9 @@ public class Term {
 				if (ith.equals(Op.forall)) {
 					// TODO collection as syntatxic sugar, from forall x: forall y: into forall (x, y)
 					output = extractQuantifiers(output, Op.forall);
-					if (output == null) return null; // TODO throw errors instead!
 					
 				} else if (ith.equals(Op.exists)) {
 					output = extractQuantifiers(output, Op.exists);
-					if (output == null) return null;
 					
 				} else if (ith.equals(Op.not)) {
 					Term notterm = new Term();
@@ -322,32 +333,33 @@ public class Term {
 		return result;
 	}
 	
-	static private LinkedList<Term> extractQuantifiers (LinkedList<Term> output, Operator quantop) {
-		try {
-			int followsPos=1;
-			//System.out.println(":extractQuantifiers:");
-			//for (Term t: output) System.out.println(t);
-			while (!output.get(followsPos).equalsString(":")) followsPos++;
-			Term quantterm = new Term();
-			Term condition = new Term();
-			Term proposition = new Term();
-			
-			for (int i=0; i<followsPos; i++) condition.addTerm(output.pop());
-			output.pop(); // removal of the ":" term
-			while (!output.isEmpty()) proposition.addTerm(output.pop());
-						
-			quantterm.addTerm(quantop);
-			quantterm.addTerm(parseTerms(condition));
-			quantterm.addTerm(parseTerms(proposition));
-			output.addFirst(quantterm);
-			return output;
-		} catch (IndexOutOfBoundsException e) { System.out.println("Couldn't find ':' token"); return null;}
+	static private LinkedList<Term> extractQuantifiers (LinkedList<Term> output, Operator quantop) throws TermSynthaxException {
+
+		int followsPos=1;
+
+		if (output.size() < 3) throw new QuantifierSynthaxException_Size(output);
+		while (!output.get(followsPos).equalsString(":")) {
+			if (++followsPos >= output.size()) throw new QuantifierSynthaxException_Colon(output);
+		}
+		Term quantterm = new Term();
+		Term condition = new Term();
+		Term proposition = new Term();
+		
+		for (int i=0; i<followsPos; i++) condition.addTerm(output.pop());
+		output.pop(); // removal of the ":" term
+		while (!output.isEmpty()) proposition.addTerm(output.pop());
+					
+		quantterm.addTerm(quantop);
+		quantterm.addTerm(parseTerms(condition));
+		quantterm.addTerm(parseTerms(proposition));
+		output.addFirst(quantterm);
+		return output;
 	}
 	
 	/*
 	 * Returns a term structure (list of other terms, never immediatly shallow)
 	 */
-	static public Term compileTerms (ArrayString seq) {
+	static public Term compileTerms (ArrayString seq) throws TermSynthaxException {
 		seq.removeVoid();
 		return compileTermsClean(seq);
 	}
@@ -367,7 +379,7 @@ public class Term {
 		return s;
 	}*/
 	
-	static private Term compileTermsClean(ArrayString seq) {
+	static private Term compileTermsClean(ArrayString seq) throws TermSynthaxException {
 		Term result = new Term();
 		ArrayString innerBuffer = new ArrayString();
 		int openedParenthesis = 0;
@@ -457,12 +469,34 @@ public class Term {
 			result = parseTerms(result);
 			//System.out.println(":into (size=" + result.size + "):   " + result.toString());
 		}
-		System.out.println(result.toString());
+		result = reduceBinaryMinus(result);
+		if (result.getDisposition() == Disp.ERR) throw new TermDispositionUnknownException(result);
 		return result;
+	}
+	
+	static private Term reduceBinaryMinus (Term t) {
+		if (t.getDisposition() == Disp.TOT && ((Operator) t.get(1)).equals(Op.minus)) {
+			
+			Term plusres = new Term();
+			plusres.addTerm(t.get(0));
+			plusres.addTerm(Op.plus);
+			
+			Term minusterm = new Term();
+			minusterm.addTerm(Op.minus);
+			minusterm.addTerm(t.get(2));
+			plusres.addTerm(minusterm);
+			
+			t = plusres;
+		}
+		return t;
 	}
 
 	static private boolean isUnaryHeader (String s) {
-		return (s.charAt(0) == '-' && s.charAt(s.length()-1) != '-');
+		if ((s.charAt(0) == '-' && s.charAt(s.length()-1) != '-')) {
+			System.out.println(s + " is a unary header.");
+			return true;
+		}
+		return false;
 	}
 
 	static private String[] getUnaryHeader (String s) {
@@ -481,23 +515,9 @@ public class Term {
 		//return s.startsWith("\\set(") || s.startsWith("\\cartprod(");
 	}
 
-
-	/** Identifies simple calls like 'f (x)' or '\set (x)' */
-	/* dead by spacing
-	static private boolean isSingletonCollection (String s) {
-		return isCollectionHeader(s) && s.endsWith(")");
-	}*/
-	/*
-	static private Term compileSingletonCollection (String s) {
-		ArrayList<ArrayString> collections = new ArrayList<ArrayString>();
-		ArrayString innercoll = new ArrayString();
-		innercoll.add(s);
-		collections.add(innercoll);
-		return compileCollectionParsed(collections);
-	}*/
 	
 	// expect a space after a comma
-	static private Term compileCollection (ArrayString as, String prev) {
+	static private Term compileCollection (ArrayString as, String prev) throws TermSynthaxException {
 		ArrayList<ArrayString> parsed = new ArrayList<ArrayString>();
 		ArrayString inner = new ArrayString();
 		as.removeSpacedParenthesis();
@@ -520,7 +540,7 @@ public class Term {
 	}
 	
 	
-	static private Term compileCollectionParsed (ArrayList<ArrayString> aas, String coll_header) {
+	static private Term compileCollectionParsed (ArrayList<ArrayString> aas, String coll_header) throws TermSynthaxException {
 
 		Collection coll = new Collection();
 		for (ArrayString as: aas) coll.addTerm(compileTermsClean(as));
@@ -587,7 +607,7 @@ public class Term {
 					}
 				}
 				catch (ExceptionSetInvalid e) { Demonstration.printout(3, e.getError()); }
-				catch (Type.ExceptionTypeUnknown e) { e.explain(); }
+				catch (GenException e) { e.explain(); }
 				if (defineSts.size() == 0) {
 					results.addAll(funcs);
 					return results;
@@ -607,9 +627,9 @@ public class Term {
 				
 					results.add(func);
 					return results;
-				} catch (ExceptionAssignDefinition e) {
-					System.out.println(e.printError());
-				}
+				} 
+				catch (ExceptionAssignDefinition e) {	System.out.println(e.printError());	}
+				catch (TermSynthaxException e) { e.explain(); }
 				
 				
 			} else {
@@ -701,7 +721,7 @@ public class Term {
 		public void extractDiff(Link link) {
 			if (Term.extractDiffInner(t1, t2, link, this)) trivial = true;
 		}
-		// TODO make use of it
+
 		public boolean isTrivial() {
 			return trivial;
 		}
@@ -720,14 +740,13 @@ public class Term {
 	 *     or that a <=> b (( since  (a <==> b) <==> (a v c <==> a v b)  ))
 	 *     idem for f(a) <=> f(b)
 	 */
-	static public ArrayList<Statement> extractDiff(Term t1, Term t2, Link link) throws ExceptionTrivialEquality {
+	static public ArrayList<Statement> extractDiff(Term t1, Term t2, Link link) {
 		DifferencesLedger dlg = new DifferencesLedger(t1, t2);
 		
 		// TODO equiv only makes sense for booleans
 		if (link.equals(Op.eq)) {
 			dlg.extractDiff(link);
 		} else if (link.equals(Op.equiv)) {
-			dlg.extractDiff(new Link(Op.eq));
 			dlg.extractDiff(link);
 		} else if (link.equals(Op.le)) {
 			dlg.extractDiff(new Link(Op.eq));
@@ -742,7 +761,6 @@ public class Term {
 			dlg.extractDiff(new Link(Op.lt));
 			dlg.extractDiff(link);
 		} else if (link.equals(Op.then)) {
-			dlg.extractDiff(new Link(Op.eq));
 			dlg.extractDiff(new Link(Op.equiv));
 			dlg.extractDiff(link);
 		} else {
@@ -750,13 +768,14 @@ public class Term {
 		}
 		
 		dlg.addNestedComparaison(extract4TOTdiff(t1, t2, link));
-		if (dlg.isTrivial()) throw new ExceptionTrivialEquality();
+		if (dlg.isTrivial()) return new ArrayList<Statement>();
 		Collections.reverse(dlg.diffs);
 		return dlg.diffs;
 	}
 	
+	// TODO is this the best way of doing this? with the error and such?
 	/* For the frequent case of a = b \eq c = b, or a < b \eq b < c */
-	static private ArrayList<Statement> extract4TOTdiff (Term t1, Term t2, Link link) throws ExceptionTrivialEquality {
+	static private ArrayList<Statement> extract4TOTdiff (Term t1, Term t2, Link link) {
 		if (link.equals(Op.equiv) || link.equals(Op.then)) {
 			if (t1.getDisposition() == Disp.TOT && t2.getDisposition() == Disp.TOT) {
 				Term a, b, c, d; a = t1.get(0); b = t1.get(2); c = t2.get(0); d = t2.get(2);
@@ -779,14 +798,15 @@ public class Term {
 						if (eqlt == 11)	return extractDiff(b, d, eqlink);
 						if (eqlt == 12)	return extractDiff(b, c, eqlink);
 						if (eqlt == 21)	return extractDiff(a, d, eqlink);
-						if (eqlt == 22)	return extractDiff(a, c, eqlink);
+						return extractDiff(a, c, eqlink);
 					}
 				}
 			}
 		}
 		return null;
 	}
-	
+
+	/** Digs from complex (a+((b*c) - (d/e))) = (a+((b*c) - (x/e))) into a "d = x" expression */
 	static boolean extractDiffInner(Term t1, Term t2, Link clink, DifferencesLedger dL) {
 
 		Statement wholestatement = new Statement(clink, t1, t2);
@@ -819,11 +839,14 @@ public class Term {
 				
 				if (d1 == Disp.TOT) {
 					if (!eq1) return false;
-					if (eq0) return extractDiffInnerWithReversing(p12, p22, clink, dL, p11.s);
-					if (eq2) return extractDiffInnerWithReversing(p10, p20, clink, dL, p11.s);
+					Link adjlink = adjustLink(clink, (Operator) p11);
+					if (eq0) return extractDiffInner(p12, p22, adjlink, dL);
+					if (eq2) return extractDiffInner(p10, p20, adjlink, dL);
+					// TODO for every possible association !!!
+
 				} else if (d1 == Disp.QTT) {
 					if (!eq0) return false;
-					if (eq1) return extractDiffInner(p12, p22, clink, dL);
+					//if (eq1) return extractDiffInner(p12, p22, clink, dL); this is bullshit
 					if (eq2) return extractDiffInner(p11, p21, clink, dL);
 				} else if (d1 == Disp.DEF) {
 					if (!eq1) return false;
@@ -834,17 +857,27 @@ public class Term {
 			}
 		}
 	}
-	
+
+	/** a and b iif a and c  =>  b iif c
+	 *  a < 0   iif b < 0    =>  a = b
+	 *  a + b   <   a + c    =>  b = c
+	 */
+	static private Link adjustLink(Link lbroad, Operator op) {
+		if (op.associatesBooleans()) return lbroad;
+		return new Link(Op.eq);
+	}
+
+	/** Takes -2 > -3  into  3 > 2   for unary minus and div signs only */
 	static private boolean extractDiffInnerWithReversing(Term a, Term b, Link clink, DifferencesLedger dL, String opstr) {
 		Operator op = Op.getOperator(opstr);
 		if (op.isReversing()) return extractDiffInner(b, a, clink, dL);
-		else return extractDiffInner(a, b, clink, dL);
+		return extractDiffInner(a, b, clink, dL);
 	}
 
 	/** Made so that permutations aren't calculated every time. */
-	public Permutations getPermutations() {
+	public ArrayList<Term> getPermutations() {
 		if (permutations == null) permutations = permute(this);
-		return permutations;
+		return permutations.vs;
 	}
 
 	static protected Permutations permute(Term t) {
@@ -857,15 +890,15 @@ public class Term {
 		else if (disp == Disp.TOT) {
 			Operator op = (Operator) (t.get(1));
 			boolean commutative = op.isCommutative();
-			for (Term permta: permute(t.get(0)).vs) {
-			for (Term permtb: permute(t.get(2)).vs) {
+			for (Term permta: t.get(0).getPermutations()) {
+			for (Term permtb: t.get(2).getPermutations()) {
 				perm.add(glueTerms(new Term[]{permta, op, permtb}));
 				if (commutative) perm.add(glueTerms(new Term[]{permtb, op, permta}));
 			}
 			}
 		}
 		else if (disp == Disp.OT) {
-			for (Term permt: permute(t.get(1)).vs) {
+			for (Term permt: t.get(1).getPermutations()) {
 				perm.add(glueTerms(new Term[]{t.get(0), permt}));
 			}
 		}
@@ -883,7 +916,7 @@ public class Term {
 			return Collection.permute((Collection) t);
 		}
 		else if (disp == Disp.FC) {
-			for (Term permc: Collection.permute(t.get(1)).vs) {
+			for (Term permc: t.get(1).getPermutations()) {
 				perm.add(glueTerms(new Term[]{t.get(0), permc}));
 			}
 		}
@@ -895,10 +928,30 @@ public class Term {
 	
 	
 	static public class ExceptionTheoremNotApplicable extends Exception {};
-	static public class ExceptionTrivialEquality extends Exception {};
+	//static public class ExceptionTrivialEquality extends Exception {};
 
-	static public class TermSynthaxException extends Exception {};
-	static public class ExceptionQuantifierOperatorSynthax extends TermSynthaxException {};
+	//static public class ExceptionQuantifierOperatorSynthax extends TermSynthaxException {};
+	
+	abstract static public class TermSynthaxException extends GenException {
+		public String errorType() { return "Term";}
+	}
+	static public class QuantifierSynthaxException_Colon extends TermSynthaxException {
+		LinkedList<Term> err;
+		public QuantifierSynthaxException_Colon (LinkedList<Term> err) { this.err = err; }
+		public String errorMessage() { return "Quantifier couldn't find mandatory ':' token in term " + err.toString(); }
+	}
+	static public class QuantifierSynthaxException_Size extends TermSynthaxException {
+		LinkedList<Term> err;
+		public QuantifierSynthaxException_Size (LinkedList<Term> err) { this.err = err; }
+		public String errorMessage() { return "Quantifier has too few tokens in term " + err.toString() + " (size=" + err.size() + ")"; }
+	}
+	static public class TermDispositionUnknownException extends TermSynthaxException {
+		Term t;
+		public TermDispositionUnknownException (Term t) { this.t = t; }
+		public String errorMessage() { return "Following term has an unknown disposition: " + t.toString(); }
+	}
+	
+	
 	
 	static public class Permutations {
 		public ArrayList<Term> vs;

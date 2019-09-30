@@ -3,6 +3,7 @@ package Elements;
 import java.util.ArrayList;
 
 import Core.StringOperations;
+import Elements.Term.TermSynthaxException;
 import Operation.Op;
 import Operation.Operator;
 
@@ -111,13 +112,10 @@ public class ArrayString extends ArrayList<String>{
 		removeIf(s -> (s == null || s.equals("")));
 	}
 
-	// TODO add space after parenthsis	
-	static private final Operator[] precedence1 = new Operator[]{Op.equiv, Op.then};
-	static private final Operator[] precedence2 = new Operator[]{Op.eq, Op.gt, Op.ge, Op.lt, Op.le, Op.ineq,
-																 Op.in, Op.psubset, Op.subset};
+	// TODO add space after parenthsis
 	
 	public Sequence splitPrecedence () {
-		for (Operator[] oplist: new Operator[][]{precedence1, precedence2}) {
+		for (Operator[] oplist: Operator.genPrecedence) {
 			Sequence seq = splitPrecedence(oplist);
 			if (seq.size() > 1) return seq;
 		}
@@ -248,7 +246,8 @@ public class ArrayString extends ArrayList<String>{
 			res.remove(null);
 			return res;
 		}
-		public Statement toStatement () {
+		
+		public Statement toStatement () throws TermSynthaxException {
 			if (v.size() != 2) return null;
 			return new Statement(links.get(0), Term.compileTerms(v.get(0)), Term.compileTerms(v.get(1)));
 		}

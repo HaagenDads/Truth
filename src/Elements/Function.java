@@ -3,6 +3,7 @@ package Elements;
 import java.util.ArrayList;
 
 import Core.Theorem;
+import Elements.Term.TermSynthaxException;
 import Operation.Op;
 
 public class Function extends Variable {
@@ -68,11 +69,11 @@ public class Function extends Variable {
 	}
 	
 
-	public void setDefinition(Theorem thm, ArrayString generalDef) throws ExceptionAssignDefinition {
+	public void setDefinition(Theorem thm, ArrayString generalDef) throws ExceptionAssignDefinition, TermSynthaxException {
 		if (defs.size() > 0) throw new ExceptionDefinitionMultipleUnconditional(Term.compileTerms(generalDef));
 		setDefinition(thm, null, generalDef);
 	}
-	public void setDefinition(Theorem thm, ArrayString condstring, ArrayString defstring) throws ExceptionAssignDefinition {
+	public void setDefinition(Theorem thm, ArrayString condstring, ArrayString defstring) throws ExceptionAssignDefinition, TermSynthaxException {
 		Term def = Term.compileTerms(defstring);
 		Term fnc = def.get(0);
 		

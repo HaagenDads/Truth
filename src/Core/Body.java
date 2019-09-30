@@ -52,7 +52,7 @@ public class Body {
 		Iterator<String> it = texttokens.iterator();
 		while (it.hasNext()) {
 			x = it.next();
-			if (! (x==null || x=="")) {
+			if (! (x==null || x.equals(""))) {
 				x = x.trim();
 				
 				if (x.equals("{")) {

@@ -7,8 +7,9 @@ import Elements.*;
 import Elements.ArrayString.Sequence;
 import Elements.Term.Disp;
 import Elements.Term.ExceptionTheoremNotApplicable;
-import Elements.Term.ExceptionTrivialEquality;
 import Elements.Term.Permutations;
+import Elements.Term.TermSynthaxException;
+import Elements.Type.ExceptionTypeUnknown;
 import Operation.BooleanLogic;
 import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers;
@@ -48,7 +49,7 @@ public class Demonstration {
 	}
 	
 	
-	public boolean solveDemonstration() throws ExceptionCaseNonvalid {
+	public boolean solveDemonstration() throws ExceptionCaseNonvalid, TermSynthaxException {
 		
 		for (Sequence sequence: body.seqarray) {
 			if (sequence.isSubbody()) {
@@ -67,10 +68,8 @@ public class Demonstration {
 			} else {
 				try {
 					compileProposition(sequence);
-				} catch (ExceptionComprehension e) {
-					e.explain();
-					return false;
-				}
+				} 
+				catch (GenException e) { e.explain(); return false;	}
 			}
 		}
 		
@@ -83,15 +82,14 @@ public class Demonstration {
 		return false;		
 	}
 	
-	private void compileProposition (Sequence sequence) throws ExceptionComprehension {
+	private void compileProposition (Sequence sequence) throws ExceptionComprehension, TermSynthaxException {
 		boolean proposition = true;
 		Term firstexp = null;
 		Term t1 = null;
 		Term t2 = null;
 		
 		for (int i=0; i<sequence.size(); i++) {
-			t2 = Term.compileTerms(sequence.getV(i));
-			
+			t2 = Term.compileTerms(sequence.getV(i));			
 			if (t1 == null) {
 				nlog.addLine(null, t2, null);
 				firstexp = t2;
@@ -167,32 +165,87 @@ public class Demonstration {
 	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
 	private boolean validateStatement(Term t1, Term t2, Link link) throws ExceptionComprehension {
-		
-		Justification solution;
-		try {
-			ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
-			
-			for (Statement st: diffLedger) {
-				printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
-				solution = validateStatementSpecificDifference(st);
-				if (solution != null) {
-					printout(":success!:");
-					nlog.addLine(link, t2, solution);
-					return true;
-				}
-			}
-			printout(3, "Couldnt use assumptions nor math");
-			nlog.addLine(link, t2, new Justification("error"));
-			return false;
-			
-		} catch (ExceptionTrivialEquality e) {
-			nlog.addLine(link, t2, new Justification("Trivial equality"));
+		Justification solution = findSolutionForStatementValidation(t1, t2, link);
+		if (solution != null) {
+			nlog.addLine(link, t2, solution);
+			printout(":success!:");
 			return true;
 		}
+		nlog.addLine(link, t2, new Justification("error"));
+		return false;
+	}
+
+	// TODO a=b <==> c=d  .  if no solution is found, look for a=c && b=d, then a=d && b=c  .
+	// Types of statements:
+	// bool <==> bool
+	// bool ==> bool
+	// a = b
+	// a < b
+	private Justification findSolutionForStatementValidation(Term t1, Term t2, Link link) throws ExceptionComprehension {
+		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
+		if (diffLedger.size() == 0) return new Justification("Trivial equality");
+
+		Justification solution = null;
+		for (Statement st: diffLedger) {
+			printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
+			solution = validateStatementSpecificDifference(st);
+			if (solution != null) break;
+		}
+		return solution;
 	}
 	
-	/* Resolution for statements of the sort:
-	 *    T <==> \exists x (x > 0)     where here, quant="\exists", cond="x", prop="(x > 0)"
+	/** ----------------------------------------------------------------------------------
+	 *  Core of the demonstrator. Tries a bunch of different ways to validate a statement. 
+	 *  ----------------------------------------------------------------------------------
+	 * */
+	private Justification validateStatementSpecificDifference(Statement diff) throws ExceptionComprehension {
+	
+		Justification solution = null;
+		int k = 0;
+		while (solution == null) {
+			// Trivial proposition
+			if (k==0) solution = validateTrivialImplication(diff);
+			else if (k==1) solution = SolveFunctionEvaluation(diff);		// Function evaluation
+			else if (k==2) solution = tryKnownAssumptions(diff); 			// Using assumptions
+			else if (k==3) solution = tryUsingMath(diff);					// Using math
+			else if (k==4) solution = tryPreviousTheorems(diff);			// Applying previous theorems
+			else break;
+			k++;
+		}
+		// https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
+		return solution;
+	}
+	
+	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
+	private Justification validateTrivialImplication(Statement diff) throws ExceptionComprehension {
+		
+		Link link = diff.link;
+		for (Statement uniDiff: new Statement[]{diff, diff.switchSides()}) {
+			Term t1 = uniDiff.lside;
+			Term t2 = uniDiff.rside;
+			if (t1.equalsString("\\true") && (link.equals(Op.equiv) || link.equals(Op.equiv))) {
+				Term.Disp disp = t2.getDisposition();
+				//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
+				//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
+	
+				if (disp == Term.Disp.QTT) {
+					Term cond = t2.get(1);
+					Term prop = t2.get(2);
+					// Makes the distinction between x > 6 and x + 6 as a condition
+					if (cond.getDisposition() == Term.Disp.TOT && !Link.isConditional(cond.get(1).s)) throw new ExceptionComprehensionInQuantifier(cond);
+					if (!Type.matchtypes(prop, Type.Bool, source)) throw new ExceptionComprehensionInQuantifier(prop);
+					return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
+				}
+				if (disp == Term.Disp.TOT && Link.isLink(t2.get(1).s)) {
+					return findSolutionForStatementValidation(t2.get(0), t2.get(2), new Link(t2.get(1).s));
+				}			
+			}
+		}
+		return null;
+	}
+	
+	/** Resolution for statements of the sort:
+	 *  T <==> \exists x (x > 0)     where here, quant="\exists", cond="x", prop="(x > 0)"
 	 */
 	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) throws ExceptionComprehensionInQuantifier, Type.ExceptionTypeUnknown {
 		boolean isexist = quant.equals(Op.exists); // isforall implied by the negation
@@ -243,78 +296,6 @@ public class Demonstration {
 		return false;
 	}
 	
-	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
-	private Justification validateTrivialImplication(Term t1, Term t2, Link link) throws ExceptionComprehension {
-		t1.flatten();
-		if (link.equals(Op.equiv) && t1.equalsString("\\true")) {
-			Term.Disp disp = t2.getDisposition();
-			//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
-			//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
-
-			if (disp == Term.Disp.QTT) {
-				Term cond = t2.get(1);
-				Term prop = t2.get(2);
-				// Makes the distinction between x > 6 and x + 6 as a condition
-				if (cond.getDisposition() == Term.Disp.TOT && !Link.isConditional(cond.get(1).s)) throw new ExceptionComprehensionInQuantifier(cond);
-				if (!Type.matchtypes(prop, Type.Bool, source)) throw new ExceptionComprehensionInQuantifier(prop);
-				return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
-			}
-			if (disp == Term.Disp.TOT) {
-				Term left = t2.get(0);
-				String lk = t2.get(1).s;
-				Term right = t2.get(2);
-				if (Link.isLink(lk)) {
-					return validateStatementSpecificDifference(new Statement(new Link(lk), left, right));
-				}
-			}			
-		}
-		return null;
-	}
-	
-
-	private Justification validateStatementSpecificDifference(Statement diff) throws ExceptionComprehension {
-	
-		// Trivial proposition
-		Justification solution;
-		solution = validateTrivialImplication(diff.lside, diff.rside, diff.link);
-		if (solution != null) return solution;
-		solution = validateTrivialImplication(diff.rside, diff.lside, diff.link);
-		if (solution != null) return solution;
-		
-		// Function evaluation
-		solution = SolveFunctionEvaluation(diff);
-		if (solution != null) return solution;
-		
-		// Using assumptions
-		for (Assump a: assumptions) {
-			if (a.st.equals(diff)) {
-				return new Justification(a);
-			}
-		}
-		
-		// Using math
-		try {
-			Term matht = new Term();
-			matht.addTerm(diff.lside);
-			matht.addTerm(Op.getOperator(diff.link.link));
-			matht.addTerm(diff.rside);
-			
-			if (solveMath(matht).equalsString("\\true")) {
-				return new Justification("SolvingMath");
-			}
-		} catch (Exception ignored) {}
-		
-		
-		// Applying previous theorems
-		for (Theorem th: source.loadedTheorems) {
-			if (matchTheorem(th, diff)) {
-				return new Justification(th);
-			}
-		}	
-		
-		return null;
-	}
-	
 	private Justification SolveFunctionEvaluation (Statement diff) {
 		for (Statement st: new Statement[]{diff, diff.switchSides()}) {
 			if (st.lside.getDisposition() == Term.Disp.FC) {
@@ -336,6 +317,36 @@ public class Demonstration {
 		return null;
 	}
 	
+	private Justification tryKnownAssumptions (Statement diff) {
+		for (Assump a: assumptions) {
+			if (a.st.equals(diff)) return new Justification(a);
+		}
+		return null;
+	}
+	
+	private Justification tryUsingMath (Statement diff) {
+		try {
+			Term matht = new Term();
+			matht.addTerm(diff.lside);
+			matht.addTerm(Op.getOperator(diff.link.link));
+			matht.addTerm(diff.rside);
+			if (solveMath(matht).equalsString("\\true")) return new Justification("SolvingMath");
+		} catch (Exception ignored) {}
+		return null;
+	}
+	
+	private Justification tryPreviousTheorems (Statement diff) throws ExceptionTypeUnknown {
+		for (Theorem th: source.loadedTheorems) {
+			if (matchTheorem(th, diff)) return new Justification(th);
+		}	
+		return null;
+	}
+	
+	
+	/** ----------------------------------------------------------------------------------
+	 *  Core of matching theorems 
+	 *  ----------------------------------------------------------------------------------
+	 */
 	private boolean matchTheorem (Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
 		if (matchTheoremUnilateral(th, prop)) return true;
@@ -350,23 +361,21 @@ public class Demonstration {
 		}
 	}
 	
-	/*
-	 * We first find permutations from the left side, make sure the types match.
-	 */
+	/** We first find permutations from the left side, make sure the types match. */
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		//for (Term tt: perms) System.out.println("- " + tt.toString());
-		Permutations pmleft = prop.lside.getPermutations();
-		Permutations pmright = prop.rside.getPermutations();
+		ArrayList<Term> pmleft = prop.lside.getPermutations();
+		ArrayList<Term> pmright = prop.rside.getPermutations();
 		
 		// TODO think about 'is \true gonna yield an empty validperm?'
 		
-		_debug(th, debugthm, ":thm - " + debugthm + ": size pmleft = " + pmleft.vs.size());
-		ValidPermutations validleftperms = extractValidPerms(pmleft.vs, th, th.statement.lside);
+		_debug(th, debugthm, ":thm - " + debugthm + ": size pmleft = " + pmleft.size());
+		ValidPermutations validleftperms = extractValidPerms(pmleft, th, th.statement.lside);
 		if (validleftperms.isEmpty()) return false;
 		_debug(th, debugthm, ":leftperms:");
 		for (UniquePerm pleft: validleftperms) _debug(th, debugthm, pleft.sts.toString());
 		
-		ValidPermutations validrightperms = extractValidPerms(pmright.vs, th, th.statement.rside);
+		ValidPermutations validrightperms = extractValidPerms(pmright, th, th.statement.rside);
 		if (validrightperms.isEmpty()) return false;
 		_debug(th, debugthm, ":rightperms:");
 		for (UniquePerm pright: validrightperms) _debug(th, debugthm, pright.sts.toString());
@@ -388,9 +397,7 @@ public class Demonstration {
 	private boolean assertValidSubstitutions(ArrayList<Statement> grpA, ArrayList<Statement> grpB) {
 		for (Statement stA: grpA) {
 		for (Statement stB: grpB) {
-			if (stA.lside.equals(stB.lside) && !stA.rside.equals(stB.rside)) {
-				return false;
-			}
+			if (stA.lside.equals(stB.lside) && !stA.rside.equals(stB.rside)) return false;
 		}
 		}
 		return true;
@@ -560,9 +567,14 @@ public class Demonstration {
 	
 	private Term solveUnaryOperator(Operator op, Term term) {
 		if (!term.isShallow()) return null;
+		String result;
 		
-		String result = BooleanLogic.applyUnaryLogic(op, term.s);
+		result = BooleanLogic.applyUnaryLogic(op, term.s);
 		if (result == null) return null;
+		
+		result = RealNumbers.applyUnaryLogic(op, term.s);
+		if (result != null) return new Term(result);
+		
 		return new Term(result);
 	}
 
@@ -637,7 +649,7 @@ public class Demonstration {
 			//valid = true;
 		}
 		
-		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {
+		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid, TermSynthaxException {
 			ArrayString[] split = arr.splitArrayBy("{", 1);
 			ArrayString hypo = split[0];
 			ArrayString subbody = split[1];

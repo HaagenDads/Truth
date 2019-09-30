@@ -98,10 +98,17 @@ public class Link {
 	}
 	
 	static public boolean isCommutative(Link o) {
-		if (isLink(o.link)) {
-			return o.op.isCommutative();
-		}
+		if (isLink(o.link))	return o.op.isCommutative();
 		return false;
+	}
+	
+	public boolean hasSymmInverse() {
+		if (isLink(link)) return op.hasSymmInverse();
+		return false;
+	}
+	public Link getSymmInverse() {
+		if (isLink(link)) return new Link(op.reverse());
+		return null;
 	}
 
 }
