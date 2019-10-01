@@ -20,7 +20,7 @@ import Operation.RealNumbers;
 public class Demonstration {
 
 	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
-	private static final String debugthm = "AxiomAdditionIneq";
+	private static final String debugthm = "AxiomSoustraction";
 	
 	private boolean isNested;
 	
@@ -103,15 +103,29 @@ public class Demonstration {
 		}
 		
 		Link conclusion = Link.reduceSerie(sequence.getLinks());
+		if (firstexp == null) { System.out.println("Something real bad happened"); return; }
 		if (proposition && !conclusion.equals("")) {
 			
 			Statement takeaway = new Statement(conclusion, firstexp, t2);
 			
 			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
 			// the link to reflect this reality.
-			if (conclusion.equals(Op.then) && firstexp.equalsString("\\true")) {
-				takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
-			} 
+			if (conclusion.equals(Op.then)) {
+				if (firstexp.equalsString("\\true")) takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
+			}
+
+			// If conclusion was "true <==> a > 0", the summary should be a > 0.
+			if ((conclusion.equals(Op.then) || conclusion.equals(Op.equiv))
+				&& firstexp.equalsString("\\true") && t2.getDisposition() == Disp.TOT && ((Operator) t2.get(1)).isComparing())
+			{
+				takeaway = new Statement(new Link((Operator) t2.get(1)), t2.get(0), t2.get(2));
+			}
+			if (conclusion.equals(Op.equiv)
+				 && t2.equalsString("\\true") && firstexp.getDisposition() == Disp.TOT && ((Operator) firstexp.get(1)).isComparing())
+			{
+				takeaway = new Statement(new Link((Operator) firstexp.get(1)), firstexp.get(0), firstexp.get(2));
+			}
+
 
 			assumptions.acceptAssumptionFromDemonstration(takeaway, nlog.blockstamp);
 		}
@@ -295,11 +309,12 @@ public class Demonstration {
 		}
 		return false;
 	}
-	
+
+
 	private Justification SolveFunctionEvaluation (Statement diff) {
 		for (Statement st: new Statement[]{diff, diff.switchSides()}) {
 			if (st.lside.getDisposition() == Term.Disp.FC) {
-				Function fnc = (Function) source.getVariable(st.lside.get(0).s);
+			Function fnc = (Function) source.getVariable(st.lside.get(0).s);
 				Collection col = (Collection) st.lside.get(1);
 				if (fnc.domain.isElement(col, source)) {
 					Term eval = fnc.getEvaluation(col, assumptions);
@@ -412,7 +427,8 @@ public class Demonstration {
 			try {
 				// extractDiffArray already checks for surjectivity
 				ArrayList<Statement> substitutions = Term.extractDiffArray(thside, propPermutation);
-				substitutions = orderSubstitutions(substitutions);
+				// System.out.println("thside=" + thside.toString() + " propPermutation=" + propPermutation.toString());
+				// substitutions = orderSubstitutions(substitutions);
 				
 				// checking here for types - trueSubs ignores substitutions of non-variables (e.g. \true, 4)
 				// Case for 3 = 3, for example
@@ -428,13 +444,13 @@ public class Demonstration {
 					else trueSubs.add(st);
 				}
 				validperms.add(propPermutation, trueSubs);
-			} catch (ExceptionTheoremNotApplicable e) {}
+			} catch (ExceptionTheoremNotApplicable ignored) {}
 		}
 		return validperms;
 	}
 	
 
-	private class ValidPermutations implements Iterable<UniquePerm>{
+	private static class ValidPermutations implements Iterable<UniquePerm>{
 		ArrayList<UniquePerm> perms;
 		public ValidPermutations () {
 			perms = new ArrayList<UniquePerm>();
@@ -451,7 +467,7 @@ public class Demonstration {
 	}
 	
 	// TODO remove t if not actually needed... after running lots of tests.
-	private class UniquePerm {
+	private static class UniquePerm {
 		@SuppressWarnings("unused")
 		Term t;
 		ArrayList<Statement> sts;
@@ -483,7 +499,9 @@ public class Demonstration {
 	}
 	
 	/*	Prioritizes largest substitutions before more shallow ones  */
+	/*
 	private ArrayList<Statement> orderSubstitutions(ArrayList<Statement> former) {
+		System.out.println("ordersubs entry: " + former.toString());
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		int nbshallow = 0;
 		int resultsize = 0;
@@ -495,8 +513,8 @@ public class Demonstration {
 			else {
 				boolean found = false;
 				int pos = resultsize - nbshallow;
-				while (0 < pos-- && !found) {
-					if (!substitute(result.get(pos).rside, st.rside, new Term()).equals(result.get(pos).rside)) {
+				while (pos --> 0 && !found) {
+					if (!Term.substitute(result.get(pos).rside, st.rside, new Term()).equals(result.get(pos).rside)) {  // TODO capital what?
 						result.add(pos+1, st);
 						resultsize++;
 						found = true;
@@ -505,27 +523,10 @@ public class Demonstration {
 				if (!found) result.add(resultsize++ - nbshallow, st);
 			}	
 		}
+		System.out.println("ordersubs exit: " + result.toString() + " resultsize=" + resultsize + " nbshallow=" + nbshallow);
 		return result;
 	}
-	
-	
-	static private Term substitute(Term from, Term key, Term into) {
-		Term result = new Term();
-		if (from.isShallow()) {
-			if (key.isShallow() && from.equals(key)) return into;
-			else return from;
-		}
-		if (from.equals(key)) return into;
-		if (from.getDisposition() != Disp.C) {
-			for (Term x: from.v) result.addTerm(substitute(x, key, into));
-			return result;
-		} else {
-			Collection coll = (Collection) from;
-			Collection res = new Collection();
-			for (Term x: coll.items) res.addTerm(substitute(x, key, into));
-			return res;
-		}
-	}
+	*/
 	
 	
 	private Term solveMath(Term t) throws ExceptionBooleanCasting, ExceptionCantReduceQuantifier {

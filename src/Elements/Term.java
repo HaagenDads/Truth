@@ -66,7 +66,7 @@ public class Term {
 			return v[i];
 		} catch (Exception e) {
 			if (v == null) System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from empty term");
-			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + v.toString());
+			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + Arrays.toString(v));
 			throw new IndexOutOfBoundsException();
 		}
 	}
@@ -98,7 +98,7 @@ public class Term {
 
 	
 	public boolean equals(Term t) {
-		Disp disp = this.getDisposition();
+		Disp disp = getDisposition();
 		if (t.getDisposition() != disp) return false;
 		if (disp == Disp.F) {
 			if (s == null && t.s == null) return true;
@@ -107,7 +107,10 @@ public class Term {
 			if (size != t.size) return false;
 			for (Term tperm: t.getPermutations()) {
 				boolean result = true;
-				for (int i=0; i<size; i++) result = result && (get(i).equals(tperm.get(i)));
+				for (int i=0; i<size; i++) {
+					if (get(i).disp == Disp.F && get(i).s == null) System.out.println("This term has null: " + toString() + " at i=" + i);
+					result = result && (get(i).equals(tperm.get(i)));
+				}
 				if (result) return true;
 			}
 			return false;
@@ -179,13 +182,13 @@ public class Term {
 	
 	public String toString() {
 		Disp disp = getDisposition();
-		if (disp == Disp.F) return s;	
+		if (disp == Disp.F) return s;
 		if (disp == Disp.C) return toString();
 		if (disp == Disp.QTT) return get(0).s + get(1).toString() + ": " + adjustParenthesis(get(2));
 		if (disp == Disp.FC) return get(0).s + get(1).toString();
 		
-		String output = "";
-		if (disp == Disp.ERR) output += "[disp error (size="+size+")] ";
+		StringBuilder output = new StringBuilder();
+		if (disp == Disp.ERR) output.append("[disp error (size=").append(size).append(")] ");
 		
 		if (disp == Disp.OT && v[0] == Op.minus) return "-" + v[1].toString();
 		if (disp == Disp.TOT && Op.plus.equals(v[1]) && v[2].getDisposition() == Disp.OT && Op.minus.equals(v[2].v[0])) {
@@ -197,22 +200,41 @@ public class Term {
 		}
 		for (Term x: v) {
 			Disp innerdisp = x.getDisposition();
-			if (innerdisp == Disp.F) output += x.s + " ";
-			else if (innerdisp == Disp.C) output += x.toString() + " ";
+			if (innerdisp == Disp.F) output.append(x.s).append(" ");
+			else if (innerdisp == Disp.C) output.append(x.toString()).append(" ");
 			else if (innerdisp == Disp.OT) {
-				output += x.get(0).s + " ";
+				output.append(x.get(0).s).append(" ");
 				Term secondterm = x.get(1);
 				/*
 				if (seconddisp != Disp.F && seconddisp != Disp.OT) output += "(" + secondterm.toString() + ") ";
 				else output += secondterm.toString() + " ";*/
-				output += adjustParenthesis(secondterm) + " ";
+				output.append(adjustParenthesis(secondterm)).append(" ");
 			}
 			else if (innerdisp == Disp.FC) {
-				output += x.get(0).s + x.get(1).toString() + " ";
+				output.append(x.get(0).s).append(x.get(1).toString()).append(" ");
 			}
-			else output += "(" + x.toString() + ") ";
+			else output.append("(").append(x.toString()).append(") ");
 		}
-		return removeLastSpace(output);
+		return removeLastSpace(output.toString());
+	}
+
+	/** Straight forward substitution of in terms using recursion. */
+	static public Term substitute(Term from, Term key, Term into) {
+		Term result = new Term();
+		if (from.isShallow()) {
+			if (key.isShallow() && from.equals(key)) return into;
+			else return from;
+		}
+		if (from.equals(key)) return into;
+		if (from.getDisposition() != Disp.C) {
+			for (Term x: from.v) result.addTerm(substitute(x, key, into));
+			return result;
+		} else {
+			Collection coll = (Collection) from;
+			Collection res = new Collection();
+			for (Term x: coll.items) res.addTerm(substitute(x, key, into));
+			return res;
+		}
 	}
 	
 	private String removeLastSpace(String s) {
@@ -248,9 +270,7 @@ public class Term {
 	
 	static private Term glueTerms(Term[] ts) {
 		Term output = new Term();
-		for (Term x: ts) {
-			output.addTerm(x);
-		}
+		for (Term x: ts) output.addTerm(x);
 		return output;
 	}
 	
@@ -313,11 +333,11 @@ public class Term {
 			if (ith.isOperator()) {
 				if (ith.equals(Op.forall)) {
 					// TODO collection as syntatxic sugar, from forall x: forall y: into forall (x, y)
-					output = extractQuantifiers(output, Op.forall);
-					
+					extractQuantifiers(output, Op.forall);
+
 				} else if (ith.equals(Op.exists)) {
-					output = extractQuantifiers(output, Op.exists);
-					
+					extractQuantifiers(output, Op.exists);
+
 				} else if (ith.equals(Op.not)) {
 					Term notterm = new Term();
 					notterm.addTerm(ith);
@@ -333,7 +353,7 @@ public class Term {
 		return result;
 	}
 	
-	static private LinkedList<Term> extractQuantifiers (LinkedList<Term> output, Operator quantop) throws TermSynthaxException {
+	static private void extractQuantifiers (LinkedList<Term> output, Operator quantop) throws TermSynthaxException {
 
 		int followsPos=1;
 
@@ -353,7 +373,6 @@ public class Term {
 		quantterm.addTerm(parseTerms(condition));
 		quantterm.addTerm(parseTerms(proposition));
 		output.addFirst(quantterm);
-		return output;
 	}
 	
 	/*
@@ -654,46 +673,54 @@ public class Term {
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		return extractDiffArray(tthm, tprop, result);
 	}
-	
-	static protected ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> result) throws ExceptionTheoremNotApplicable {	
+	// TODO URGENTLY::: reduce the stupid number of repetition observed
+	static protected ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> result) throws ExceptionTheoremNotApplicable {
+		ArrayList<Statement> newresult = new ArrayList<Statement>();
 		Disp disp = tthm.getDisposition();
 		if (disp == Disp.F) {
 			// Following case implies no difference; no need to check.
-			if (tprop.isShallow() && tprop.equals(tthm)) return result;
-			
+			if (tprop.isShallow() && tprop.equals(tthm)) return newresult;
+
 			// Can't overload a thm variable (thm.a can't be both equal to (x>0) and (x=0))
 			for (Statement st: result) {
 				if (st.lside.equals(tthm) && !st.rside.equals(tprop)) throw new ExceptionTheoremNotApplicable();
+				if (st.lside.equals(tthm) &&  st.rside.equals(tprop)) return newresult;
 			}
-			
-			result.add(new Statement(new Link(":="), tthm, tprop));
+			newresult.add(new Statement(new Link(":="), tthm, tprop));
+			return newresult;
 		}
 		else {
 			if (disp != tprop.getDisposition()) throw new ExceptionTheoremNotApplicable();
 			if (disp == Disp.C) {
-				result.addAll(Collection.extractDiffArray(tthm, tprop, result));
+				newresult.addAll(Collection.extractDiffArray(tthm, tprop, result));
 			} else if (disp == Disp.OT) {
 				assertSameOperator(tthm, tprop, 0);
-				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1), result));
+				newresult.addAll(extractDiffArray(tthm.get(1), tprop.get(1), result));
 			} else if (disp == Disp.TOT) {
 				assertSameOperator(tthm, tprop, 1);
-				result.addAll(extractDiffArray(tthm.get(0), tprop.get(0)));
-				result.addAll(extractDiffArray(tthm.get(2), tprop.get(2), result));
+				newresult.addAll(extractDiffArray(tthm.get(0), tprop.get(0), result));
+				result.addAll(newresult);
+				newresult.addAll(extractDiffArray(tthm.get(2), tprop.get(2), result));
 			} else if (disp == Disp.QTT) {
 				assertSameOperator(tthm, tprop, 0);
-				result.addAll(extractDiffArray(tthm.get(1), tprop.get(1), result));
-				result.addAll(extractDiffArray(tthm.get(2), tprop.get(2), result));
+				newresult.addAll(extractDiffArray(tthm.get(1), tprop.get(1), result));
+				result.addAll(newresult);
+				newresult.addAll(extractDiffArray(tthm.get(2), tprop.get(2), result));
 			} else if (disp == Disp.FC) {
-				result.addAll(extractDiffArray(tthm.get(0), tprop.get(0), result));
-				result.addAll(Collection.extractDiffArray(tthm.get(1), tprop.get(1), result));
+				newresult.addAll(extractDiffArray(tthm.get(0), tprop.get(0), result));
+				result.addAll(newresult);
+				newresult.addAll(Collection.extractDiffArray(tthm.get(1), tprop.get(1), result));
 			} else if (disp == Disp.DEF) {
 				assertSameOperator(tthm, tprop, 1);
-				result.addAll(extractDiffArray(tthm.get(0), tprop.get(0), result));
-				result.addAll(Collection.extractDiffArray(tthm.get(2), tprop.get(2), result));
+				newresult.addAll(extractDiffArray(tthm.get(0), tprop.get(0), result));
+				result.addAll(newresult);
+				newresult.addAll(Collection.extractDiffArray(tthm.get(2), tprop.get(2), result));
 			}
 			else throw new ExceptionTheoremNotApplicable();
 		}
-		return result;
+
+
+		return newresult;
 	}	
 	
 	static private void assertSameOperator (Term a, Term b, int pos) throws ExceptionTheoremNotApplicable {
@@ -840,10 +867,13 @@ public class Term {
 				if (d1 == Disp.TOT) {
 					if (!eq1) return false;
 					Link adjlink = adjustLink(clink, (Operator) p11);
-					if (eq0) return extractDiffInner(p12, p22, adjlink, dL);
-					if (eq2) return extractDiffInner(p10, p20, adjlink, dL);
-					// TODO for every possible association !!!
 
+					for (Term perma: t1.getPermutations()) {
+						p10 = perma.get(0); p12 = perma.get(2);
+						p20 = t2.get(0); p22 = t2.get(2);
+						if (p10.equals(p20)) return extractDiffInner(p12, p22, adjlink, dL);
+						if (p12.equals(p22)) return extractDiffInner(p10, p20, adjlink, dL);
+					}
 				} else if (d1 == Disp.QTT) {
 					if (!eq0) return false;
 					//if (eq1) return extractDiffInner(p12, p22, clink, dL); this is bullshit
@@ -880,7 +910,68 @@ public class Term {
 		return permutations.vs;
 	}
 
-	static protected Permutations permute(Term t) {
+	/*
+	private static Permutations associate(Term t) {
+		Permutations perm = new Permutations();
+		if (t.getDisposition() != Disp.TOT) {
+			perm.add(t);
+			return perm;
+		}
+
+		Operator op = (Operator) (t.get(1));
+		boolean commutative = op.isCommutative();
+		boolean hassymminv = op.hasSymmInverse();
+		boolean uniAssociative = false;
+		boolean biAssociative = false;
+		int ptrAB = 0;
+		int ptrC = 2;
+		Term[][] t0t2_array;
+
+		if (op.isAssociative()) {
+			uniAssociative = t.get(0).getDisposition() == Disp.TOT && t.get(0).get(1).equals(op);
+			if (t.get(2).getDisposition() == Disp.TOT && t.get(2).get(1).equals(op)) {
+				if (uniAssociative) biAssociative = true;
+				else {
+					uniAssociative = true;
+					ptrAB = 2;
+					ptrC = 0;
+				}
+			}
+		}
+		// TODO commutativity
+		// TODO associative isnt always commutative a->(b->c) = (a->b)->c
+
+		if (biAssociative) {
+			Term a, b, c, d;
+			a = t.get(0).get(0);
+			b = t.get(0).get(2);
+			c = t.get(2).get(0);
+			d = t.get(2).get(2);
+			t0t2_array = new Term[][]{
+					new Term[]{glueTerms(new Term[]{a, op, b}), glueTerms(new Term[]{c, op, d})},
+					new Term[]{glueTerms(new Term[]{a, op, c}), glueTerms(new Term[]{b, op, d})},
+					new Term[]{glueTerms(new Term[]{a, op, d}), glueTerms(new Term[]{b, op, c})},
+					new Term[]{glueTerms(new Term[]{b, op, c}), glueTerms(new Term[]{a, op, d})},
+					new Term[]{glueTerms(new Term[]{b, op, d}), glueTerms(new Term[]{a, op, c})},
+					new Term[]{glueTerms(new Term[]{c, op, d}), glueTerms(new Term[]{a, op, b})}
+			};
+		} else if (uniAssociative) {
+			Term a, b, c;
+			a = t.get(ptrAB).get(0);
+			b = t.get(ptrAB).get(2);
+			c = t.get(ptrC);
+			t0t2_array = new Term[][]{
+					new Term[]{glueTerms(new Term[]{a, op, b}), c},
+					new Term[]{glueTerms(new Term[]{a, op, c}), b},
+					new Term[]{glueTerms(new Term[]{b, op, c}), a},
+			};
+		} else t0t2_array = new Term[][]{new Term[]{t.get(0), t.get(2)}};
+
+		for (Term[] t0t2: t0t2_array) {
+			permutet0t2(perm, t0t2, op, commutative, hassymminv);
+		}
+	}*/
+	private static Permutations permute(Term t) {
 		Permutations perm = new Permutations();
 		Disp disp = t.getDisposition();
 		
@@ -890,12 +981,57 @@ public class Term {
 		else if (disp == Disp.TOT) {
 			Operator op = (Operator) (t.get(1));
 			boolean commutative = op.isCommutative();
-			for (Term permta: t.get(0).getPermutations()) {
-			for (Term permtb: t.get(2).getPermutations()) {
-				perm.add(glueTerms(new Term[]{permta, op, permtb}));
-				if (commutative) perm.add(glueTerms(new Term[]{permtb, op, permta}));
+			boolean hassymminv = op.hasSymmInverse();
+			boolean uniAssociative = false;
+			boolean biAssociative = false;
+			int ptrAB = 0;
+			int ptrC = 2;
+			Term[][] t0t2_array;
+
+			if (op.isAssociative()) {
+				uniAssociative = t.get(0).getDisposition() == Disp.TOT && t.get(0).get(1).equals(op);
+				if (t.get(2).getDisposition() == Disp.TOT && t.get(2).get(1).equals(op)) {
+					if (uniAssociative) biAssociative = true;
+					else {
+						uniAssociative = true;
+						ptrAB = 2;
+						ptrC = 0;
+					}
+				}
 			}
+			// TODO commutativity
+			// TODO associative isnt always commutative a->(b->c) = (a->b)->c
+
+			if (biAssociative) {
+				Term a, b, c, d;
+				a = t.get(0).get(0);
+				b = t.get(0).get(2);
+				c = t.get(2).get(0);
+				d = t.get(2).get(2);
+				t0t2_array = new Term[][]{
+						new Term[]{glueTerms(new Term[]{a, op, b}), glueTerms(new Term[]{c, op, d})},
+						new Term[]{glueTerms(new Term[]{a, op, c}), glueTerms(new Term[]{b, op, d})},
+						new Term[]{glueTerms(new Term[]{a, op, d}), glueTerms(new Term[]{b, op, c})},
+						new Term[]{glueTerms(new Term[]{b, op, c}), glueTerms(new Term[]{a, op, d})},
+						new Term[]{glueTerms(new Term[]{b, op, d}), glueTerms(new Term[]{a, op, c})},
+						new Term[]{glueTerms(new Term[]{c, op, d}), glueTerms(new Term[]{a, op, b})}
+				};
+			} else if (uniAssociative) {
+				Term a, b, c;
+				a = t.get(ptrAB).get(0);
+				b = t.get(ptrAB).get(2);
+				c = t.get(ptrC);
+				t0t2_array = new Term[][]{
+						new Term[]{glueTerms(new Term[]{a, op, b}), c},
+						new Term[]{glueTerms(new Term[]{a, op, c}), b},
+						new Term[]{glueTerms(new Term[]{b, op, c}), a},
+				};
+			} else t0t2_array = new Term[][]{new Term[]{t.get(0), t.get(2)}};
+
+			for (Term[] t0t2: t0t2_array) {
+				permutet0t2(perm, t0t2, op, commutative, hassymminv);
 			}
+
 		}
 		else if (disp == Disp.OT) {
 			for (Term permt: t.get(1).getPermutations()) {
@@ -923,10 +1059,26 @@ public class Term {
 		else if (disp == Disp.DEF) {
 			return Definition.permute((Definition) t);
 		}
+
+		/*
+		System.out.println("Permutations of: " + t.toString());
+		for (Term ttt: perm.vs) {
+			System.out.println("term: " + ttt.toString() + " disp=" + ttt.getDisposition());
+			if (ttt.getDisposition() == Disp.TOT) System.out.println("term(0): " + ttt.get(0).toString() + " disp=" + ttt.get(0).getDisposition());
+		}*/
 		return perm;
 	}
 	
-	
+	static private void permutet0t2(Permutations perm, Term[] t0t2, Operator op, boolean commutative, boolean hassymminv) {
+		for (Term permta: t0t2[0].getPermutations()) {
+			for (Term permtb: t0t2[1].getPermutations()) {
+				perm.add(glueTerms(new Term[]{permta, op, permtb}));
+				if (commutative) perm.add(glueTerms(new Term[]{permtb, op, permta}));
+				else if (hassymminv) perm.add(glueTerms(new Term[]{permtb, op.reverse(), permta}));
+			}
+		}
+	}
+
 	static public class ExceptionTheoremNotApplicable extends Exception {};
 	//static public class ExceptionTrivialEquality extends Exception {};
 

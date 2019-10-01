@@ -1,7 +1,9 @@
 package Graphics;
 
+import java.util.ArrayList;
+
 public class Main {
-	
+
 	public static void main(String[] args) {
         Application frame = new Application();
         frame.setLocation(250, 50);
@@ -21,5 +23,30 @@ public class Main {
         // TODO save types in term (easy)
         // TODO for every possible association !!!
 	}
-	
+
+	/*
+	public static void main(String[] args) {
+	    A a = new A(11);
+	    A b = new A(22);
+        ArrayList<A> alist = new ArrayList<A>();
+        alist.add(a); alist.add(b);
+        alist.get(0).setv(3);
+        alist.get(1).setv(5);
+        System.out.println(a.v + " " + b.v + " : " + alist.get(0).v + " " +alist.get(1).v);
+
+    }
+
+
+	static class A {
+	    int v;
+	    int id;
+	    public A(int id) {
+	        this.id = id;
+	        this.v = 0;
+        }
+	    public void setv(int v) {
+	        System.out.println("Setting v to " + v + " in " + id);
+	        this.v = v;
+        }
+    }*/
 }

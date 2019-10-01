@@ -52,17 +52,18 @@ public class Collection extends Term {
 		if (isEmpty()) return "()";
 		String link = ", ";
 		if (iscartesian) link = " × ";
-		String output = "(";
+
+		StringBuilder output = new StringBuilder("(");
 		String closing = ")";
 		if (isset) {
-			output = "{";
+			output = new StringBuilder("{");
 			closing = "}";
 		}
 		for (Term t: items) {
 			//Disp tdisp = t.getDisposition();
 			//if (!t.isShallow() && !(tdisp == Disp.C) && !(tdisp == Disp.FC)) output += "(" + t.toString() + ")" + link;
 			//else
-			output += t.toString() + link;
+			output.append(t.toString()).append(link);
 		}
 		return output.substring(0, output.length()-link.length()) + closing;
 	}
