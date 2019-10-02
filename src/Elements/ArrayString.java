@@ -1,10 +1,10 @@
 package Elements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import Core.StringOperations;
 import Elements.Term.TermSynthaxException;
-import Operation.Op;
 import Operation.Operator;
 
 public class ArrayString extends ArrayList<String>{
@@ -12,20 +12,21 @@ public class ArrayString extends ArrayList<String>{
 	public ArrayString (){
 		super();
 	}
+
+	public ArrayString(String[] var) {
+		super();
+		addAll(Arrays.asList(var));
+	}
+
+	/*
 	public ArrayString (ArrayList<String> input) {
 		super();
 		addAll(input);
 	}
-	
-	public ArrayString(String[] var) {
-		super();
-		for (String s: var) add(s);
-	}
-
 	public ArrayString(String x) {
 		super();
 		add(x);
-	}
+	}*/
 	
 	public void removeLast () {
 		remove(size()-1);
@@ -43,21 +44,21 @@ public class ArrayString extends ArrayList<String>{
 		ArrayString commasep = new ArrayString();
 		boolean foundchar;
 		for (String s: this) {
-			ArrayList<Character> newstr = new ArrayList<Character>();
+			ArrayList<Character> newstr = new ArrayList<>();
 			foundchar = false;
 			for (char c: s.toCharArray()) {
 				if (c == '(' || c == ')' || c == ':') {
 					foundchar = true;
 					commasep.add(StringOperations.getString(newstr));
 					commasep.add(Character.toString(c));
-					newstr = new ArrayList<Character>();
+					newstr = new ArrayList<>();
 				}
 				else {
 					newstr.add(c);
 					if (c == ',') {						// takes ['x,y,z'] into ['x,', 'y,', 'z']
 						foundchar = true;
 						commasep.add(StringOperations.getString(newstr));
-						newstr = new ArrayList<Character>();
+						newstr = new ArrayList<>();
 					}
 				}
 			}
@@ -111,8 +112,6 @@ public class ArrayString extends ArrayList<String>{
 	public void removeVoid() {
 		removeIf(s -> (s == null || s.equals("")));
 	}
-
-	// TODO add space after parenthsis
 	
 	public Sequence splitPrecedence () {
 		for (Operator[] oplist: Operator.genPrecedence) {
@@ -162,7 +161,7 @@ public class ArrayString extends ArrayList<String>{
 	
 	
 	public ArrayList<ArrayString> getDefineSequences() {
-		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
+		ArrayList<ArrayString> result = new ArrayList<>();
 		ArrayString buffer = new ArrayString();
 		removeLast(); // it's a '}'
 		
@@ -196,13 +195,13 @@ public class ArrayString extends ArrayList<String>{
 	
 	public class Sequence {
 		
-		ArrayList<ArrayString> v = new ArrayList<ArrayString>();
-		ArrayList<Link> links = new ArrayList<Link>();
+		ArrayList<ArrayString> v;
+		ArrayList<Link> links;
 		private boolean issubbody, isassignment;
 		
 		public Sequence () {
-			v = new ArrayList<ArrayString>();
-			links = new ArrayList<Link>();
+			v = new ArrayList<>();
+			links = new ArrayList<>();
 			issubbody = false;
 			isassignment = false;
 		}
@@ -236,7 +235,8 @@ public class ArrayString extends ArrayList<String>{
 		public String getHeadtoken () {
 			return v.get(0).get(0);
 		}
-		
+
+		/*
 		public ArrayString mergeBack () {
 			ArrayString res = new ArrayString();
 			for (int i=0; i<v.size(); i++) {
@@ -245,7 +245,7 @@ public class ArrayString extends ArrayList<String>{
 			}
 			res.remove(null);
 			return res;
-		}
+		}*/
 		
 		public Statement toStatement () throws TermSynthaxException {
 			if (v.size() != 2) return null;

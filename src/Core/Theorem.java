@@ -45,7 +45,8 @@ public class Theorem {
 			String body = Compiler.getDemonstrationFromUnit(unit);
 			compileDemonstration(body);
 		} 
-		catch (GenException e) {e.explain(); } 
+		catch (Compiler.CouldntFindDemonstrationException e) {e.explain_nostack(); }
+		catch (GenException e) {e.explain(); }
 		catch (ExceptionCaseNonvalid e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

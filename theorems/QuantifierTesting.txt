@@ -1,15 +1,15 @@
-Theorem Name:Unit Package:Logic{
+Theorem Name:QuantifierUnit Package:Logic{
 \let x \in \setnatural;
 \let p \in \boolean;
 \let q \in \boolean;
-\state \not \forall x \follows (p \implies q) \eq \exists x \suchthat (p \and \not q);
+\state \not \forall x: (p \implies q) \eq \exists x: (p \and \not q);
 }
 Demonstration { 
-    \not \forall x \follows (p \implies q) \eq
-    \exists x \suchthat \not (p \implies q) \eq
-    \exists x \suchthat \not (\not p \or q) \eq
-    \exists x \suchthat (\not \not p \and \not q) \eq
-    \exists x \suchthat (p \and \not q);
+    \not \forall x: (p \implies q) \eq
+    \exists x: \not (p \implies q) \eq
+    \exists x: \not (\not p \or q) \eq
+    \exists x: (\not \not p \and \not q) \eq
+    \exists x: p \and \not q;
 
 
 }

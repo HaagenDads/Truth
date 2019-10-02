@@ -1,13 +1,12 @@
 package Elements;
 
 import Core.Theorem;
-import Elements.Statement;
 
 // Expresses the validity of a step
 public class Justification {
 
 	public Theorem thm;
-	public Assump assump;
+	private Assump assump;
 	public boolean isTheorem;
 	
 	public Justification(Theorem a) {
@@ -24,7 +23,7 @@ public class Justification {
 	
 	public Justification(String str) {
 		this.thm = null;
-		if (str.equals("error")) assump = new Assump(new Statement(new Link("error"), "", ""), "0");
+		if (str.startsWith("error")) assump = new Assump(new Statement(new Link(str), "", ""), "0");
 		// TODO: When does this str=BooleanLogic happen...
 		else {
 			assump = new Assump(new Statement(new Link(), str, ""), "0");
@@ -41,20 +40,21 @@ public class Justification {
 		if (isTheorem) return thm.name;
 		else {
 			String stamp = assump.IndexStamp;
-			if (stamp.equals("hyp")) {
-				return "Hypothesis";
-			} else if (stamp.equals("0")) {
-				return assump.st.toString();
-			} else if (stamp.equals("-1")) {
-				return "Case: " + assump.st.toString();
-			} else {
-				return "(" + stamp + ")";
+			switch (stamp) {
+				case "hyp":
+					return "Hypothesis";
+				case "0":
+					return assump.st.toString();
+				case "-1":
+					return "Case: " + assump.st.toString();
+				default:
+					return "(" + stamp + ")";
 			}
 		}
 	}
 	
 	public String toString() {
-		if (isError()) return "error";
+		if (isError()) return assump.st.link.link;
 		return getName();
 	}
 	

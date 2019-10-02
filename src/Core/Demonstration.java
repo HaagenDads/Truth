@@ -7,21 +7,15 @@ import Elements.*;
 import Elements.ArrayString.Sequence;
 import Elements.Term.Disp;
 import Elements.Term.ExceptionTheoremNotApplicable;
-import Elements.Term.Permutations;
 import Elements.Term.TermSynthaxException;
 import Elements.Type.ExceptionTypeUnknown;
 import Operation.BooleanLogic;
-import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers;
 import Operation.Op;
 import Operation.Operator;
 import Operation.RealNumbers;
 
-public class Demonstration {
-
-	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
-	private static final String debugthm = "AxiomSoustraction";
-	
+public class Demonstration extends Utils {
 	private boolean isNested;
 	
 	private Body body;
@@ -49,15 +43,15 @@ public class Demonstration {
 	}
 	
 	
-	public boolean solveDemonstration() throws ExceptionCaseNonvalid, TermSynthaxException {
-		
+	public void solveDemonstration() throws ExceptionCaseNonvalid, TermSynthaxException {
+		printout("body seqarray size::" + body.seqarray.size());
 		for (Sequence sequence: body.seqarray) {
 			if (sequence.isSubbody()) {
 				Cases cases = new Cases();
 				cases.parseCase(sequence.getV(0));
 
 				nlog.createCase(cases.hypothesis);
-				if (!cases.nested.solveDemonstration()) return false;
+				cases.nested.solveDemonstration();
 				acceptCasesCommunProvenStatements(cases);
 				nlog.closeCase();
 			} else if (sequence.isAssignment()) {
@@ -69,17 +63,12 @@ public class Demonstration {
 				try {
 					compileProposition(sequence);
 				} 
-				catch (GenException e) { e.explain(); return false;	}
+				catch (GenException e) { e.explain(); return;	}
 			}
 		}
 		
 		// Check if we have demonstrated the proposition
-		if (!isNested) {
-			boolean demonstrated = isTheoremDemonstrated();
-			nlog.conclude(demonstrated);
-			return demonstrated;
-		}
-		return false;		
+		if (!isNested) nlog.conclude(isTheoremDemonstrated());
 	}
 	
 	private void compileProposition (Sequence sequence) throws ExceptionComprehension, TermSynthaxException {
@@ -104,6 +93,7 @@ public class Demonstration {
 		
 		Link conclusion = Link.reduceSerie(sequence.getLinks());
 		if (firstexp == null) { System.out.println("Something real bad happened"); return; }
+		if (conclusion == null) { System.out.println("Link serie does not simplify."); return; }
 		if (proposition && !conclusion.equals("")) {
 			
 			Statement takeaway = new Statement(conclusion, firstexp, t2);
@@ -145,7 +135,7 @@ public class Demonstration {
 	/*
 	 *   Takes commun proven statements from cases and accepts them in the higher demonstration level
 	 */
-	private ArrayList<Assump> acceptCasesCommunProvenStatements(Cases cases) {
+	private void acceptCasesCommunProvenStatements(Cases cases) {
 		// TODO generalise for QTT exists statements
 		// TODO make this work
 		//if (cases.validatePartition().equals("true")) {
@@ -167,7 +157,6 @@ public class Demonstration {
 			assumptions.acceptAssumptionFromDemonstrationThroughCases(bulkResults, nlog.blockstamp);
 			return bulkResults;
 		}*/
-		return null;
 	}
 	
 	/*
@@ -179,13 +168,18 @@ public class Demonstration {
 	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
 	private boolean validateStatement(Term t1, Term t2, Link link) throws ExceptionComprehension {
-		Justification solution = findSolutionForStatementValidation(t1, t2, link);
-		if (solution != null) {
-			nlog.addLine(link, t2, solution);
-			printout(":success!:");
-			return true;
+		try {
+			Justification solution = findSolutionForStatementValidation(t1, t2, link);
+			if (solution != null) {
+				nlog.addLine(link, t2, solution);
+				printout(":success!:");
+				return true;
+			}
+			nlog.addLine(link, t2, new Justification("error"));
+		} catch (Type.ExceptionCollectionOutOfDomain e) {
+			e.explain_nostack();
+			nlog.addLine(link, t2, new Justification("error: collection out of domain"));
 		}
-		nlog.addLine(link, t2, new Justification("error"));
 		return false;
 	}
 
@@ -261,7 +255,7 @@ public class Demonstration {
 	/** Resolution for statements of the sort:
 	 *  T <==> \exists x (x > 0)     where here, quant="\exists", cond="x", prop="(x > 0)"
 	 */
-	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) throws ExceptionComprehensionInQuantifier, Type.ExceptionTypeUnknown {
+	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) throws Type.ExceptionTypeUnknown {
 		boolean isexist = quant.equals(Op.exists); // isforall implied by the negation
 	
 		// TODO check if cond matches the set, eg x < 0 should be invalid if x in naturals
@@ -301,9 +295,7 @@ public class Demonstration {
 			
 			// Partial match between conditions
 			if (assign.link.equals(Op.eq) && isexist) {
-				if (assign.lside.equals(cond) && Type.matchtypes(assign.rside, cond, source)) {
-					return true;
-				}
+				return assign.lside.equals(cond) && Type.matchtypes(assign.rside, cond, source);
 			}
 			// TODO i dont want to always have to write x = 4 ==> x > 3 ==> ... ==> f(x) > 0 ==> Exists x | f(x) > 0
 		}
@@ -365,18 +357,10 @@ public class Demonstration {
 	private boolean matchTheorem (Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
 		if (matchTheoremUnilateral(th, prop)) return true;
-		if (Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides())) return true;
-		return false;
+		return Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides());
 	}
 	
-	@SuppressWarnings("unused")
-	private void _debug(Theorem thm, String thmname, String str) {
-		if (printPriority==1 && thm.name.equals(thmname)) {
-			System.out.println(str);
-		}
-	}
-	
-	/** We first find permutations from the left side, make sure the types match. */
+	/* We first find permutations from the left side, make sure the types match. */
 	private boolean matchTheoremUnilateral(Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
 		//for (Term tt: perms) System.out.println("- " + tt.toString());
 		ArrayList<Term> pmleft = prop.lside.getPermutations();
@@ -384,24 +368,24 @@ public class Demonstration {
 		
 		// TODO think about 'is \true gonna yield an empty validperm?'
 		
-		_debug(th, debugthm, ":thm - " + debugthm + ": size pmleft = " + pmleft.size());
+		_debug(th, ":thm - " + debugthm + ": size pmleft = " + pmleft.size());
 		ValidPermutations validleftperms = extractValidPerms(pmleft, th, th.statement.lside);
 		if (validleftperms.isEmpty()) return false;
-		_debug(th, debugthm, ":leftperms:");
-		for (UniquePerm pleft: validleftperms) _debug(th, debugthm, pleft.sts.toString());
+		_debug(th, ":leftperms:");
+		for (UniquePerm pleft: validleftperms) _debug(th, pleft.sts.toString());
 		
 		ValidPermutations validrightperms = extractValidPerms(pmright, th, th.statement.rside);
 		if (validrightperms.isEmpty()) return false;
-		_debug(th, debugthm, ":rightperms:");
-		for (UniquePerm pright: validrightperms) _debug(th, debugthm, pright.sts.toString());
+		_debug(th, ":rightperms:");
+		for (UniquePerm pright: validrightperms) _debug(th, pright.sts.toString());
 		
 		for (UniquePerm pleft: validleftperms) {
 		for (UniquePerm pright: validrightperms) {
-			_debug(th, debugthm, ":assertingsubs:");
+			_debug(th, ":assertingsubs:");
 			if (assertValidSubstitutions(pleft.sts, pright.sts)) {
 				return true;
 			}
-			_debug(th, debugthm, ":!!didntmatch:\n" + pleft.sts.toString() + "\n" + pright.sts.toString());
+			_debug(th, ":!!didntmatch:\n" + pleft.sts.toString() + "\n" + pright.sts.toString());
 		}
 		}
 		
@@ -432,12 +416,12 @@ public class Demonstration {
 				
 				// checking here for types - trueSubs ignores substitutions of non-variables (e.g. \true, 4)
 				// Case for 3 = 3, for example
-				ArrayList<Statement> trueSubs = new ArrayList<Statement>();
+				ArrayList<Statement> trueSubs = new ArrayList<>();
 				for (Statement st: substitutions) {
 					Variable v = th.getVariable(st.lside.s);
 					if (v == null) {
 						if (!st.lside.equals(st.rside)) {
-							_debug(th, debugthm, ":invalid nonequal nonvariable: " + st.toString());
+							_debug(th, ":invalid nonequal nonvariable: " + st.toString());
 							throw new ExceptionTheoremNotApplicable();
 						}
 					} else if (!matchTheoremTypes(v, st.rside)) throw new ExceptionTheoremNotApplicable();
@@ -453,7 +437,7 @@ public class Demonstration {
 	private static class ValidPermutations implements Iterable<UniquePerm>{
 		ArrayList<UniquePerm> perms;
 		public ValidPermutations () {
-			perms = new ArrayList<UniquePerm>();
+			perms = new ArrayList<>();
 		}
 		public void add(Term propperm, ArrayList<Statement> subs) {
 			perms.add(new UniquePerm(propperm, subs));
@@ -476,26 +460,11 @@ public class Demonstration {
 			this.sts = sts;
 		}
 	}
-	
-	
-	/* FORGOT WHAT THAT DID... 
-	private Term reduceTheoremVariables(Term t, ArrayList<Statement> subs) {
-		if (t.isShallow()) return t;
-		for (int i=subs.size()-1; i>0; i--) {
-			for (int j=i-1; j>=0; j--) {
-				Term ta = subs.get(j).rside;
-				Term tb = subs.get(i).rside;
-				if (ta.equals(tb)) t = substitute(t, subs.get(i).lside, subs.get(j).lside);
-			}
-		}
-		return t;
-	}
-	*/
-	
+
 	/* v is the theorem type, t corresponds to the demonstration type */
 	private boolean matchTheoremTypes(Variable v, Term t) throws Type.ExceptionTypeUnknown {
 		//System.out.println(" :term: " + t.toString() + " - " + t.getDisposition());
-		return Type.matchtypes(v.type, Type.getType(t, source));
+		return Type.matchtypes(v.type, t.getType(source));
 	}
 	
 	/*	Prioritizes largest substitutions before more shallow ones  */
@@ -529,7 +498,7 @@ public class Demonstration {
 	*/
 	
 	
-	private Term solveMath(Term t) throws ExceptionBooleanCasting, ExceptionCantReduceQuantifier {
+	private Term solveMath(Term t) {
 		
 		if (t == null) return null;
 		Term.Disp disp = t.getDisposition();
@@ -571,12 +540,12 @@ public class Demonstration {
 		String result;
 		
 		result = BooleanLogic.applyUnaryLogic(op, term.s);
-		if (result == null) return null;
+		if (result != null) return new Term(result);
 		
 		result = RealNumbers.applyUnaryLogic(op, term.s);
 		if (result != null) return new Term(result);
 		
-		return new Term(result);
+		return null;
 	}
 
 	/** Solve trivial quantifier operator, e.g. for all x: false. */
@@ -640,7 +609,6 @@ public class Demonstration {
 		
 		Statement hypothesis;
 		Demonstration nested;
-		boolean valid;
 		
 		public Cases() {
 			//hypothesis = new ArrayList<Statement>();
@@ -686,12 +654,14 @@ public class Demonstration {
 			return null;
 		}*/
 		
-		// TODO 
+		// TODO
+		/*
 		public void compilePartition() {
 			
-		}
+		}/*
 		
 		/* Answers to whether the partition is complete of partial - used to determine the assumption that follows from the cases */
+		/*
 		public boolean isPartitionComplete() {
 			return false;/*
 					
@@ -702,8 +672,8 @@ public class Demonstration {
 				return NaturalNumbers.validatePartition(casevar, hypothesis);
 			}
 			printout(3, "Couldnt validate partition. " + set);
-			return null;*/
-		}
+			return null;
+		}*/
 		
 		/*
 		 *   Find commun statements proven in every case in order to make a general statement, given a partition of cases
@@ -736,32 +706,22 @@ public class Demonstration {
 			}
 			return result;
 		}*/
+		/*
 		public ArrayList<Assump> enumerateCommunStatements() {
-			ArrayList<Assump> result = new ArrayList<Assump>();
+			ArrayList<Assump> result = new ArrayList<>();
 			for (Assump x: nested.assumptions) {
 				result.add(x);
 			}
 			return result;
-		}
-	}
-
-	
-	static public void printout(String text) {
-		printout(1, text);
+		}*/
 	}
 	
-	static public void printout(int priority, String text) {
-		if (printPriority > priority) return;
-		if (priority == 3) System.out.println("[FATAL]" + text);
-		else System.out.println(text);
-	}
-	
-	static private class ExceptionCantSolveMath extends Exception {}
-	static private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
+	//static private class ExceptionCantSolveMath extends Exception {}
+	//static private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
 	static public class ExceptionCaseNonvalid extends Exception {}
 
 
-	abstract static public class ExceptionComprehension extends GenException { public String errorType() { return "Comprehension";}};
+	abstract static public class ExceptionComprehension extends GenException { public String errorType() { return "Comprehension";}}
 	static public class ExceptionComprehensionInQuantifier extends ExceptionComprehension {
 		Term t;
 		 ExceptionComprehensionInQuantifier (Term _t) { t = _t; }

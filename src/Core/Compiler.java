@@ -13,7 +13,7 @@ import Elements.Term.TermSynthaxException;
 import Graphics.Application;
 
 
-public class Compiler {
+public class Compiler extends Utils {
 
 	private final static int printPriority = 3;
 	
@@ -21,13 +21,13 @@ public class Compiler {
 	private Application source;
 	
 	public Compiler(Application source) {
-		Theorems = new ArrayList<Theorem>();
+		Theorems = new ArrayList<>();
 		this.source = source;
 	}
 	
 	public void refreshUnit() {
-		Theorems = new ArrayList<Theorem>();
-	};
+		Theorems = new ArrayList<>();
+	}
 	
 	
 	static public String getUnitFromFile(File file) {
@@ -61,8 +61,7 @@ public class Compiler {
 		assertTheoremExists(unit);
 		
 		Theorem thm = new Theorem();
-		Logging nlog = new Logging(thm);
-		thm.nlog = nlog;
+		thm.nlog = new Logging(thm);
 		
 		char[] chars = unit.toCharArray();
 		int pos_identification = unit.indexOf("{");
@@ -107,8 +106,8 @@ public class Compiler {
 			
 			String headToken = seq.getHeadtoken();
 			if (seq.isAssignment()) {
-				for (Variable v: Term.parseLetStatement(seq.getV(0), thm, true)) thm.variables.add(v);
-				
+				thm.variables.addAll(Term.parseLetStatement(seq.getV(0), thm, true));
+
 			} else if (headToken.equals("\\where")) {
 				Statement st = parseStatementFromSequence(seq);
 				thm.assumptions.acceptAssumptionFromHypothesis(st);
@@ -146,22 +145,12 @@ public class Compiler {
 		int package_pos = str.toLowerCase().indexOf("package:");
 		int tags_pos = str.toLowerCase().indexOf("tags:");
 		int head_end = str.length();
-		
+
 		if (name_pos == -1 ) { throw new CouldntFindTheoremNameException(); }
-		if (package_pos == -1 && tags_pos == -1) {
-			thm.name = str.substring(name_pos + 5, head_end).trim();
-		} else if (package_pos == -1) {
-			thm.name = str.substring(name_pos + 5, tags_pos).trim();
-			thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", ");
-		} else if (tags_pos == -1) {
-			thm.name = str.substring(name_pos + 5, package_pos).trim();
-			thm.packages = str.substring(package_pos + 8, head_end).trim().split(", ");
-		} else {
-			thm.name = str.substring(name_pos + 5, package_pos).trim();
-			thm.packages = str.substring(package_pos + 8, tags_pos).trim().split(", ");
-			thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", ");
-		}
-		
+
+		if (tags_pos > -1) { thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", "); head_end = tags_pos; }
+		if (package_pos > -1)  {thm.packages = str.substring(package_pos + 8, head_end).trim().split(", "); head_end = package_pos; }
+		thm.name = str.substring(name_pos + 5, head_end).trim();
 	}
 	
 	public void acceptTheorems(String packageName) throws CompilerException, TermSynthaxException {
@@ -186,16 +175,7 @@ public class Compiler {
 			}
 		}
 	}
-	
-	private void printout(String text) {
-		printout(1, text);
-	}
-	
-	private void printout(int priority, String text) {
-		if (printPriority > priority) return;
-		if (priority == 3) System.out.println("[FATAL]" + text);
-		else System.out.println(text);
-	}
+
 	
 	private void assertTheoremExists(String body) throws CouldntFindTheoremException {
 		if (!body.substring(0, 8).equalsIgnoreCase("theorem ")) throw new CouldntFindTheoremException();
@@ -203,7 +183,7 @@ public class Compiler {
 
 	private void assertParenthesis(String body) throws ErrorInParenthesisException {
 		char[] chars = body.toCharArray();
-		Stack<Character> stk = new Stack<Character>();
+		Stack<Character> stk = new Stack<>();
 		for (int i=0; i<chars.length; i++) {
 			char c = chars[i];
 			if (c == '(' || c == '{' ||  c == '[') {
@@ -219,8 +199,8 @@ public class Compiler {
 		return body.substring(0, 13).trim().equalsIgnoreCase("demonstration");
 	}
 
-	abstract static public class CompilerException extends GenException { public String errorType() { return "Compiler";}};
-	static class CouldntFindTheoremException extends CompilerException { public String errorMessage() { return "Couldn't find theorem."; }};
+	abstract static public class CompilerException extends GenException { public String errorType() { return "Compiler";}}
+	static class CouldntFindTheoremException extends CompilerException { public String errorMessage() { return "Couldn't find theorem."; }}
 	static class CouldntFindTheoremNameException extends CompilerException { public String errorMessage() { return "Couldn't find theorem name."; }}
 	static class CouldntFindDemonstrationException extends CompilerException { public String errorMessage() { return "Couldn't find demonstration."; }}
 	static class ErrorInParenthesisException extends CompilerException {

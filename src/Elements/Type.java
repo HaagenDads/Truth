@@ -57,14 +57,14 @@ public class Type {
 	}
 	
 	static public boolean matchtypes (Term t1, Term t2, Theorem thm) throws ExceptionTypeUnknown {
-		return matchtypes(getType(t1, thm), getType(t2, thm));
+		return matchtypes(t1.getType(thm), t2.getType(thm));
 	}
 
 	static public boolean matchtypes (Term t, Type type, Theorem thm) throws ExceptionTypeUnknown {
-		return matchtypes(getType(t, thm), type);
+		return matchtypes(t.getType(thm), type);
 	}
 	
-	static public Type getType(Term t, Theorem thm) throws ExceptionTypeUnknown {
+	static public Type computeType(Term t, Theorem thm) throws ExceptionTypeUnknown {
 		//System.out.println(":getting type of: " + t.toString());
 		Term.Disp termdisp = t.getDisposition();
 		if (termdisp == Term.Disp.F) {
@@ -81,12 +81,12 @@ public class Type {
 		if (termdisp == Term.Disp.QTT) return Bool;
 		if (termdisp == Term.Disp.DEF) return Bool;
 		if (termdisp == Term.Disp.OT) {
-			Type x = getType(t.get(1), thm);
+			Type x = t.get(1).getType(thm);
 			return solveUnary(Op.getOperator(t.get(0).s), x);
 		}
 		if (termdisp == Term.Disp.TOT) {
-			Type x = getType(t.get(0), thm);
-			Type y = getType(t.get(2), thm);
+			Type x = t.get(0).getType(thm);
+			Type y = t.get(2).getType(thm);
 			return solveBinary(x, Op.getOperator(t.get(1).s), y);
 		}
 		if (termdisp == Term.Disp.FC) {
@@ -109,18 +109,16 @@ public class Type {
 		else if (a.equals(Real)) {
 			if (op.equals(Op.minus)) return a;
 		}
-		
 		if (a.equals(Nat)) return solveUnary(op, Real);
 		throw new ExceptionCouldntResolveUnaryType(op, a);
 	}
 	
 	static private Type solveBinary(Type a, Operator op, Type b) throws ExceptionCouldntResolveBinaryType {
 		if (a.equals(b)) {
-			if (a.equals(Real)) return solveBinary(Nat, op, Nat);
-			if (a.equals(BooleanLogic.genericType)) {
-				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies})) return a;
+			if (a.equals(Bool)) {
+				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies, Op.then, Op.equiv})) return a;
 			}
-			if (a.equals(NaturalNumbers.genericType)) {
+			if (a.equals(Real) || a.equals(Nat)) {
 				if (isin(op, new Operator[]{Op.plus, Op.mult, Op.exp})) return a;
 				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
 					return Bool;
@@ -133,8 +131,8 @@ public class Type {
 				} else if (isin(op, new Operator[]{Op.in, Op.notin})) return Bool;
 			}
 		} else {
-			if (a.equals(Real)) return solveBinary(Nat, op, b);
-			if (b.equals(Real)) return solveBinary(a, op, Nat);
+			if (a.equals(Nat)) return solveBinary(Real, op, b);
+			if (b.equals(Nat)) return solveBinary(a, op, Real);
 		}
 
 		throw new ExceptionCouldntResolveBinaryType(op, a, b);

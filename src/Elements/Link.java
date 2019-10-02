@@ -53,22 +53,23 @@ public class Link {
 		for (Link b: arrayList) {
 			Operator op = Op.getOperator(b.link);
 			reduction = reduceLinks(reduction, op);
-			if (reduction == null) return new Link();
+			if (reduction == null) return null;
 		}
+		if (reduction == null) return null;
 		return new Link(reduction);
 	}
 	
-	static public Operator reduceLinks (Operator a, Operator b) {
+	private static Operator reduceLinks(Operator a, Operator b) {
 		if (a == null) return b;
 		if (a == b) return a;
 		if (a == Op.lt) {
 			if (b == Op.eq || b == Op.le) return a;
 		} else if (a == Op.le) {
-			if (b == (Op.eq) || b == Op.le) return a;
+			if (b == Op.eq) return a;
 		} else if (a == Op.gt) {
 			if (b == Op.eq || b == Op.ge) return a;
 		} else if (a == Op.ge) {
-			if (b == Op.eq || b == Op.ge) return a;
+			if (b == Op.eq) return a;
 		} else if (a == Op.equiv) {
 			if (b == Op.then) return b;
 		} else if (a == Op.then) {
@@ -92,9 +93,12 @@ public class Link {
 	public boolean equals (Operator op) {
 		return this.link.equals(op.s);
 	}
+	public boolean equals (String str) {
+		return this.link.equals(str);
+	}
 	
 	public boolean isError() {
-		return this.link.equals("error");
+		return this.link.startsWith("error");
 	}
 	
 	static public boolean isCommutative(Link o) {

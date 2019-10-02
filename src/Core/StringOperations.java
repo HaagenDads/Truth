@@ -11,10 +11,10 @@ abstract public class StringOperations extends JTextPane {
 	protected String join(String[] expression, String sep) {
 		
 		if (expression.length == 0) return "";
-		String output = expression[0].toString();
-		for (int i=1; i<expression.length; i++) output += sep + expression[i];
+		StringBuilder output = new StringBuilder(expression[0].toString());
+		for (int i=1; i<expression.length; i++) output.append(sep).append(expression[i]);
 		
-		return output;
+		return output.toString();
 	}
 	
 	protected int len(String s) {
@@ -56,17 +56,17 @@ abstract public class StringOperations extends JTextPane {
 	
 	private String getStyleSequence (String s) {
 		int nbopenedbracket = 1;
-		String sequence = "";
+		StringBuilder sequence = new StringBuilder();
 		for (char c: s.toCharArray()) {
 			if (c == '{') nbopenedbracket += 1;
 			if (c == '}') nbopenedbracket -= 1;
-			if (nbopenedbracket == 0) return sequence;
-			sequence += Character.toString(c);
+			if (nbopenedbracket == 0) return sequence.toString();
+			sequence.append(Character.toString(c));
 		}
 		return null;
 	}
 	
-	protected class Styledsequence {
+	protected static class Styledsequence {
 		public String style;
 		public String sequence;
 		
@@ -80,7 +80,7 @@ abstract public class StringOperations extends JTextPane {
 		}
 	}
 	
-	protected String replaceSymbols(String s) {
+	private String replaceSymbols(String s) {
 		String result = s;
 		String[] from = new String[]{"\\not ", "\\false", "\\true", "\\and", "\\or", "\\implies", "\\eq", 
 				"\\forall", "\\exists", "\\setnatural", "\\in", "\\notin", "\\then", "\\subset", "\\psubset", "\\notsubset", 
@@ -88,26 +88,26 @@ abstract public class StringOperations extends JTextPane {
 		String[] to = new String[]{"¬", "\\$bold{F}", "\\$bold{T}", "∧", "∨", "→", "≡", "∀", "∃", "ℕ", "∈", "∉", "⇒", "⊆", "⊂", "⊆ ?", "⋂", "⋃", "∅",
 				"\\$ital{P", "→", "ℝ"};
 		for (int i=0; i<from.length; i++) {
-			result = result.replace((CharSequence) from[i], (CharSequence) to[i]);
+			result = result.replace(from[i], to[i]);
 		}
 		return result;
 		
 	}
 	
 	protected String getTab(int ntab) {
-		String result = "";
-		while (ntab-- > 0) result += "    ";
-		return result;
+		StringBuilder result = new StringBuilder();
+		while (ntab-- > 0) result.append("    ");
+		return result.toString();
 	}
 	
 	protected String repeat(String a, int n) {
-		String result = "";
-		while (n-- > 0) result += a;
-		return result;
+		StringBuilder result = new StringBuilder();
+		while (n-- > 0) result.append(a);
+		return result.toString();
 	}
 	
 	
-	/**
+	/*
 	 *  General String operations
 	 */
 
@@ -129,16 +129,16 @@ abstract public class StringOperations extends JTextPane {
 
 	public static ArrayString split(String text, char[] cs) {
 		ArrayString result = new ArrayString();
-		String buffer = "";
+		StringBuilder buffer = new StringBuilder();
 		for (char c: text.toCharArray()) {
 			if (isPartOfList(c, cs)) {
-				if (!buffer.equals(""))	result.add(buffer);
-				buffer = "";
+				if (!buffer.toString().equals(""))	result.add(buffer.toString());
+				buffer = new StringBuilder();
 			} else {
-				buffer += c;
+				buffer.append(c);
 			}
 		}
-		if (!buffer.equals(""))	result.add(buffer);
+		if (!buffer.toString().equals(""))	result.add(buffer.toString());
 		return result;
 	}
 	
@@ -151,12 +151,12 @@ abstract public class StringOperations extends JTextPane {
 	
 	static public String getEndLine(String token) {
 		int backslash = 0;
-		String result = "";
+		StringBuilder result = new StringBuilder();
 		for (char x: token.toCharArray()) {
 			if (x == '\\') backslash += 1;
-			else if (x == ';' && backslash % 2 == 0) return result;
+			else if (x == ';' && backslash % 2 == 0) return result.toString();
 			else backslash = 0;
-			result += x;
+			result.append(x);
 		}
 		return null;
 	}

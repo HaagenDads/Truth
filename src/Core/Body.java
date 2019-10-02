@@ -21,7 +21,7 @@ public class Body {
 	}
 	
 	private void init (ArrayString texttokens) {
-		seqarray = new ArrayList<Sequence>();
+		seqarray = new ArrayList<>();
 		try {
 			ArrayList<ArrayString> lines = splitSequences(texttokens);
 			for (ArrayString as: lines) {
@@ -45,7 +45,7 @@ public class Body {
 	}
 	
 	private ArrayList<ArrayString> splitSequences (ArrayString texttokens) throws ExceptionSequenceParsing {
-		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
+		ArrayList<ArrayString> result = new ArrayList<>();
 		ArrayString buffer = new ArrayString();
 		
 		String x;
@@ -87,13 +87,13 @@ public class Body {
 	
 	static abstract public class ExceptionSequenceParsing extends Exception {
 		abstract String printError ();
-	};
+	}
 	/*
 	static public class ExceptionCouldntCloseCases extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close cases while parsing. Missing an '\\endcase' token."; }
 	};*/
 	static public class ExceptionCouldntCloseDefinitionBrackets extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token."; }
-	};
+	}
 	
 }

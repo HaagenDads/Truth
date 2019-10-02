@@ -1,13 +1,12 @@
 Theorem Name:Unit Package:Logic{
 \let x \in \setnatural;
 \let y \in \setnatural;
-\state \exists x \suchthat \exists y \suchthat (x + y = 0) \eq \true;
+\state \exists x: \exists y: (x + y = 0) \eq \true;
 }
 Demonstration { 
-    \startcase x
-    \case x = 0 {
-        (y = 0) \then (x + y = x + 0) \eq (x + y = 0 + 0) \eq (x + y = 0);
+    \case (x = 0), (y = 0) {
+        x + y = x + 0 = 0 + 0 = 0;
     }
-    \endcase
+    
 }
 

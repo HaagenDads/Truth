@@ -55,14 +55,14 @@ public class Function extends Variable {
 	}
 	
 	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
-		Type tp = Type.getType(term, thm);
+		Type tp = term.getType(thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, true);
 		domain = new Set(term);
 		defaultDomain = false;
 	}
 	
 	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
-		Type tp = Type.getType(term, thm);
+		Type tp = term.getType(thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, false);
 		image = new Set(term);
 		defaultImage = false;

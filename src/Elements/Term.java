@@ -5,12 +5,13 @@ import java.util.*;
 import Core.Demonstration;
 import Core.GenException;
 import Core.Theorem;
+import Core.Utils;
 import Elements.Function.ExceptionAssignDefinition;
 import Elements.Function.ExceptionSetInvalid;
 import Operation.Op;
 import Operation.Operator;
 
-public class Term {
+public class Term extends Utils {
 
 	public enum Disp {SET, TOT, QTT, OT, F, C, FC, DEF, ERR};
 	private Disp disp;
@@ -18,10 +19,11 @@ public class Term {
 	protected boolean isoperator = false;
 	protected boolean isdefinition = false;
 	
-	public Term[] v;
+	private Term[] v;
 	public int size;
 	public String s;
 	protected Permutations permutations;
+	public Type type;
 
 	public Term() { __init__();	}
 	public Term(String s) {
@@ -33,6 +35,7 @@ public class Term {
 		size = 0;
 		disp = null;
 		permutations = null;
+		type = null;
 	}
 	
 	public static Term makeNewTerm (String s) {
@@ -219,7 +222,7 @@ public class Term {
 	}
 
 	/** Straight forward substitution of in terms using recursion. */
-	static public Term substitute(Term from, Term key, Term into) {
+	static private Term substitute(Term from, Term key, Term into) {
 		Term result = new Term();
 		if (from.isShallow()) {
 			if (key.isShallow() && from.equals(key)) return into;
@@ -268,14 +271,22 @@ public class Term {
 		}
 	}
 	
-	static private Term glueTerms(Term[] ts) {
+	static private Term glueTerms(Term t1, Term t2) {
 		Term output = new Term();
-		for (Term x: ts) output.addTerm(x);
+		output.addTerm(t1);
+		output.addTerm(t2);
+		return output;
+	}
+	static private Term glueTerms(Term t1, Term t2, Term t3) {
+		Term output = new Term();
+		output.addTerm(t1);
+		output.addTerm(t2);
+		output.addTerm(t3);
 		return output;
 	}
 	
 	static private Stack<Term> toStack (Term[] array) {
-		Stack<Term> result = new Stack<Term>();
+		Stack<Term> result = new Stack<>();
 		result.addAll(Arrays.asList(array));
 		return result;
 	}
@@ -316,15 +327,14 @@ public class Term {
 		return parsed;
 	}
 
-	/** Takes ['x', 'and', 'not', 'y'] into ['x', 'and', ['not', 'y']] 
-	 * @throws TermSynthaxException */
+	/** Takes ['x', 'and', 'not', 'y'] into ['x', 'and', ['not', 'y']] */
 	static private Term reduce (Term termarray) throws TermSynthaxException {
 		if (termarray.isShallow() || termarray.isCollection()) {
 			return termarray;
 		}
 		
 		Stack<Term> input = toStack(termarray.v);
-		LinkedList<Term> output = new LinkedList<Term>();
+		LinkedList<Term> output = new LinkedList<>();
 
 		//System.out.println(":input stack:");
 		//for (Term t: termarray.v) System.out.println(t.toString());
@@ -345,6 +355,13 @@ public class Term {
 					output.addFirst(notterm);
 					
 				} else output.addFirst(ith);
+			} else if (output.size() == 4 && output.get(0) == output.get(2) && output.get(0).isoperator) {
+				Operator op = (Operator) (output.get(0));
+				if (op.isAssociative()) {
+					output.pollFirst();
+					Term b = output.pollFirst();
+					output.addFirst(glueTerms(ith, op, b));
+				}
 			} else output.addFirst(ith);
 		}
 		
@@ -463,13 +480,13 @@ public class Term {
 					// Straight to a definition
 					else if (x.equals("is")) {
 						Definition def = new Definition();
-						String str = "";
+						StringBuilder str = new StringBuilder();
 						boolean foundis = false;
 						for (String d: seq) {
 							if (!foundis && d.equals("is")) foundis = true;
-							if (foundis) str += d + " ";
+							if (foundis) str.append(d).append(" ");
 						}
-						def.parseTerms(result, str);
+						def.parseTerms(result, str.toString());
 						return def;
 					}
 					else {
@@ -510,12 +527,9 @@ public class Term {
 		return t;
 	}
 
+	/** Returns whether a token starts with '-' */
 	static private boolean isUnaryHeader (String s) {
-		if ((s.charAt(0) == '-' && s.charAt(s.length()-1) != '-')) {
-			System.out.println(s + " is a unary header.");
-			return true;
-		}
-		return false;
+		return (s.charAt(0) == '-' && s.charAt(s.length() - 1) != '-');
 	}
 
 	static private String[] getUnaryHeader (String s) {
@@ -537,7 +551,7 @@ public class Term {
 	
 	// expect a space after a comma
 	static private Term compileCollection (ArrayString as, String prev) throws TermSynthaxException {
-		ArrayList<ArrayString> parsed = new ArrayList<ArrayString>();
+		ArrayList<ArrayString> parsed = new ArrayList<>();
 		ArrayString inner = new ArrayString();
 		as.removeSpacedParenthesis();
 
@@ -563,15 +577,22 @@ public class Term {
 
 		Collection coll = new Collection();
 		for (ArrayString as: aas) coll.addTerm(compileTermsClean(as));
-		if (coll_header.equals("\\cartprod")) coll.iscartesian = true;
-		else if (coll_header.equals("\\set")) coll.isset = true;
-		else if (coll_header.equals("\\tuple"));
-		else {
-			Term fc = new Term();
-			fc.addTerm(makeNewTerm(coll_header));
-			fc.addTerm(coll);
-			fc.disp = Disp.FC;
-			return fc;
+		switch (coll_header) {
+			case "\\cartprod":
+				coll.iscartesian = true;
+				break;
+			case "\\set":
+				coll.isset = true;
+				break;
+			case "\\tuple":
+				;
+				break;
+			default:
+				Term fc = new Term();
+				fc.addTerm(makeNewTerm(coll_header));
+				fc.addTerm(coll);
+				fc.disp = Disp.FC;
+				return fc;
 		}
 		return coll;
 	}
@@ -593,7 +614,7 @@ public class Term {
 	}*/
 		
 	static public ArrayList<Variable> parseLetStatement (ArrayString strings, Theorem thm, boolean fromheader) {
-		ArrayList<Variable> results = new ArrayList<Variable>();
+		ArrayList<Variable> results = new ArrayList<>();
 		
 		ArrayString varname = new ArrayString();
 		int i = 1;
@@ -612,7 +633,7 @@ public class Term {
 			i++;
 			if (strings.size() > i) {
 
-				ArrayList<Function> funcs = new ArrayList<Function>();
+				ArrayList<Function> funcs = new ArrayList<>();
 				ArrayString[] domain = strings.splitArrayBy("->", i);
 				ArrayString[] args = domain[1].splitArrayBy("{", 0);
 				ArrayString image = args[0];
@@ -670,12 +691,12 @@ public class Term {
 	 * Demonstration territory
 	 */
 	static public ArrayList<Statement> extractDiffArray(Term tthm, Term tprop) throws ExceptionTheoremNotApplicable {
-		ArrayList<Statement> result = new ArrayList<Statement>();
+		ArrayList<Statement> result = new ArrayList<>();
 		return extractDiffArray(tthm, tprop, result);
 	}
 	// TODO URGENTLY::: reduce the stupid number of repetition observed
 	static protected ArrayList<Statement> extractDiffArray(Term tthm, Term tprop, ArrayList<Statement> result) throws ExceptionTheoremNotApplicable {
-		ArrayList<Statement> newresult = new ArrayList<Statement>();
+		ArrayList<Statement> newresult = new ArrayList<>();
 		Disp disp = tthm.getDisposition();
 		if (disp == Disp.F) {
 			// Following case implies no difference; no need to check.
@@ -734,7 +755,7 @@ public class Term {
 		public ArrayList<Statement> diffs;
 		
 		public DifferencesLedger(Term t1, Term t2) {
-			diffs = new ArrayList<Statement>();
+			diffs = new ArrayList<>();
 			this.t1 = t1;
 			this.t2 = t2;
 			trivial = false;
@@ -795,7 +816,7 @@ public class Term {
 		}
 		
 		dlg.addNestedComparaison(extract4TOTdiff(t1, t2, link));
-		if (dlg.isTrivial()) return new ArrayList<Statement>();
+		if (dlg.isTrivial()) return new ArrayList<>();
 		Collections.reverse(dlg.diffs);
 		return dlg.diffs;
 	}
@@ -868,16 +889,22 @@ public class Term {
 					if (!eq1) return false;
 					Link adjlink = adjustLink(clink, (Operator) p11);
 
+					// Sometimes, a permutation of t1 will coincide with t2.
+					// Sometimes, a permutation of t2 will coincide with t1.
+					// Sometimes, only a permutation will coincide with a permutation of the other
+					// Note that the loop is lazy (stops as soon as it finds a match)
 					for (Term perma: t1.getPermutations()) {
-						p10 = perma.get(0); p12 = perma.get(2);
-						p20 = t2.get(0); p22 = t2.get(2);
-						if (p10.equals(p20)) return extractDiffInner(p12, p22, adjlink, dL);
-						if (p12.equals(p22)) return extractDiffInner(p10, p20, adjlink, dL);
+						for (Term permb: t2.getPermutations()) {
+							p10 = perma.get(0); p12 = perma.get(2);
+							p20 = permb.get(0); p22 = permb.get(2);
+							if (p10.equals(p20)) return extractDiffInner(p12, p22, adjlink, dL);
+							if (p12.equals(p22)) return extractDiffInner(p10, p20, adjlink, dL);
+						}
 					}
 				} else if (d1 == Disp.QTT) {
 					if (!eq0) return false;
-					//if (eq1) return extractDiffInner(p12, p22, clink, dL); this is bullshit
-					if (eq2) return extractDiffInner(p11, p21, clink, dL);
+					if (eq1) return extractDiffInner(p12, p22, clink, dL);
+					//if (eq2) return extractDiffInner(p11, p21, clink, dL); this is bullshit
 				} else if (d1 == Disp.DEF) {
 					if (!eq1) return false;
 					if (eq0 && (clink.equals(Op.eq) || clink.equals(Op.equiv) || clink.equals(Op.then))) return extractDiffInner(p12, p22, clink, dL);
@@ -890,11 +917,13 @@ public class Term {
 
 	/** a and b iif a and c  =>  b iif c
 	 *  a < 0   iif b < 0    =>  a = b
-	 *  a + b   <   a + c    =>  b = c
+	 *  a + b   <   a + c    =>  b < c
+	 *  a + b   =   a + c    =>  b = c
 	 */
 	static private Link adjustLink(Link lbroad, Operator op) {
 		if (op.associatesBooleans()) return lbroad;
-		return new Link(Op.eq);
+		if (op.isComparing() && (lbroad.equals(Op.equiv) || lbroad.equals(Op.then))) return new Link(Op.eq);
+		return lbroad;
 	}
 
 	/** Takes -2 > -3  into  3 > 2   for unary minus and div signs only */
@@ -905,72 +934,17 @@ public class Term {
 	}
 
 	/** Made so that permutations aren't calculated every time. */
+	public Type getType(Theorem thm) throws Type.ExceptionTypeUnknown {
+		if (type == null) type = Type.computeType(this, thm);
+		return type;
+	}
+
+	/** Made so that permutations aren't calculated every time. */
 	public ArrayList<Term> getPermutations() {
 		if (permutations == null) permutations = permute(this);
 		return permutations.vs;
 	}
 
-	/*
-	private static Permutations associate(Term t) {
-		Permutations perm = new Permutations();
-		if (t.getDisposition() != Disp.TOT) {
-			perm.add(t);
-			return perm;
-		}
-
-		Operator op = (Operator) (t.get(1));
-		boolean commutative = op.isCommutative();
-		boolean hassymminv = op.hasSymmInverse();
-		boolean uniAssociative = false;
-		boolean biAssociative = false;
-		int ptrAB = 0;
-		int ptrC = 2;
-		Term[][] t0t2_array;
-
-		if (op.isAssociative()) {
-			uniAssociative = t.get(0).getDisposition() == Disp.TOT && t.get(0).get(1).equals(op);
-			if (t.get(2).getDisposition() == Disp.TOT && t.get(2).get(1).equals(op)) {
-				if (uniAssociative) biAssociative = true;
-				else {
-					uniAssociative = true;
-					ptrAB = 2;
-					ptrC = 0;
-				}
-			}
-		}
-		// TODO commutativity
-		// TODO associative isnt always commutative a->(b->c) = (a->b)->c
-
-		if (biAssociative) {
-			Term a, b, c, d;
-			a = t.get(0).get(0);
-			b = t.get(0).get(2);
-			c = t.get(2).get(0);
-			d = t.get(2).get(2);
-			t0t2_array = new Term[][]{
-					new Term[]{glueTerms(new Term[]{a, op, b}), glueTerms(new Term[]{c, op, d})},
-					new Term[]{glueTerms(new Term[]{a, op, c}), glueTerms(new Term[]{b, op, d})},
-					new Term[]{glueTerms(new Term[]{a, op, d}), glueTerms(new Term[]{b, op, c})},
-					new Term[]{glueTerms(new Term[]{b, op, c}), glueTerms(new Term[]{a, op, d})},
-					new Term[]{glueTerms(new Term[]{b, op, d}), glueTerms(new Term[]{a, op, c})},
-					new Term[]{glueTerms(new Term[]{c, op, d}), glueTerms(new Term[]{a, op, b})}
-			};
-		} else if (uniAssociative) {
-			Term a, b, c;
-			a = t.get(ptrAB).get(0);
-			b = t.get(ptrAB).get(2);
-			c = t.get(ptrC);
-			t0t2_array = new Term[][]{
-					new Term[]{glueTerms(new Term[]{a, op, b}), c},
-					new Term[]{glueTerms(new Term[]{a, op, c}), b},
-					new Term[]{glueTerms(new Term[]{b, op, c}), a},
-			};
-		} else t0t2_array = new Term[][]{new Term[]{t.get(0), t.get(2)}};
-
-		for (Term[] t0t2: t0t2_array) {
-			permutet0t2(perm, t0t2, op, commutative, hassymminv);
-		}
-	}*/
 	private static Permutations permute(Term t) {
 		Permutations perm = new Permutations();
 		Disp disp = t.getDisposition();
@@ -999,49 +973,22 @@ public class Term {
 					}
 				}
 			}
-			// TODO commutativity
-			// TODO associative isnt always commutative a->(b->c) = (a->b)->c
+			if (biAssociative) t0t2_array = associateTerms(t.get(0).get(0), t.get(0).get(2), t.get(2).get(0), t.get(2).get(2), op);
+			else if (uniAssociative) t0t2_array = associateTerms(t.get(ptrAB).get(0), t.get(ptrAB).get(2), t.get(ptrC), op);
+			else t0t2_array = new Term[][]{new Term[]{t.get(0), t.get(2)}};
 
-			if (biAssociative) {
-				Term a, b, c, d;
-				a = t.get(0).get(0);
-				b = t.get(0).get(2);
-				c = t.get(2).get(0);
-				d = t.get(2).get(2);
-				t0t2_array = new Term[][]{
-						new Term[]{glueTerms(new Term[]{a, op, b}), glueTerms(new Term[]{c, op, d})},
-						new Term[]{glueTerms(new Term[]{a, op, c}), glueTerms(new Term[]{b, op, d})},
-						new Term[]{glueTerms(new Term[]{a, op, d}), glueTerms(new Term[]{b, op, c})},
-						new Term[]{glueTerms(new Term[]{b, op, c}), glueTerms(new Term[]{a, op, d})},
-						new Term[]{glueTerms(new Term[]{b, op, d}), glueTerms(new Term[]{a, op, c})},
-						new Term[]{glueTerms(new Term[]{c, op, d}), glueTerms(new Term[]{a, op, b})}
-				};
-			} else if (uniAssociative) {
-				Term a, b, c;
-				a = t.get(ptrAB).get(0);
-				b = t.get(ptrAB).get(2);
-				c = t.get(ptrC);
-				t0t2_array = new Term[][]{
-						new Term[]{glueTerms(new Term[]{a, op, b}), c},
-						new Term[]{glueTerms(new Term[]{a, op, c}), b},
-						new Term[]{glueTerms(new Term[]{b, op, c}), a},
-				};
-			} else t0t2_array = new Term[][]{new Term[]{t.get(0), t.get(2)}};
-
-			for (Term[] t0t2: t0t2_array) {
-				permutet0t2(perm, t0t2, op, commutative, hassymminv);
-			}
+			for (Term[] t0t2: t0t2_array) permutet0t2(perm, t0t2, op, commutative, hassymminv);
 
 		}
 		else if (disp == Disp.OT) {
 			for (Term permt: t.get(1).getPermutations()) {
-				perm.add(glueTerms(new Term[]{t.get(0), permt}));
+				perm.add(glueTerms(t.get(0), permt));
 			}
 		}
 		else if (disp == Disp.QTT) {
 			for (Term permc: permute(t.get(1)).vs) {
 			for (Term permp: permute(t.get(2)).vs) {
-				perm.add(glueTerms(new Term[]{t.get(0), permc, permp}));
+				perm.add(glueTerms(t.get(0), permc, permp));
 			}
 			}
 		}
@@ -1053,33 +1000,66 @@ public class Term {
 		}
 		else if (disp == Disp.FC) {
 			for (Term permc: t.get(1).getPermutations()) {
-				perm.add(glueTerms(new Term[]{t.get(0), permc}));
+				perm.add(glueTerms(t.get(0), permc));
 			}
 		}
 		else if (disp == Disp.DEF) {
 			return Definition.permute((Definition) t);
 		}
 
-		/*
-		System.out.println("Permutations of: " + t.toString());
-		for (Term ttt: perm.vs) {
-			System.out.println("term: " + ttt.toString() + " disp=" + ttt.getDisposition());
-			if (ttt.getDisposition() == Disp.TOT) System.out.println("term(0): " + ttt.get(0).toString() + " disp=" + ttt.get(0).getDisposition());
-		}*/
 		return perm;
 	}
-	
+
+	static private Term[][] associateTerms (Term a, Term b, Term c, Operator op) {
+		if (op.isCommutative()) {
+			return new Term[][]{
+					new Term[]{glueTerms(a, op, b), c},
+					new Term[]{glueTerms(a, op, c), b},
+					new Term[]{glueTerms(b, op, c), a},
+			};
+		} else {
+			return new Term[][]{
+					new Term[]{glueTerms(a, op, b), c},
+					new Term[]{a, glueTerms(b, op, c)}
+			};
+		}
+	}
+
+	static private Term[][] associateTerms (Term a, Term b, Term c, Term d, Operator op) {
+
+		int i = 0;
+		if (op.isCommutative()) {
+			Term[][] lst =  new Term[15][];
+			lst[i++] = new Term[]{glueTerms(a, op, b), glueTerms(c, op, d)};
+			lst[i++] = new Term[]{glueTerms(a, op, c), glueTerms(b, op, d)};
+			lst[i++] = new Term[]{glueTerms(a, op, d), glueTerms(b, op, c)};
+			for (Term[] duo: associateTerms(a, b, c, op)) lst[i++] = new Term[]{glueTerms(duo[0], op, duo[1]), d};
+			for (Term[] duo: associateTerms(a, b, d, op)) lst[i++] = new Term[]{glueTerms(duo[0], op, duo[1]), c};
+			for (Term[] duo: associateTerms(a, c, d, op)) lst[i++] = new Term[]{glueTerms(duo[0], op, duo[1]), b};
+			for (Term[] duo: associateTerms(b, c, d, op)) lst[i++] = new Term[]{glueTerms(duo[0], op, duo[1]), a};
+			return lst;
+
+		} else {
+			Term[][] lst =  new Term[5][];
+			lst[i++] = new Term[]{glueTerms(a, op, b), glueTerms(c, op, d)};
+			for (Term[] duo: associateTerms(a, b, c, op)) lst[i++] = new Term[]{glueTerms(duo[0], op, duo[1]), d};
+			for (Term[] duo: associateTerms(b, c, d, op)) lst[i++] = new Term[]{a, glueTerms(duo[0], op, duo[1])};
+			return lst;
+		}
+	}
+
+
 	static private void permutet0t2(Permutations perm, Term[] t0t2, Operator op, boolean commutative, boolean hassymminv) {
 		for (Term permta: t0t2[0].getPermutations()) {
 			for (Term permtb: t0t2[1].getPermutations()) {
-				perm.add(glueTerms(new Term[]{permta, op, permtb}));
-				if (commutative) perm.add(glueTerms(new Term[]{permtb, op, permta}));
-				else if (hassymminv) perm.add(glueTerms(new Term[]{permtb, op.reverse(), permta}));
+				perm.add(glueTerms(permta, op, permtb));
+				if (commutative) perm.add(glueTerms(permtb, op, permta));
+				else if (hassymminv) perm.add(glueTerms(permtb, op.reverse(), permta));
 			}
 		}
 	}
 
-	static public class ExceptionTheoremNotApplicable extends Exception {};
+	static public class ExceptionTheoremNotApplicable extends Exception {}
 	//static public class ExceptionTrivialEquality extends Exception {};
 
 	//static public class ExceptionQuantifierOperatorSynthax extends TermSynthaxException {};
@@ -1108,7 +1088,7 @@ public class Term {
 	static public class Permutations {
 		public ArrayList<Term> vs;
 		public Permutations() {
-			vs = new ArrayList<Term>();
+			vs = new ArrayList<>();
 		}
 		public void add(Term t) {
 			vs.add(t);
