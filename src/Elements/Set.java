@@ -42,7 +42,7 @@ public class Set extends Type {
 	}
 	
 	public boolean isElement(Collection coll, Theorem thm) {
-		if (coll.size != c.size) return false;
+		if (c.size != coll.size) return false;
 		for (int i=0; i<c.size; i++) {
 			Type arg;
 			try {

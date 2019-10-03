@@ -10,7 +10,7 @@ import Operation.RealNumbers;
 
 public class Type {
 
-	public static final Type Real = new Type(RealNumbers.genericType);
+	private static final Type Real = new Type(RealNumbers.genericType);
 	public static final Type Nat = new Type(NaturalNumbers.genericType);
 	public static final Type Bool = new Type(BooleanLogic.genericType);
 	public static final Type Sets = new Type(Set.genericType);

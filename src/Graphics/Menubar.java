@@ -15,15 +15,14 @@ import javax.swing.*;
 public class Menubar extends JMenuBar{
 
 	private JMenu mFile;
-	private JMenuItem subOpen, subSave;
 	private Application source;
 	
 	public Menubar(Application source) {
 		this.source = source;
 		mFile = new JMenu("File");
-		subOpen = new JMenuItem("Open File...");
+		JMenuItem subOpen = new JMenuItem("Open File...");
 		subOpen.addActionListener(new OpenMenuListener());
-        subSave = new JMenuItem("Save As..");
+		JMenuItem subSave = new JMenuItem("Save As..");
         subSave.addActionListener(new SaveMenuListener());
         mFile.add(subOpen);
         mFile.add(subSave);
@@ -35,17 +34,15 @@ public class Menubar extends JMenuBar{
 
 		public void actionPerformed(ActionEvent e) {
 			File fcselected = searchFile("Choose .txt file to open.");
-			if (fcselected != null){
-				String contenu = "";
-				try {
-					Scanner sc = new Scanner(fcselected); 
-				    while (sc.hasNextLine()){ contenu += sc.nextLine() + "\n"; }
-				    sc.close();
-				} catch (IOException exp){
-					contenu = "<Le fichier n'a pas pu �tre ouvert...>";
-				}
-				source.topTextarea.setText(contenu);	
+			StringBuilder contenu = new StringBuilder();
+			try {
+				Scanner sc = new Scanner(fcselected);
+				while (sc.hasNextLine()){ contenu.append(sc.nextLine()).append("\n"); }
+				sc.close();
+			} catch (IOException exp){
+				contenu = new StringBuilder("<Le fichier n'a pas pu �tre ouvert...>");
 			}
+			source.topTextarea.setText(contenu.toString());
 		}
 	}
 	
@@ -56,7 +53,7 @@ public class Menubar extends JMenuBar{
 			File file = searchFile("Save file.");
 			try {
 				Files.write(Paths.get(file.getAbsolutePath()), source.topTextarea.getText().getBytes());
-			} catch (IOException exp){}
+			} catch (IOException ignored){}
 		}
 	}
 	

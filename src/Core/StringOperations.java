@@ -61,7 +61,7 @@ abstract public class StringOperations extends JTextPane {
 			if (c == '{') nbopenedbracket += 1;
 			if (c == '}') nbopenedbracket -= 1;
 			if (nbopenedbracket == 0) return sequence.toString();
-			sequence.append(Character.toString(c));
+			sequence.append(c);
 		}
 		return null;
 	}

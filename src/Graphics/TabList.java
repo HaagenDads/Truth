@@ -21,7 +21,7 @@ import Core.Theorem;
 
 public class TabList extends JComponent {
 	
-	ArrayList<Tab> tabs;
+	private ArrayList<Tab> tabs;
 	final static int maxwidth = 250;
 	final static int minwidth = 140;
 	final static String shortenmark = "...";

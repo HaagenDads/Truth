@@ -43,8 +43,7 @@ public class Link {
 	
 	static public boolean isSufficient (Link theoremlink, Link propositionlink) {
 		if (theoremlink.equals(propositionlink)) return true;
-		if (theoremlink.equals(Op.eq) && propositionlink.equals(Op.equiv)) return true;
-		return false;
+		return theoremlink.equals(Op.eq) && propositionlink.equals(Op.equiv);
 	}
 	
 	

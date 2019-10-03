@@ -63,7 +63,7 @@ public class NaturalNumbers extends RealNumbers {
 		ArrayList<Statement> equalsto = new ArrayList<Statement>();
 		ArrayList<Statement> largerthan = new ArrayList<Statement>();
 		for (Statement st: cases) {
-			if (!st.lside.equals(casevar.name)) return null;
+			if (!st.lside.equalsString(casevar.name)) return null;
 			// TODO case for x  = y + 3
 			// 				 x != y + 3
 			if (!st.rside.isShallow()) return null;

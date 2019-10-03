@@ -10,7 +10,5 @@ Demonstration {
     \exists x: \not (\not p \or q) \eq
     \exists x: (\not \not p \and \not q) \eq
     \exists x: p \and \not q;
-
-
 }
 

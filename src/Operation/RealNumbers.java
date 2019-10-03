@@ -66,7 +66,7 @@ public class RealNumbers {
 		
 		int whole = getNumeric(realstr[0]);
 		if (whole == -1) return null;
-		if (realstr.length == 1 && realstr[0] != "") {
+		if (realstr.length == 1 && !realstr[0].equals("")) {
 			return new RealItem(negative, whole);
 		}
 		else if (realstr.length == 2) {

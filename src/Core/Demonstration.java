@@ -92,7 +92,7 @@ public class Demonstration extends Utils {
 		}
 		
 		Link conclusion = Link.reduceSerie(sequence.getLinks());
-		if (firstexp == null) { System.out.println("Something real bad happened"); return; }
+		if (firstexp == null) { System.out.println("Something real bad happened "); return; }
 		if (conclusion == null) { System.out.println("Link serie does not simplify."); return; }
 		if (proposition && !conclusion.equals("")) {
 			

@@ -52,7 +52,7 @@ public class Definition extends Term {
 		
 		Collection col = (Collection) get(2);
 		int varindex = 0;
-		ArrayList<Character> res = new ArrayList<Character>();
+		ArrayList<Character> res = new ArrayList<>();
 		for (char c: get(1).s.trim().toCharArray()) {
 			if (c == '[') {
 				Term t = col.get(varindex++);

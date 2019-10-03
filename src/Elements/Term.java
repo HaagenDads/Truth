@@ -68,7 +68,7 @@ public class Term extends Utils {
 		try {
 			return v[i];
 		} catch (Exception e) {
-			if (v == null) System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from empty term");
+			if (v == null) System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from empty term ");
 			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + Arrays.toString(v));
 			throw new IndexOutOfBoundsException();
 		}

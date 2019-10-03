@@ -73,7 +73,7 @@ public class Theorem {
 		
 	}
 	
-	public void embedVariableNames() {
+	private void embedVariableNames() {
 		if (isEmbeded) return;
 		isEmbeded = true;
 		

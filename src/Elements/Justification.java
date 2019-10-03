@@ -42,7 +42,7 @@ public class Justification {
 			String stamp = assump.IndexStamp;
 			switch (stamp) {
 				case "hyp":
-					return "Hypothesis";
+					return "Hypothesis ";
 				case "0":
 					return assump.st.toString();
 				case "-1":

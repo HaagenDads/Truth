@@ -93,7 +93,7 @@ public class Body {
 		String printError() { return "Couldn't close cases while parsing. Missing an '\\endcase' token."; }
 	};*/
 	static public class ExceptionCouldntCloseDefinitionBrackets extends ExceptionSequenceParsing {
-		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token."; }
+		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token. "; }
 	}
 	
 }

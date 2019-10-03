@@ -86,7 +86,7 @@ public class Operator extends Term {
 	}
 
 	public boolean isComparing() {
-		Operator[] opSet = new Operator[]{Op.lt, Op.le, Op.gt, Op.ge, Op.eq, Op.ineq};
+		Operator[] opSet = new Operator[]{Op.eq, Op.ineq, Op.lt, Op.le, Op.gt, Op.ge};
 		return isPartOfList(opSet);
 	}
 }

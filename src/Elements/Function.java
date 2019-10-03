@@ -14,7 +14,7 @@ public class Function extends Variable {
 	
 	public Collection args;
 	public Term definition;
-	public boolean defaultDomain, defaultImage;
+	private boolean defaultDomain, defaultImage;
 	
 	private Term defvar;
 	private ArrayList<Definition> defs;

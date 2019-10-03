@@ -24,7 +24,7 @@ public class Application extends JFrame {
 	public JTextArea topTextarea;
 	public BotTextArea botTextarea;
 	private JPanel tablistpanel;
-	private JScrollPane topPanel, botPanel;
+	private JScrollPane botPanel;
 	public Compiler compiler;
 
 	public TabList tablist;
@@ -64,7 +64,7 @@ public class Application extends JFrame {
             public boolean isManagingFocus(){ return false; }
 	    */};
 		topTextarea.setLineWrap(true);
-		topPanel = new JScrollPane(topTextarea);
+		JScrollPane topPanel = new JScrollPane(topTextarea);
 		topPanel.setPreferredSize(new Dimension(200, 250));
 		topPanel.setBorder(BorderFactory.createMatteBorder(
                 5, 10, 5, 10, Colors.colorCentral));

@@ -3,7 +3,7 @@ package Core;
 public class Utils {
 
     private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
-    protected static final String debugthm = "AxiomSoustraction";
+    protected static final String debugthm = "AxiomSoustraction ";
 
     static protected void printout(String text) {
         printout(1, text);

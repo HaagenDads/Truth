@@ -113,7 +113,7 @@ public class Compiler extends Utils {
 				thm.assumptions.acceptAssumptionFromHypothesis(st);
 				
 			} else if (headToken.equals("\\state")) {
-				if (seq.size() != 2) System.out.println("[FATAL] Couldn't find a TOT disp in declaration for theorem " + thm.name);
+				if (seq.size() != 2) System.out.println("[FATAL] Couldn't find a TOT disp in declaration for theorem  " + thm.name);
 				thm.statement = parseStatementFromSequence(seq);
 			}
 		}

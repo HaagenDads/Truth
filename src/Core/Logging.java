@@ -31,7 +31,7 @@ public class Logging {
 		blockstamp = new BlockStamp();
 		this.thm = thm;
 	}
-	public Logging(type t, Logging parent, BlockStamp blockstamp) {
+	private Logging(type t, Logging parent, BlockStamp blockstamp) {
 		v = new ArrayList<Logging>();
 		activeLog = this;
 		this.t = t;

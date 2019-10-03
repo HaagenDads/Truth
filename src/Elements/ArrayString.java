@@ -44,8 +44,8 @@ public class ArrayString extends ArrayList<String>{
 		ArrayString commasep = new ArrayString();
 		boolean foundchar;
 		for (String s: this) {
-			ArrayList<Character> newstr = new ArrayList<>();
 			foundchar = false;
+			ArrayList<Character> newstr = new ArrayList<>();
 			for (char c: s.toCharArray()) {
 				if (c == '(' || c == ')' || c == ':') {
 					foundchar = true;

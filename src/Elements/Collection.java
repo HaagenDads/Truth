@@ -125,10 +125,10 @@ public class Collection extends Term {
 	static protected Permutations permute (Collection c) {
 		Permutations perm = new Permutations();
 		
-		ArrayList<Collection> collectionPerms = new ArrayList<Collection>();
+		ArrayList<Collection> collectionPerms = new ArrayList<>();
 		collectionPerms.add(new Collection());
 		for (Term t: c.items) {
-			ArrayList<Collection> newcolls = new ArrayList<Collection>();
+			ArrayList<Collection> newcolls = new ArrayList<>();
 			for (Term p: t.getPermutations()) {
 				for (Collection col: collectionPerms) {
 					Collection newcol = col.copy();

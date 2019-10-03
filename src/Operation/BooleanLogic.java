@@ -67,7 +67,7 @@ public class BooleanLogic {
 		if (exp1.equals(cases.get(0)) && exp2.equals(cases.get(1))) return true;
 		if (exp1.equals(cases.get(1)) && exp2.equals(cases.get(0))) return true;
 		
-		System.out.println("Couldnt match cases to expected cases for boolean variables");
+		System.out.println("Couldnt match cases to expected cases for boolean variables ");
 		return false;
 	}
 	
