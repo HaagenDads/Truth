@@ -16,9 +16,9 @@ public class Menubar extends JMenuBar{
 
 	private JMenu mFile;
 	private JMenuItem subOpen, subSave;
-	private TextZone source;
+	private Application source;
 	
-	public Menubar(TextZone source) {
+	public Menubar(Application source) {
 		this.source = source;
 		mFile = new JMenu("File");
 		subOpen = new JMenuItem("Open File...");
@@ -42,7 +42,7 @@ public class Menubar extends JMenuBar{
 				    while (sc.hasNextLine()){ contenu += sc.nextLine() + "\n"; }
 				    sc.close();
 				} catch (IOException exp){
-					contenu = "<Le fichier n'a pas pu être ouvert...>";
+					contenu = "<Le fichier n'a pas pu ï¿½tre ouvert...>";
 				}
 				source.topTextarea.setText(contenu);	
 			}
@@ -61,16 +61,21 @@ public class Menubar extends JMenuBar{
 	}
 	
 	
-	// Cette fonction demande à l'utilisateur d'aller chercher un fichier
+	// Cette fonction demande ï¿½ l'utilisateur d'aller chercher un fichier
     private File searchFile(String dialog){
     	
     	JFileChooser fc;
     	fc = new JFileChooser();
-		fc.setCurrentDirectory(new java.io.File("."));
+    	String initialpath = ".";
+    	if (source.openedfile_path != null) initialpath = source.openedfile_path;
+		fc.setCurrentDirectory(new java.io.File(initialpath));
 		fc.setDialogTitle(dialog);
 		fc.showOpenDialog(new JButton());
-		
-		return fc.getSelectedFile();
+
+		File selectedFile = fc.getSelectedFile();
+		source.openedfile_path = selectedFile.getPath();
+
+		return selectedFile;
     }
     
 }

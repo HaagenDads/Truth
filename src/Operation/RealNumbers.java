@@ -5,6 +5,15 @@ public class RealNumbers {
 	
 	public static final String genericType = "\\setreal";
 	
+	
+	static public String applyUnaryLogic (Operator op, String a) {
+		RealItem stra = readString(a);
+		if (stra != null) {
+			if (op.equals(Op.minus)) return "" + (-stra.d);
+			return null;
+		}
+		return null;
+	}
 	static public String applyBinaryLogic (String a, Operator op, String b) {
 		RealItem stra = readString(a);
 		RealItem strb = readString(b);
@@ -19,7 +28,6 @@ public class RealNumbers {
 		
 		if (stra != null && strb != null) {
 			if (op.equals(Op.plus)) return "" + (stra.d + strb.d);
-			if (op.equals(Op.minus)) return "" + (stra.d - strb.d);
 			if (op.equals(Op.mult)) return "" + (stra.d * strb.d);
 			// TODO only natural numbers
 			if (op.equals(Op.exp)) {

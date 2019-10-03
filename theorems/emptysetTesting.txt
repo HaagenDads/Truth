@@ -3,7 +3,7 @@ Theorem Name:Unit Package:Logic{
 \state (D \subset \emptyset) \eq (D is empty);
 }
 Demonstration { 
-    (D \subset \emptyset) \eq ((D \subset \emptyset) \and \true) \eq 
-    (D \subset \emptyset) \and (\emptyset \subset D) \eq (D = \emptyset) \eq (D is empty);
+	(D is empty) \eq (D = \emptyset) \eq (D \subset \emptyset) \and (\emptyset \subset D)
+	\eq (D \subset \emptyset) \and \true \eq D \subset \emptyset;
 }
 

@@ -11,6 +11,7 @@ public class BooleanLogic {
 	static public String applyUnaryLogic(Operator op, String a) {
 
 		bool x = readString(a);
+
 		if (x != null && op.equals(Op.not)) {
 			if (x.equals(bool.TRUE)) return "\\false";
 			if (x.equals(bool.FALSE)) return "\\true";
@@ -44,13 +45,18 @@ public class BooleanLogic {
 		return null;
 	}
 	
-	static public bool readString(String a) {
-		if (a.equals("\\true")) return bool.TRUE;
-		else if (a.equals("\\false")) return bool.FALSE;
-		else if (a.equals(genericType)) return bool.BOOLEAN;
-		else return null;
+	private static bool readString(String a) {
+		switch (a) {
+			case "\\true":
+				return bool.TRUE;
+			case "\\false":
+				return bool.FALSE;
+			case genericType:
+				return bool.BOOLEAN;
+			default:
+				return null;
+		}
 	}
-	
 	
 	static public boolean validatePartition(Variable casevar, ArrayList<Statement> cases, ArrayList<Type> types) {
 		if (cases.size() != 2) System.out.println("Cases partition can only have two cases.");

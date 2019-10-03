@@ -1,9 +1,10 @@
 package Elements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import Core.StringOperations;
-import Operation.Op;
+import Elements.Term.TermSynthaxException;
 import Operation.Operator;
 
 public class ArrayString extends ArrayList<String>{
@@ -11,49 +12,53 @@ public class ArrayString extends ArrayList<String>{
 	public ArrayString (){
 		super();
 	}
+
+	public ArrayString(String[] var) {
+		super();
+		addAll(Arrays.asList(var));
+	}
+
+	/*
 	public ArrayString (ArrayList<String> input) {
 		super();
 		addAll(input);
 	}
-	
-	public ArrayString(String[] var) {
-		super();
-		for (String s: var) add(s);
-	}
-
 	public ArrayString(String x) {
 		super();
 		add(x);
-	}
+	}*/
 	
 	public void removeLast () {
 		remove(size()-1);
 	}
-	
+
+	/*
 	public String[] toStringlist() {
 		String[] res = new String[size()];
 		for (int i=0; i<size(); i++) res[i] = get(i);
 		return res;
-	}
-	
-	public ArrayString sepwithComma () {
+	}*/
+
+	/** Levels array string with '(', ')', ',' and ':'. */
+	public ArrayString addSpacing () {
 		ArrayString commasep = new ArrayString();
 		boolean foundchar;
 		for (String s: this) {
-			ArrayList<Character> newstr = new ArrayList<Character>();
+			ArrayList<Character> newstr = new ArrayList<>();
 			foundchar = false;
 			for (char c: s.toCharArray()) {
-				if (c == ':') {
+				if (c == '(' || c == ')' || c == ':') {
 					foundchar = true;
 					commasep.add(StringOperations.getString(newstr));
-					commasep.add(":");
-					newstr = new ArrayList<Character>();
-				} else {
+					commasep.add(Character.toString(c));
+					newstr = new ArrayList<>();
+				}
+				else {
 					newstr.add(c);
-					if (c == ',') {
+					if (c == ',') {						// takes ['x,y,z'] into ['x,', 'y,', 'z']
 						foundchar = true;
 						commasep.add(StringOperations.getString(newstr));
-						newstr = new ArrayList<Character>();
+						newstr = new ArrayList<>();
 					}
 				}
 			}
@@ -62,7 +67,8 @@ public class ArrayString extends ArrayList<String>{
 		}
 		return commasep;
 	}
-	
+
+	/*
 	public boolean isSurroundedByParenthesis() {
 		if (get(0).charAt(0) != '(') return false;
 		int openedParenthesis = 0;
@@ -87,19 +93,28 @@ public class ArrayString extends ArrayList<String>{
 			String lastString = get(size()-1);
 			set(size()-1, lastString.substring(0, lastString.length()-1));
 		}
+	}*/
+
+	public void removeSpacedParenthesis () {
+		while (get(0).equals("(") && get(size()-1).equals(")")) {
+			int opndp = 1;
+			for (int i=1; i<size()-1; i++) {
+				String x = get(i);
+				if (x.equals("(")) opndp++;
+				else if (x.equals(")")) opndp--;
+				if (opndp == 0) return;
+			}
+			removeLast();
+			remove(0);
+		}
 	}
 	
 	public void removeVoid() {
 		removeIf(s -> (s == null || s.equals("")));
 	}
-
-	// TODO add space after parenthsis	
-	static private final Operator[] precedence1 = new Operator[]{Op.equiv, Op.then};
-	static private final Operator[] precedence2 = new Operator[]{Op.eq, Op.gt, Op.ge, Op.lt, Op.le, Op.ineq,
-																 Op.in, Op.psubset, Op.subset};
 	
 	public Sequence splitPrecedence () {
-		for (Operator[] oplist: new Operator[][]{precedence1, precedence2}) {
+		for (Operator[] oplist: Operator.genPrecedence) {
 			Sequence seq = splitPrecedence(oplist);
 			if (seq.size() > 1) return seq;
 		}
@@ -146,7 +161,7 @@ public class ArrayString extends ArrayList<String>{
 	
 	
 	public ArrayList<ArrayString> getDefineSequences() {
-		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
+		ArrayList<ArrayString> result = new ArrayList<>();
 		ArrayString buffer = new ArrayString();
 		removeLast(); // it's a '}'
 		
@@ -180,13 +195,13 @@ public class ArrayString extends ArrayList<String>{
 	
 	public class Sequence {
 		
-		ArrayList<ArrayString> v = new ArrayList<ArrayString>();
-		ArrayList<Link> links = new ArrayList<Link>();
+		ArrayList<ArrayString> v;
+		ArrayList<Link> links;
 		private boolean issubbody, isassignment;
 		
 		public Sequence () {
-			v = new ArrayList<ArrayString>();
-			links = new ArrayList<Link>();
+			v = new ArrayList<>();
+			links = new ArrayList<>();
 			issubbody = false;
 			isassignment = false;
 		}
@@ -220,7 +235,8 @@ public class ArrayString extends ArrayList<String>{
 		public String getHeadtoken () {
 			return v.get(0).get(0);
 		}
-		
+
+		/*
 		public ArrayString mergeBack () {
 			ArrayString res = new ArrayString();
 			for (int i=0; i<v.size(); i++) {
@@ -229,8 +245,9 @@ public class ArrayString extends ArrayList<String>{
 			}
 			res.remove(null);
 			return res;
-		}
-		public Statement toStatement () {
+		}*/
+		
+		public Statement toStatement () throws TermSynthaxException {
 			if (v.size() != 2) return null;
 			return new Statement(links.get(0), Term.compileTerms(v.get(0)), Term.compileTerms(v.get(1)));
 		}

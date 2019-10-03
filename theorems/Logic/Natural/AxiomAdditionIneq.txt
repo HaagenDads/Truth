@@ -1,7 +1,7 @@
 Theorem Name:AxiomAdditionIneq Package:Logic{
-\let x \in \setnatural;
-\let y \in \setnatural;
-\let z \in \setnatural;
+\let x \in \setreal;
+\let y \in \setreal;
+\let z \in \setreal;
 \state (x < y) \eq (x + z) < (y + z);
 }
 

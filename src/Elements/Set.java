@@ -25,9 +25,9 @@ public class Set extends Type {
 	
 	public String toString() {
 		if (c.size == 1) return c.get(0).toString();
-		String output = "";
-		for (int i=0; i<c.size-1; i++) output += c.get(i).toString() + " × ";
-		return output += c.get(c.size-1);
+		StringBuilder output = new StringBuilder();
+		for (int i=0; i<c.size-1; i++) output.append(c.get(i).toString()).append(" ï¿½ ");
+		return output.append(c.get(c.size - 1)).toString();
 	}
 	
 	public boolean equals (Set other) {
@@ -44,7 +44,13 @@ public class Set extends Type {
 	public boolean isElement(Collection coll, Theorem thm) {
 		if (coll.size != c.size) return false;
 		for (int i=0; i<c.size; i++) {
-			Type arg = Type.getType(coll.get(i), thm);
+			Type arg;
+			try {
+				arg = coll.get(i).getType(thm);
+			} catch (ExceptionTypeUnknown e) {
+				e.explain();
+				return false;
+			}
 			String setname = this.c.get(i).s;
 			if (!arg.equals(setname)) return false;
 		}
@@ -52,8 +58,7 @@ public class Set extends Type {
 	}
 	
 	public static boolean isValid (String str) {
-		if (str.equals("\\emptyset")) return true;
-		return false;
+		return str.equals("\\emptyset");
 	}
 	
 	

@@ -11,7 +11,7 @@ import Elements.Variable;
 
 public class Logging {
 
-	Logging activeLog, parent;
+	private Logging activeLog, parent;
 	public ArrayList<Logging> v;
 	public enum type {cases, statement, ground};
 	public type t;
@@ -101,7 +101,7 @@ public class Logging {
 		solved = state;
 	}
 	
-	public void rawPrint() {
+	private void rawPrint() {
 		System.out.println(t);
 		if (t.equals(type.cases)) {System.out.println(caseStatement.toString()); }
 		if (t.equals(type.statement)) {

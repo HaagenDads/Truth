@@ -2,6 +2,7 @@ package Graphics;
 
 import Core.Compiler;
 import Core.Compiler.CompilerException;
+import Core.GenException;
 import Core.Theorem;
 
 import java.awt.BorderLayout;
@@ -18,7 +19,7 @@ import java.util.Scanner;
 
 import javax.swing.*;
 
-public class TextZone extends JFrame {
+public class Application extends JFrame {
 	
 	public JTextArea topTextarea;
 	public BotTextArea botTextarea;
@@ -29,8 +30,9 @@ public class TextZone extends JFrame {
 	public TabList tablist;
 	private static final Font consolasFont = new Font("DialogInput", Font.PLAIN, 12);
 	private static final Font consolasFontButton = new Font("Consolas", Font.BOLD, 12);
+	public String openedfile_path;
 	
-	public TextZone() {
+	public Application() {
 		compiler = new Compiler(this);
 		getContentPane().setLayout(new BorderLayout());
 		
@@ -38,6 +40,7 @@ public class TextZone extends JFrame {
 		instantiateBotarea();
 		instantiateButtons();
 		instantiateMenubar();
+		openedfile_path = null;
 	}
 	
 	
@@ -57,9 +60,9 @@ public class TextZone extends JFrame {
 	}
 	
 	private void instantiateToparea() {
-		topTextarea = new JTextArea(){
+		topTextarea = new JTextArea(){ /*
             public boolean isManagingFocus(){ return false; }
-	    };
+	    */};
 		topTextarea.setLineWrap(true);
 		topPanel = new JScrollPane(topTextarea);
 		topPanel.setPreferredSize(new Dimension(200, 250));
@@ -140,8 +143,8 @@ public class TextZone extends JFrame {
 	
 
 	public void loadTheorem(String filename) {
-		
-		File fcselected = new File("theorems/" + filename);
+		openedfile_path = "theorems/" + filename;
+		File fcselected = new File(openedfile_path);
 		String contenu = "";
 		try {
 			Scanner sc = new Scanner(fcselected); 
@@ -187,9 +190,7 @@ public class TextZone extends JFrame {
 				Theorem thm = compiler.readUnitFromEditor();
 				tablist.addnew(thm);
 				
-			} catch (CompilerException e) {
-				e.printStackTrace();
-			}
+			} catch (GenException e) { e.explain(); }
 		}	
 	}
 	

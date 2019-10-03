@@ -3,9 +3,9 @@ package Core;
 import java.io.File;
 import java.util.ArrayList;
 
-import Core.Compiler.CompilerException;
 import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
+import Elements.Term.TermSynthaxException;
 
 public class Theorem {
 
@@ -44,9 +44,15 @@ public class Theorem {
 		try {
 			String body = Compiler.getDemonstrationFromUnit(unit);
 			compileDemonstration(body);
-		} catch (Exception e) {}
+		} 
+		catch (Compiler.CouldntFindDemonstrationException e) {e.explain_nostack(); }
+		catch (GenException e) {e.explain(); }
+		catch (ExceptionCaseNonvalid e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
-	public void compileDemonstration (String body) throws ExceptionCaseNonvalid {
+	public void compileDemonstration (String body) throws ExceptionCaseNonvalid, TermSynthaxException {
 		this.demonstration = new Demonstration(body, this);
 		this.demonstration.solveDemonstration();
 	}
@@ -56,7 +62,9 @@ public class Theorem {
 		for (String x: packages) {
 			try {
 				nc.acceptTheorems(x);
-			} catch (CompilerException e) {e.printStackTrace();}
+			} 
+			catch (GenException e) { e.explain(); }
+			
 			for (Theorem th: nc.Theorems) {
 				loadedTheorems.add(th);
 				th.embedVariableNames();

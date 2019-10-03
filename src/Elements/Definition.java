@@ -12,7 +12,7 @@ public class Definition extends Term {
 		isdefinition = true;
 	}
 	
-	public void parseTerms(Term result, String str) {
+	public void parseTerms(Term result, String str) throws TermSynthaxException {
 		result.flatten();
 		addTerm(result);
 		
@@ -71,8 +71,8 @@ public class Definition extends Term {
 		Permutations perm = new Permutations();
 		ArrayList<Definition> defs = new ArrayList<Definition>();
 
-		for (Term perma: permute(def.get(0)).vs) {
-		for (Term permc: Collection.permute(def.get(2)).vs) {
+		for (Term perma: def.get(0).getPermutations()) {
+		for (Term permc: def.get(2).getPermutations()) {
 			Definition newdef = new Definition();
 			newdef.addTerm(perma);
 			newdef.addTerm(def.get(1));
