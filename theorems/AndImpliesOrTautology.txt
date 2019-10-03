@@ -7,6 +7,9 @@ Demonstration {
     (p \and q) \implies (p \or q) \eq
     (\not (p \and q)) \or (p \or q) \eq
     (\not p \or \not q) \or (p \or q) \eq
+    (\not p \or (p \or q)) \or \not q \eq
+    ((\not p \or p) \or q) \or \not q \eq
+    (\not p \or p) \or (\not q \or q) \eq
     \true \or (\not q \or q) \eq
     \true \or \true \eq
     \true;

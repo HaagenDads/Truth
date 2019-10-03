@@ -51,19 +51,18 @@ public class Collection extends Term {
 	public String toString() {
 		if (isEmpty()) return "()";
 		String link = ", ";
-		if (iscartesian) link = " Ã— ";
-
-		StringBuilder output = new StringBuilder("(");
+		if (iscartesian) link = " × ";
+		String output = "(";
 		String closing = ")";
 		if (isset) {
-			output = new StringBuilder("{");
+			output = "{";
 			closing = "}";
 		}
 		for (Term t: items) {
 			//Disp tdisp = t.getDisposition();
 			//if (!t.isShallow() && !(tdisp == Disp.C) && !(tdisp == Disp.FC)) output += "(" + t.toString() + ")" + link;
 			//else
-			output.append(t.toString()).append(link);
+			output += t.toString() + link;
 		}
 		return output.substring(0, output.length()-link.length()) + closing;
 	}
@@ -114,32 +113,25 @@ public class Collection extends Term {
 		}
 		
 	}
-
-	public ArrayList<Term> getPermutations() {
-		if (permutations == null) permutations = permute(this);
-		return permutations.vs;
-	}
-
-
-	/** Permutes the collection by iteratively adding permutations collections of growing dimensions. Cool stuff. */
-	static protected Permutations permute (Collection c) {
+	
+	static public Permutations permute (Collection c) {
 		Permutations perm = new Permutations();
 		
-		ArrayList<Collection> collectionPerms = new ArrayList<Collection>();
-		collectionPerms.add(new Collection());
+		ArrayList<Collection> colls = new ArrayList<Collection>();
+		colls.add(new Collection());
 		for (Term t: c.items) {
 			ArrayList<Collection> newcolls = new ArrayList<Collection>();
-			for (Term p: t.getPermutations()) {
-				for (Collection col: collectionPerms) {
+			for (Term p: Term.permute(t).vs) {
+				for (Collection col: colls) {
 					Collection newcol = col.copy();
 					newcol.addTerm(p);
 					newcolls.add(newcol);
 				}
 			}
-			collectionPerms = newcolls;
+			colls = newcolls;
 		}
 		
-		for (Term t: collectionPerms) perm.add(t);
+		for (Term t: colls) perm.add(t);
 		return perm;
 	}
 	

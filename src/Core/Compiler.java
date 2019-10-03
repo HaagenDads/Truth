@@ -4,44 +4,42 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.Stack;
 
 import Core.Demonstration.ExceptionCaseNonvalid;
 import Elements.*;
 import Elements.ArrayString.Sequence;
-import Elements.Term.TermSynthaxException;
-import Graphics.Application;
+import Graphics.TextZone;
 
 
-public class Compiler extends Utils {
+public class Compiler {
 
 	private final static int printPriority = 3;
 	
 	public ArrayList<Theorem> Theorems;
-	private Application source;
+	TextZone source;
 	
-	public Compiler(Application source) {
-		Theorems = new ArrayList<>();
+	public Compiler(TextZone source) {
+		Theorems = new ArrayList<Theorem>();
 		this.source = source;
 	}
 	
 	public void refreshUnit() {
-		Theorems = new ArrayList<>();
-	}
+		Theorems = new ArrayList<Theorem>();
+	};
 	
 	
 	static public String getUnitFromFile(File file) {
-		StringBuilder unit = new StringBuilder();
+		String unit = "";
 		try {
 			Scanner sc = new Scanner(file); 
-		    while (sc.hasNextLine()){ unit.append(sc.nextLine()).append("\n"); }
+		    while (sc.hasNextLine()){ unit += sc.nextLine() + "\n"; }
 		    sc.close();
-		} catch (IOException ignored){}
+		} catch (IOException exp){}
 		
-		return unit.toString();
+		return unit;
 	}
 	
-	public Theorem readUnitFromEditor() throws CompilerException, TermSynthaxException {
+	public Theorem readUnitFromEditor() throws CompilerException {
 		String unit = source.topTextarea.getText();
 		return readUnit(unit);
 	}
@@ -55,13 +53,13 @@ public class Compiler extends Utils {
 		}
 	}
 	
-	private Theorem readUnit (String unit) throws CompilerException, TermSynthaxException {
-
-		assertParenthesis(unit);
+	private Theorem readUnit (String unit) throws CompilerException {
+		
 		assertTheoremExists(unit);
 		
 		Theorem thm = new Theorem();
-		thm.nlog = new Logging(thm);
+		Logging nlog = new Logging(thm);
+		thm.nlog = nlog;
 		
 		char[] chars = unit.toCharArray();
 		int pos_identification = unit.indexOf("{");
@@ -84,8 +82,7 @@ public class Compiler extends Utils {
 		Theorems.add(thm);
 		return thm;
 	}
-
-
+	
 	private int getHeaderPos (char[] chars, int pos) {
 		int openedbracket = 1;
 		for (; pos<chars.length; pos++) {
@@ -98,16 +95,16 @@ public class Compiler extends Utils {
 	}
 	
 	
-	private void readHeader(String header, Theorem thm) throws TermSynthaxException {
+	private void readHeader(String header, Theorem thm) {
 		
 		//System.out.println(":thm name:  " + thm.name);
 		Body head = new Body(header);
-		for (Sequence seq: head.seqarray) {
+		for (Sequence seq: head.body) {
 			
 			String headToken = seq.getHeadtoken();
 			if (seq.isAssignment()) {
-				thm.variables.addAll(Term.parseLetStatement(seq.getV(0), thm, true));
-
+				for (Variable v: Term.parseLetStatement(seq.getV(0), thm, true)) thm.variables.add(v);
+				
 			} else if (headToken.equals("\\where")) {
 				Statement st = parseStatementFromSequence(seq);
 				thm.assumptions.acceptAssumptionFromHypothesis(st);
@@ -120,40 +117,50 @@ public class Compiler extends Utils {
 		
 	}
 	
-	private Statement parseStatementFromSequence(Sequence seq) throws TermSynthaxException {
+	private Statement parseStatementFromSequence(Sequence seq) {
 		ArrayString lside = seq.getV(0);
 		lside.remove(0);
 		Term t1 = Term.compileTerms(lside);
 		Term t2 = Term.compileTerms(seq.getV(1));
 		return new Statement(seq.getL(0), t1, t2);
 	}
-
+	
+	
 	private void readBody(String body, Theorem thm) {
 		try {
 			thm.compileDemonstration(body);
-		} 
-		catch (GenException e) { e.explain(); } 
-		catch (ExceptionCaseNonvalid e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (ExceptionCaseNonvalid e) {
+			System.out.println("[[ TERMINAL ]] Couldn't compile demonstration.");
 		}
 	}
-
+	
+	
 	private void findFields(String str, Theorem thm) throws CompilerException {
 		
 		int name_pos = str.toLowerCase().indexOf("name:");
 		int package_pos = str.toLowerCase().indexOf("package:");
 		int tags_pos = str.toLowerCase().indexOf("tags:");
 		int head_end = str.length();
-
+		
 		if (name_pos == -1 ) { throw new CouldntFindTheoremNameException(); }
-
-		if (tags_pos > -1) { thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", "); head_end = tags_pos; }
-		if (package_pos > -1)  {thm.packages = str.substring(package_pos + 8, head_end).trim().split(", "); head_end = package_pos; }
-		thm.name = str.substring(name_pos + 5, head_end).trim();
+		if (package_pos == -1 && tags_pos == -1) {
+			thm.name = str.substring(name_pos + 5, head_end).trim();
+		} else if (package_pos == -1) {
+			thm.name = str.substring(name_pos + 5, tags_pos).trim();
+			thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", ");
+		} else if (tags_pos == -1) {
+			thm.name = str.substring(name_pos + 5, package_pos).trim();
+			thm.packages = str.substring(package_pos + 8, head_end).trim().split(", ");
+		} else {
+			thm.name = str.substring(name_pos + 5, package_pos).trim();
+			thm.packages = str.substring(package_pos + 8, tags_pos).trim().split(", ");
+			thm.tags = str.substring(tags_pos + 5, head_end).trim().split(", ");
+		}
+		
 	}
 	
-	public void acceptTheorems(String packageName) throws CompilerException, TermSynthaxException {
+	
+	public void acceptTheorems(String packageName) throws CompilerException {
 		File[] files = new File("theorems/" + packageName + "/Axioms/").listFiles();
 		File[] files2 = new File("theorems/" + packageName + "/FirstOrder/").listFiles();
 		File[] files3 = new File("theorems/" + packageName + "/Natural/").listFiles();
@@ -175,38 +182,29 @@ public class Compiler extends Utils {
 			}
 		}
 	}
-
+	
+	
+	private void printout(String text) {
+		printout(1, text);
+	}
+	
+	private void printout(int priority, String text) {
+		if (printPriority > priority) return;
+		if (priority == 3) System.out.println("[FATAL]" + text);
+		else System.out.println(text);
+	}
 	
 	private void assertTheoremExists(String body) throws CouldntFindTheoremException {
 		if (!body.substring(0, 8).equalsIgnoreCase("theorem ")) throw new CouldntFindTheoremException();
 	}
-
-	private void assertParenthesis(String body) throws ErrorInParenthesisException {
-		char[] chars = body.toCharArray();
-		Stack<Character> stk = new Stack<>();
-		for (int i=0; i<chars.length; i++) {
-			char c = chars[i];
-			if (c == '(' || c == '{' ||  c == '[') {
-				stk.push(c);
-			} else if (c == ')' && stk.pop() != '(') throw new ErrorInParenthesisException(i);
-			else if (c == ']' && stk.pop() != '[') throw new ErrorInParenthesisException(i);
-			else if (c == '}' && stk.pop() != '{') throw new ErrorInParenthesisException(i);
-		}
-	}
-
 	static private boolean doesDemonstrationExist(String body) {
 		if (body.length() < 14) return false;
 		return body.substring(0, 13).trim().equalsIgnoreCase("demonstration");
 	}
-
-	abstract static public class CompilerException extends GenException { public String errorType() { return "Compiler";}}
-	static class CouldntFindTheoremException extends CompilerException { public String errorMessage() { return "Couldn't find theorem."; }}
-	static class CouldntFindTheoremNameException extends CompilerException { public String errorMessage() { return "Couldn't find theorem name."; }}
-	static class CouldntFindDemonstrationException extends CompilerException { public String errorMessage() { return "Couldn't find demonstration."; }}
-	static class ErrorInParenthesisException extends CompilerException {
-		int i;
-		ErrorInParenthesisException(int i) {this.i = i; }
-		public String errorMessage() { return "Error in parenthesis at position " + i + "."; }
-	}
+		
+	static public class CompilerException extends Exception {};
+	static class CouldntFindTheoremException extends CompilerException {};
+	static class CouldntFindTheoremNameException extends CompilerException {}
+	static class CouldntFindDemonstrationException extends CompilerException {}
 	
 }

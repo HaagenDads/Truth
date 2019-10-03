@@ -1,6 +1,5 @@
 package Elements;
 
-import Core.Demonstration;
 import Operation.BooleanLogic;
 import Core.Theorem;
 import Operation.NaturalNumbers;
@@ -9,11 +8,11 @@ import Operation.Operator;
 import Operation.RealNumbers;
 
 public class Type {
-
-	public static final Type Real = new Type(RealNumbers.genericType);
-	public static final Type Nat = new Type(NaturalNumbers.genericType);
-	public static final Type Bool = new Type(BooleanLogic.genericType);
-	public static final Type Sets = new Type(Set.genericType);
+	
+	private static final Type Real = new Type(RealNumbers.genericType);
+	private static final Type Nat = new Type(NaturalNumbers.genericType);
+	private static final Type Bool = new Type(BooleanLogic.genericType);
+	private static final Type Sets = new Type(Set.genericType);
 	
 
 	public String type;
@@ -56,15 +55,11 @@ public class Type {
 		return false;
 	}
 	
-	static public boolean matchtypes (Term t1, Term t2, Theorem thm) throws ExceptionTypeUnknown {
-		return matchtypes(t1.getType(thm), t2.getType(thm));
-	}
-
-	static public boolean matchtypes (Term t, Type type, Theorem thm) throws ExceptionTypeUnknown {
-		return matchtypes(t.getType(thm), type);
+	static public boolean matchtypes (Term t1, Term t2, Theorem thm) {
+		return matchtypes(getType(t1, thm), getType(t2, thm));
 	}
 	
-	static public Type computeType(Term t, Theorem thm) throws ExceptionTypeUnknown {
+	static public Type getType(Term t, Theorem thm) {
 		//System.out.println(":getting type of: " + t.toString());
 		Term.Disp termdisp = t.getDisposition();
 		if (termdisp == Term.Disp.F) {
@@ -75,51 +70,49 @@ public class Type {
 			if (BooleanLogic.isValid(t.s)) return Bool;
 			if (NaturalNumbers.isValid(t.s)) return Nat;
 			if (RealNumbers.isValid(t.s)) return Real;
+			
 			if (Set.isValid(t.s)) return Sets;
-			throw new ExceptionVariableCouldntBeFound(t);
+			return null;
 		}
 		if (termdisp == Term.Disp.QTT) return Bool;
 		if (termdisp == Term.Disp.DEF) return Bool;
 		if (termdisp == Term.Disp.OT) {
-			Type x = t.get(1).getType(thm);
+			Type x = getType(t.get(1), thm);
 			return solveUnary(Op.getOperator(t.get(0).s), x);
 		}
 		if (termdisp == Term.Disp.TOT) {
-			Type x = t.get(0).getType(thm);
-			Type y = t.get(2).getType(thm);
+			Type x = getType(t.get(0), thm);
+			Type y = getType(t.get(2), thm);
 			return solveBinary(x, Op.getOperator(t.get(1).s), y);
 		}
 		if (termdisp == Term.Disp.FC) {
 			Function fnc = (Function) (thm.getVariable(t.get(0).s));
 			Collection coll = (Collection) (t.get(1));
 			if (fnc.domain.isElement(coll, thm)) return fnc.image;
-			else throw new ExceptionCollectionOutOfDomain(fnc, coll);
+			System.out.println(":coll " + coll.toString() + " isnt element of " + fnc.domain.toString());
+			return null;
 		}
 		if (termdisp == Term.Disp.C) {
 			return new Type("Collection");
 		}
-		else throw new ExceptionTypeUnknown(t);
+		else return null;
 	}
 	
 	
-	static private Type solveUnary(Operator op, Type a) throws ExceptionCouldntResolveUnaryType {
-		if (a.equals(Bool)) {
+	static private Type solveUnary(Operator op, Type a) {
+		if (a.equals(BooleanLogic.genericType)) {
 			if (op.equals(Op.not)) return a;
 		}
-		else if (a.equals(Real)) {
-			if (op.equals(Op.minus)) return a;
-		}
-		if (a.equals(Nat)) return solveUnary(op, Real);
-		throw new ExceptionCouldntResolveUnaryType(op, a);
+		return null;
 	}
 	
-	static private Type solveBinary(Type a, Operator op, Type b) throws ExceptionCouldntResolveBinaryType {
+	static private Type solveBinary(Type a, Operator op, Type b) {
 		if (a.equals(b)) {
-			if (a.equals(Bool)) {
-				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies, Op.then, Op.equiv})) return a;
+			if (a.equals(BooleanLogic.genericType)) {
+				if (isin(op, new Operator[]{Op.and, Op.or, Op.implies})) return a;
 			}
-			if (a.equals(Real) || a.equals(Nat)) {
-				if (isin(op, new Operator[]{Op.plus, Op.mult, Op.exp})) return a;
+			if (a.equals(NaturalNumbers.genericType)) {
+				if (isin(op, new Operator[]{Op.plus, Op.minus, Op.mult, Op.exp})) return a;
 				if (isin(op, new Operator[]{Op.eq, Op.lt, Op.gt, Op.le, Op.ge, Op.ineq})) {
 					return Bool;
 				}
@@ -131,50 +124,17 @@ public class Type {
 				} else if (isin(op, new Operator[]{Op.in, Op.notin})) return Bool;
 			}
 		} else {
-			if (a.equals(Nat)) return solveBinary(Real, op, b);
-			if (b.equals(Nat)) return solveBinary(a, op, Real);
+			if (a.equals(Real)) return solveBinary(Nat, op, b);
+			if (b.equals(Real)) return solveBinary(a, op, Nat);
 		}
-
-		throw new ExceptionCouldntResolveBinaryType(op, a, b);
+		return null;
 	}
 	
-	private static boolean isin(Object t, Object[] list) {
+	public static boolean isin(Object t, Object[] list) {
 		for (Object s: list) {
 			if (t.equals(s)) return true;
 		}
 		return false;
 	}
 
-
-	static public class ExceptionTypeUnknown extends Demonstration.ExceptionComprehension {
-		Term t;
-		ExceptionTypeUnknown(Term t) { this.t = t; }
-		public String errorType() { return "Type";}
-		public String errorMessage() { return "Type couldn't be understood from term: " + t.toString(); }
-	}
-
-	static public class ExceptionCollectionOutOfDomain extends ExceptionTypeUnknown {
-		Function f;
-		ExceptionCollectionOutOfDomain(Function f, Collection c) { super(c); this.f = f; }
-		public String errorMessage() { return "Collection " + t.toString() + " isn't element of domain of " + f.name;}
-	}
-
-	static public class ExceptionVariableCouldntBeFound extends ExceptionTypeUnknown {
-		ExceptionVariableCouldntBeFound(Term t) { super(t); }
-		public String errorMessage() { return "Type couldn't be infered from flat unknown term " + t.toString(); }
-	}
-
-	static public class ExceptionCouldntResolveUnaryType extends ExceptionTypeUnknown {
-		Type type; Operator op;
-		ExceptionCouldntResolveUnaryType(Operator op, Type type) { super(op); this.type = type; }
-		public String errorMessage() { return "Couldn't resolve unary type " + type + " with operator " + t.toString();}
-	}
-
-	static public class ExceptionCouldntResolveBinaryType extends ExceptionTypeUnknown {
-		Type t1, t2; Operator op;
-		ExceptionCouldntResolveBinaryType(Operator op, Type type1, Type type2) { super(op); this.t1 = type1; this.t2 = type2; }
-		public String errorMessage() { return "Couldn't resolve binary types " + t1 + " and " + t2 + " with operator " + t.toString();}
-	}
 }
-
-

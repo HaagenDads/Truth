@@ -1,5 +1,0 @@
-Theorem Name:IffImpliesImplication Package:Logic{
-\let a \in \boolean;
-\let b \in \boolean;
-\state (a \eq b) \then (a \implies b);
-}

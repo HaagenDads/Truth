@@ -4,22 +4,21 @@ import Elements.Term;
 
 public class Operator extends Term {
 
-	static private final Operator[] precedence1 = new Operator[]{Op.equiv, Op.then};
-	static private final Operator[] precedence2 = new Operator[]{Op.eq, Op.gt, Op.ge, Op.lt, Op.le, Op.ineq,
-			Op.in, Op.psubset, Op.subset};
-	static public final Operator[][] genPrecedence = new Operator[][]{precedence1, precedence2};
-
 	public Operator (String s) {
 		super(s);
 		isoperator = true;
 	}
 	
-	public boolean equals (Operator other) { return s.equals(other.s); }
+	public boolean equals (Operator other) {
+		return this.s.equals(other.s);
+	}
 	public boolean equals (String str) {
-		return s.equals(str);
+		return this.s.equals(s);
 	}
 	
-	public Operator copy () { return new Operator(s); }
+	public Operator copy () {
+		return new Operator(s);
+	}
 	public String toString() {
 		return s;
 	}
@@ -47,23 +46,13 @@ public class Operator extends Term {
 	}
 	
 	public boolean isBinary() {
-		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.exp,
+		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.implies, Op.eq, Op.gt, Op.lt, Op.ge, Op.le, Op.ineq, Op.mult, Op.plus, Op.minus, Op.exp,
 										  Op.intersection, Op.union, Op.subset, Op.psubset, Op.in, Op.notin, Op.equiv, Op.iff, Op.then};
 		return isPartOfList(opSet);
 	}
 	
 	public boolean isCommutative() {
 		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.eq, Op.ineq, Op.plus, Op.mult, Op.equiv, Op.intersection, Op.union, Op.iff};
-		return isPartOfList(opSet);
-	}
-	public boolean isAssociative() {
-		Operator[] opSet = new Operator[]{Op.or, Op.and, Op.eq, Op.ineq, Op.plus, Op.mult, Op.equiv, Op.intersection, Op.union, Op.iff};
-		return isPartOfList(opSet);
-	}
-	
-	/** Answers the question whether an operator has a symmetrical inverse */
-	public boolean hasSymmInverse() {
-		Operator[] opSet = new Operator[]{Op.lt, Op.le, Op.gt, Op.ge};
 		return isPartOfList(opSet);
 	}
 	
@@ -80,13 +69,4 @@ public class Operator extends Term {
 		return this;
 	}
 
-	public boolean associatesBooleans() {
-		Operator[] opSet = new Operator[]{Op.and, Op.or, Op.equiv, Op.then, Op.implies, Op.not, Op.iff};
-		return isPartOfList(opSet);
-	}
-
-	public boolean isComparing() {
-		Operator[] opSet = new Operator[]{Op.lt, Op.le, Op.gt, Op.ge, Op.eq, Op.ineq};
-		return isPartOfList(opSet);
-	}
 }

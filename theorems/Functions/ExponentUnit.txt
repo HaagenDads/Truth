@@ -21,24 +21,19 @@ Demonstration {
     P(0) \eq (f(0) = g(0)) \eq (f(0) = 2 ^ 0) \eq (1 = 2 ^ 0) \eq \true;
 
     \case n > 0 {
-        n = n + 0 = (n + 1) - 1;
+        n = n + 0 = n + (-1 + 1) = (n + 1) + -1;
         n + 1 > n + 0 = n > 0;
         P(n) \eq f(n) = g(n) \eq f(n) = 2 ^ n
-	\eq 2 * f(n) = 2 * (2 ^ n)
+	\then 2 * f(n) = 2 * (2 ^ n)
 	\eq 2 * f(n) = 2 ^ (n + 1)
 	\eq 2 * f(n) = g(n + 1)
-        \eq 2 * f((n + 1) - 1) = g(n + 1)
+        \eq 2 * f((n + 1) + -1) = g(n + 1)
         \eq f(n + 1) = g(n + 1)
         \eq P(n + 1);
     }
 
-    \true \eq \forall n > 0: (P(n) \eq P(n + 1)) \then \forall n > 0: (P(n) \implies P(n + 1));
-
-    \true \eq \true \and \true \eq P(0) \and \true 
-    \eq P(0) \and \forall n > 0: (P(n) \eq P(n + 1)) 
-    \then P(0) \and \forall n > 0: (P(n) \implies P(n + 1))
-    \then \forall n: P(n) 
-    \eq \forall n: f(n) = g(n);
+    \true \eq \true \and \true \eq P(0) \and \true \eq P(0) \and \forall n > 0: (P(n) \then P(n + 1))
+    \then \forall n: P(n) \eq \forall n: f(n) = g(n);
  
 
 

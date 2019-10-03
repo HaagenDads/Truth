@@ -1,6 +1,6 @@
 Theorem Name:Unit Package:Logic{
 \let x \in \setnatural;
-\state \forall x: (x > 0) \eq \false;
+\state \forall x \follows (x > 0) \eq \false;
 }
 Demonstration { 
         \not (x = 0) \eq (x != 0) \eq ((x > 0) \or (x < 0));
@@ -9,8 +9,8 @@ Demonstration {
 
     \false \eq
     \not \true \eq
-    \not \exists x: (\not (x > 0)) \eq
-    \forall x: \not \not (x > 0) \eq
-    \forall x: (x > 0);
+    \not \exists x \suchthat (\not (x > 0)) \eq
+    \forall x \follows \not \not (x > 0) \eq
+    \forall x \follows (x > 0);
 }
 

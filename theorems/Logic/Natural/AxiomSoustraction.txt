@@ -1,4 +1,0 @@
-Theorem Name:AxiomSoustraction Package:Logic{
-\let x \in \setreal;
-\state x - x = 0;
-}

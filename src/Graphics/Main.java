@@ -1,51 +1,56 @@
 package Graphics;
 
-import java.util.ArrayList;
+import Elements.*;
+import Operation.Op;
 
+@SuppressWarnings("unused")
 public class Main {
-
+	
+	
 	public static void main(String[] args) {
-        Application frame = new Application();
+		TextZone frame = new TextZone();
         frame.setLocation(250, 50);
         frame.setSize(900, 650); 
         frame.setVisible(true);
         //frame.loadTheorem("Logic/FirstOrder/OrImplication.txt");
         //frame.loadTheorem("AndImpliesOrTautology.txt");
         //frame.loadTheorem("Logic/FirstOrder/PartitionImplication.txt");
-        frame.loadTheorem("QuantifierTesting.txt");
+        //frame.loadTheorem("QuantifierTesting.txt");
         //frame.loadTheorem("EmbededQuantifier.txt");
         //frame.loadTheorem("Logic/Set/AxiomPowerset.txt");
         //frame.loadTheorem("unsolvedQuant.txt");
         //frame.loadTheorem("Functions/increasingfnc.txt");
-        //frame.loadTheorem("Functions/ExponentUnit.txt");
-        //frame.loadTheorem("Logic/Natural/AxiomAdditionIneq2.txt");
-
-        // TODO am i sure that (((a+b) + c) + d) + e    has every associative power? I am not.
+        frame.loadTheorem("Functions/ExponentUnit.txt");
 	}
-
+	
 	/*
 	public static void main(String[] args) {
-	    A a = new A(11);
-	    A b = new A(22);
-        ArrayList<A> alist = new ArrayList<A>();
-        alist.add(a); alist.add(b);
-        alist.get(0).setv(3);
-        alist.get(1).setv(5);
-        System.out.println(a.v + " " + b.v + " : " + alist.get(0).v + " " +alist.get(1).v);
+		
+		Term a = new Term("aa");
+		Term b = Op.getOperator("+");
+		Term c = new Term();
+		c.addTerm(new Term("3"));
+		c.addTerm(Op.getOperator("+"));
+		c.addTerm(new Term("a"));
+		Term d = new Term();
+		d.addTerm(new Term("8"));
+		d.addTerm(Op.getOperator("*"));
+		d.addTerm(new Term("b"));
+		Term all = new Term();
+		Collection col = new Collection();
+		
+		col.addTerm(c);
+		col.addTerm(d);
+		all.addTerm(a);
+		all.addTerm(b);
+		all.addTerm(col);
 
-    }
-
-
-	static class A {
-	    int v;
-	    int id;
-	    public A(int id) {
-	        this.id = id;
-	        this.v = 0;
-        }
-	    public void setv(int v) {
-	        System.out.println("Setting v to " + v + " in " + id);
-	        this.v = v;
-        }
-    }*/
+		
+		for (Term t: Term.permute(col).vs) {
+			System.out.println(t);
+		}
+		System.out.println(all.toString());
+		
+	}*/
+	
 }

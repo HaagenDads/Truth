@@ -3,7 +3,6 @@ package Elements;
 import java.util.ArrayList;
 
 import Core.Theorem;
-import Elements.Term.TermSynthaxException;
 import Operation.Op;
 
 public class Function extends Variable {
@@ -54,26 +53,26 @@ public class Function extends Variable {
 		return res + '\n';
 	}
 	
-	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
-		Type tp = term.getType(thm);
+	public void setDomain (Term term, Theorem thm) throws ExceptionSetInvalid {
+		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, true);
 		domain = new Set(term);
 		defaultDomain = false;
 	}
 	
-	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid, Type.ExceptionTypeUnknown {
-		Type tp = term.getType(thm);
+	public void setImage (Term term, Theorem thm) throws ExceptionSetInvalid {
+		Type tp = Type.getType(term, thm);
 		if (!tp.equals(Set.genericType)) throw new ExceptionSetInvalid(term, false);
 		image = new Set(term);
 		defaultImage = false;
 	}
 	
 
-	public void setDefinition(Theorem thm, ArrayString generalDef) throws ExceptionAssignDefinition, TermSynthaxException {
+	public void setDefinition(Theorem thm, ArrayString generalDef) throws ExceptionAssignDefinition {
 		if (defs.size() > 0) throw new ExceptionDefinitionMultipleUnconditional(Term.compileTerms(generalDef));
 		setDefinition(thm, null, generalDef);
 	}
-	public void setDefinition(Theorem thm, ArrayString condstring, ArrayString defstring) throws ExceptionAssignDefinition, TermSynthaxException {
+	public void setDefinition(Theorem thm, ArrayString condstring, ArrayString defstring) throws ExceptionAssignDefinition {
 		Term def = Term.compileTerms(defstring);
 		Term fnc = def.get(0);
 		
@@ -183,7 +182,7 @@ public class Function extends Variable {
 	}
 	
 
-	static public class ExceptionSetInvalid extends Exception {
+	public class ExceptionSetInvalid extends Exception {
 		public Term invalidset;
 		public boolean isdomain;
 		public ExceptionSetInvalid (Term set, boolean isdomain) {

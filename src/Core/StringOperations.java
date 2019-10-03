@@ -11,10 +11,10 @@ abstract public class StringOperations extends JTextPane {
 	protected String join(String[] expression, String sep) {
 		
 		if (expression.length == 0) return "";
-		StringBuilder output = new StringBuilder(expression[0].toString());
-		for (int i=1; i<expression.length; i++) output.append(sep).append(expression[i]);
+		String output = expression[0].toString();
+		for (int i=1; i<expression.length; i++) output += sep + expression[i];
 		
-		return output.toString();
+		return output;
 	}
 	
 	protected int len(String s) {
@@ -56,17 +56,17 @@ abstract public class StringOperations extends JTextPane {
 	
 	private String getStyleSequence (String s) {
 		int nbopenedbracket = 1;
-		StringBuilder sequence = new StringBuilder();
+		String sequence = "";
 		for (char c: s.toCharArray()) {
 			if (c == '{') nbopenedbracket += 1;
 			if (c == '}') nbopenedbracket -= 1;
-			if (nbopenedbracket == 0) return sequence.toString();
-			sequence.append(Character.toString(c));
+			if (nbopenedbracket == 0) return sequence;
+			sequence += Character.toString(c);
 		}
 		return null;
 	}
 	
-	protected static class Styledsequence {
+	protected class Styledsequence {
 		public String style;
 		public String sequence;
 		
@@ -80,7 +80,7 @@ abstract public class StringOperations extends JTextPane {
 		}
 	}
 	
-	private String replaceSymbols(String s) {
+	protected String replaceSymbols(String s) {
 		String result = s;
 		String[] from = new String[]{"\\not ", "\\false", "\\true", "\\and", "\\or", "\\implies", "\\eq", 
 				"\\forall", "\\exists", "\\setnatural", "\\in", "\\notin", "\\then", "\\subset", "\\psubset", "\\notsubset", 
@@ -88,30 +88,29 @@ abstract public class StringOperations extends JTextPane {
 		String[] to = new String[]{"¬", "\\$bold{F}", "\\$bold{T}", "∧", "∨", "→", "≡", "∀", "∃", "ℕ", "∈", "∉", "⇒", "⊆", "⊂", "⊆ ?", "⋂", "⋃", "∅",
 				"\\$ital{P", "→", "ℝ"};
 		for (int i=0; i<from.length; i++) {
-			result = result.replace(from[i], to[i]);
+			result = result.replace((CharSequence) from[i], (CharSequence) to[i]);
 		}
 		return result;
 		
 	}
 	
 	protected String getTab(int ntab) {
-		StringBuilder result = new StringBuilder();
-		while (ntab-- > 0) result.append("    ");
-		return result.toString();
+		String result = "";
+		while (ntab-- > 0) result += "    ";
+		return result;
 	}
 	
 	protected String repeat(String a, int n) {
-		StringBuilder result = new StringBuilder();
-		while (n-- > 0) result.append(a);
-		return result.toString();
+		String result = "";
+		while (n-- > 0) result += a;
+		return result;
 	}
 	
 	
-	/*
+	/* 
 	 *  General String operations
 	 */
-
-	/** Build string from array of characters. */
+	
 	public static String getString (ArrayList<Character> list) {    
 	    StringBuilder builder = new StringBuilder(list.size());
 	    for(Character ch: list) { builder.append(ch); }
@@ -129,16 +128,16 @@ abstract public class StringOperations extends JTextPane {
 
 	public static ArrayString split(String text, char[] cs) {
 		ArrayString result = new ArrayString();
-		StringBuilder buffer = new StringBuilder();
+		String buffer = "";
 		for (char c: text.toCharArray()) {
 			if (isPartOfList(c, cs)) {
-				if (!buffer.toString().equals(""))	result.add(buffer.toString());
-				buffer = new StringBuilder();
+				if (!buffer.equals(""))	result.add(buffer);
+				buffer = "";
 			} else {
-				buffer.append(c);
+				buffer += c;
 			}
 		}
-		if (!buffer.toString().equals(""))	result.add(buffer.toString());
+		if (!buffer.equals(""))	result.add(buffer);
 		return result;
 	}
 	
@@ -151,12 +150,12 @@ abstract public class StringOperations extends JTextPane {
 	
 	static public String getEndLine(String token) {
 		int backslash = 0;
-		StringBuilder result = new StringBuilder();
+		String result = "";
 		for (char x: token.toCharArray()) {
 			if (x == '\\') backslash += 1;
-			else if (x == ';' && backslash % 2 == 0) return result.toString();
+			else if (x == ';' && backslash % 2 == 0) return result;
 			else backslash = 0;
-			result.append(x);
+			result += x;
 		}
 		return null;
 	}

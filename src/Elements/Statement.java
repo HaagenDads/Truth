@@ -38,9 +38,6 @@ public class Statement {
 				if (lside.equals(other.rside) && rside.equals(other.lside)) return true;
 			}
 		}
-		if (link.hasSymmInverse() && (link.getSymmInverse()).equals(other.link)) {		// a > 0  ==  0 < a
-			if (lside.equals(other.rside) && rside.equals(other.lside)) return true;
-		}
 		return false;
 		
 	}

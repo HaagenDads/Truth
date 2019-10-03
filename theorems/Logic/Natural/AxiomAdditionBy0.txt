@@ -1,5 +1,5 @@
 Theorem Name:AxiomAddition Package:Logic{
-\let x \in \setreal;
+\let x \in \setnatural;
 \state x = x + 0;
 }
 

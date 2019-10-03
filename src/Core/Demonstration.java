@@ -7,22 +7,28 @@ import Elements.*;
 import Elements.ArrayString.Sequence;
 import Elements.Term.Disp;
 import Elements.Term.ExceptionTheoremNotApplicable;
-import Elements.Term.TermSynthaxException;
-import Elements.Type.ExceptionTypeUnknown;
+import Elements.Term.ExceptionTrivialEquality;
+import Elements.Term.Permutations;
 import Operation.BooleanLogic;
+import Operation.BooleanLogic.ExceptionBooleanCasting;
 import Operation.NaturalNumbers;
 import Operation.Op;
 import Operation.Operator;
 import Operation.RealNumbers;
 
-public class Demonstration extends Utils {
-	private boolean isNested;
+public class Demonstration {
+
+	private final static int printPriority = 1; // 3 = [FATAL] only; 1 = broad;
+	private static final String debugthm = "AxiomAdditionIneq";
+	
+	boolean isNested;
 	
 	private Body body;
-	private Statement proposition;
-	private Assumptions assumptions;
-	private Logging nlog;
-	private Theorem source;
+	Statement proposition;
+	Assumptions assumptions;
+	Logging nlog;
+	Theorem source;
+	
 
 	public Demonstration (String fulltext, Theorem thm) {
 		proposition = thm.statement;
@@ -43,42 +49,59 @@ public class Demonstration extends Utils {
 	}
 	
 	
-	public void solveDemonstration() throws ExceptionCaseNonvalid, TermSynthaxException {
-		printout("body seqarray size::" + body.seqarray.size());
-		for (Sequence sequence: body.seqarray) {
+	public boolean solveDemonstration() throws ExceptionCaseNonvalid {
+		
+		for (Sequence sequence: body.body) {
+			
+			ArrayString subbody = sequence.getV(0);
 			if (sequence.isSubbody()) {
+				
+				
 				Cases cases = new Cases();
-				cases.parseCase(sequence.getV(0));
-
+				cases.parseCase(subbody);
+				
+				/*
+				for (int i=0; i<cases.nested.size(); i++) {
+					Demonstration d = cases.nested.get(i);
+					Statement casehypothesis = cases.hypothesis.get(i);
+					nlog.addCase(casehypothesis);
+					d.solveDemonstration();
+				}*/
 				nlog.createCase(cases.hypothesis);
 				cases.nested.solveDemonstration();
+				
 				acceptCasesCommunProvenStatements(cases);
 				nlog.closeCase();
+				
+
 			} else if (sequence.isAssignment()) {
 				// TODO add checking for overloading and validating
-				ArrayList<Variable> sts = Term.parseLetStatement(sequence.getV(0), source, false);
+				ArrayList<Variable> sts = Term.parseLetStatement(subbody, source, false);
 				source.variables.addAll(sts);
 				nlog.addLine(sts);
 			} else {
-				try {
-					compileProposition(sequence);
-				} 
-				catch (GenException e) { e.explain(); return;	}
+				compileProposition(sequence);
 			}
 		}
 		
 		// Check if we have demonstrated the proposition
-		if (!isNested) nlog.conclude(isTheoremDemonstrated());
+		if (!isNested) {
+			boolean demonstrated = isTheoremDemonstrated();
+			nlog.conclude(demonstrated);
+			return demonstrated;
+		}
+		return false;		
 	}
 	
-	private void compileProposition (Sequence sequence) throws ExceptionComprehension, TermSynthaxException {
+	private void compileProposition (Sequence sequence) {
 		boolean proposition = true;
 		Term firstexp = null;
 		Term t1 = null;
 		Term t2 = null;
 		
 		for (int i=0; i<sequence.size(); i++) {
-			t2 = Term.compileTerms(sequence.getV(i));			
+			t2 = Term.compileTerms(sequence.getV(i));
+			
 			if (t1 == null) {
 				nlog.addLine(null, t2, null);
 				firstexp = t2;
@@ -92,30 +115,15 @@ public class Demonstration extends Utils {
 		}
 		
 		Link conclusion = Link.reduceSerie(sequence.getLinks());
-		if (firstexp == null) { System.out.println("Something real bad happened"); return; }
-		if (conclusion == null) { System.out.println("Link serie does not simplify."); return; }
 		if (proposition && !conclusion.equals("")) {
 			
 			Statement takeaway = new Statement(conclusion, firstexp, t2);
 			
 			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
 			// the link to reflect this reality.
-			if (conclusion.equals(Op.then)) {
-				if (firstexp.equalsString("\\true")) takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
-			}
-
-			// If conclusion was "true <==> a > 0", the summary should be a > 0.
-			if ((conclusion.equals(Op.then) || conclusion.equals(Op.equiv))
-				&& firstexp.equalsString("\\true") && t2.getDisposition() == Disp.TOT && ((Operator) t2.get(1)).isComparing())
-			{
-				takeaway = new Statement(new Link((Operator) t2.get(1)), t2.get(0), t2.get(2));
-			}
-			if (conclusion.equals(Op.equiv)
-				 && t2.equalsString("\\true") && firstexp.getDisposition() == Disp.TOT && ((Operator) firstexp.get(1)).isComparing())
-			{
-				takeaway = new Statement(new Link((Operator) firstexp.get(1)), firstexp.get(0), firstexp.get(2));
-			}
-
+			if (conclusion.equals(Op.then) && firstexp.equalsString("\\true")) {
+				takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
+			} 
 
 			assumptions.acceptAssumptionFromDemonstration(takeaway, nlog.blockstamp);
 		}
@@ -135,7 +143,7 @@ public class Demonstration extends Utils {
 	/*
 	 *   Takes commun proven statements from cases and accepts them in the higher demonstration level
 	 */
-	private void acceptCasesCommunProvenStatements(Cases cases) {
+	private ArrayList<Assump> acceptCasesCommunProvenStatements(Cases cases) {
 		// TODO generalise for QTT exists statements
 		// TODO make this work
 		//if (cases.validatePartition().equals("true")) {
@@ -157,6 +165,7 @@ public class Demonstration extends Utils {
 			assumptions.acceptAssumptionFromDemonstrationThroughCases(bulkResults, nlog.blockstamp);
 			return bulkResults;
 		}*/
+		return null;
 	}
 	
 	/*
@@ -167,103 +176,44 @@ public class Demonstration extends Utils {
 	 *  
 	 *  f(g(x))=f(g(y)) could be true if we know that x=y, that g(x)=g(y) or that f(g(x)) = f(g(y)).
 	 */
-	private boolean validateStatement(Term t1, Term t2, Link link) throws ExceptionComprehension {
-		try {
-			Justification solution = findSolutionForStatementValidation(t1, t2, link);
-			if (solution != null) {
-				nlog.addLine(link, t2, solution);
-				printout(":success!:");
-				return true;
-			}
-			nlog.addLine(link, t2, new Justification("error"));
-		} catch (Type.ExceptionCollectionOutOfDomain e) {
-			e.explain_nostack();
-			nlog.addLine(link, t2, new Justification("error: collection out of domain"));
-		}
-		return false;
-	}
-
-	// TODO a=b <==> c=d  .  if no solution is found, look for a=c && b=d, then a=d && b=c  .
-	// Types of statements:
-	// bool <==> bool
-	// bool ==> bool
-	// a = b
-	// a < b
-	private Justification findSolutionForStatementValidation(Term t1, Term t2, Link link) throws ExceptionComprehension {
-		ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
-		if (diffLedger.size() == 0) return new Justification("Trivial equality");
-
-		Justification solution = null;
-		for (Statement st: diffLedger) {
-			printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
-			solution = validateStatementSpecificDifference(st);
-			if (solution != null) break;
-		}
-		return solution;
-	}
-	
-	/** ----------------------------------------------------------------------------------
-	 *  Core of the demonstrator. Tries a bunch of different ways to validate a statement. 
-	 *  ----------------------------------------------------------------------------------
-	 * */
-	private Justification validateStatementSpecificDifference(Statement diff) throws ExceptionComprehension {
-	
-		Justification solution = null;
-		int k = 0;
-		while (solution == null) {
-			// Trivial proposition
-			if (k==0) solution = validateTrivialImplication(diff);
-			else if (k==1) solution = SolveFunctionEvaluation(diff);		// Function evaluation
-			else if (k==2) solution = tryKnownAssumptions(diff); 			// Using assumptions
-			else if (k==3) solution = tryUsingMath(diff);					// Using math
-			else if (k==4) solution = tryPreviousTheorems(diff);			// Applying previous theorems
-			else break;
-			k++;
-		}
-		// https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
-		return solution;
-	}
-	
-	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
-	private Justification validateTrivialImplication(Statement diff) throws ExceptionComprehension {
+	private boolean validateStatement(Term t1, Term t2, Link link) {
 		
-		Link link = diff.link;
-		for (Statement uniDiff: new Statement[]{diff, diff.switchSides()}) {
-			Term t1 = uniDiff.lside;
-			Term t2 = uniDiff.rside;
-			if (t1.equalsString("\\true") && (link.equals(Op.equiv) || link.equals(Op.equiv))) {
-				Term.Disp disp = t2.getDisposition();
-				//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
-				//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
-	
-				if (disp == Term.Disp.QTT) {
-					Term cond = t2.get(1);
-					Term prop = t2.get(2);
-					// Makes the distinction between x > 6 and x + 6 as a condition
-					if (cond.getDisposition() == Term.Disp.TOT && !Link.isConditional(cond.get(1).s)) throw new ExceptionComprehensionInQuantifier(cond);
-					if (!Type.matchtypes(prop, Type.Bool, source)) throw new ExceptionComprehensionInQuantifier(prop);
-					return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
+		Justification solution;
+		try {
+			ArrayList<Statement> diffLedger = Term.extractDiff(t1, t2, link);
+			
+			for (Statement st: diffLedger) {
+				printout("\nValidate statement: " + t1 + st.link.toString() + t2 + "  <==>  " + st.toString());
+				solution = validateStatementSpecificDifference(st);
+				if (solution != null) {
+					printout(":success!:");
+					nlog.addLine(link, t2, solution);
+					return true;
 				}
-				if (disp == Term.Disp.TOT && Link.isLink(t2.get(1).s)) {
-					return findSolutionForStatementValidation(t2.get(0), t2.get(2), new Link(t2.get(1).s));
-				}			
 			}
+			printout(3, "Couldnt use assumptions nor math");
+			nlog.addLine(link, t2, new Justification("error"));
+			return false;
+			
+		} catch (ExceptionTrivialEquality e) {
+			nlog.addLine(link, t2, new Justification("Trivial equality"));
+			return true;
 		}
-		return null;
 	}
 	
-	/** Resolution for statements of the sort:
-	 *  T <==> \exists x (x > 0)     where here, quant="\exists", cond="x", prop="(x > 0)"
+	/* Resolution for statements of the sort:
+	 *    T <==> \exists x (x > 0)
 	 */
-	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) throws Type.ExceptionTypeUnknown {
-		boolean isexist = quant.equals(Op.exists); // isforall implied by the negation
+	private Justification validateExistentialProposition(Operator quant, Term cond, Term prop) {
+		boolean isexist = quant.equals(Op.exists);
+		boolean isforall = quant.equals(Op.forall);
+		if (!isexist && !isforall) System.out.println("Fatal error in QTT identification.");
 	
 		// TODO check if cond matches the set, eg x < 0 should be invalid if x in naturals
-
-		// Self evident x s.t. x
-		if (Type.matchtypes(cond, Type.Bool, source) && cond.equals(prop)) return new Justification("Self evident");
-
-		// Have we seen assumptions of the sort: x=4 -> x>0,  or x<y -> x<3   or  P <-> Q
+		if (cond.getDisposition() == Term.Disp.TOT && Link.isConditional(cond.get(1).s) && cond.equals(prop)) {
+			return new Justification("Self evident");
+		}
+		
 		for (Assump a: assumptions) {
 			boolean linkeq = a.st.link.equals(Op.equiv);
 			if (linkeq || a.st.link.equals(Op.then)) {
@@ -284,29 +234,98 @@ public class Demonstration extends Utils {
 		return null;
 	}
 
-	/** Trying to assert whether x=4 -> P   can imply that  \exists x s.t. P */
-	private boolean matchConditionalExistentialStatement (Term assumpLside, Term cond, boolean isexist) throws Type.ExceptionTypeUnknown {
+	
+	private boolean matchConditionalExistentialStatement (Term assumpLside, Term cond, boolean isexist) {
 		if (assumpLside.getDisposition() == Term.Disp.TOT && Link.isConditional(assumpLside.get(1).s)) {
 			
-			Statement assign = assumpLside.toStatement();
+			Statement assign = new Statement(new Link(assumpLside.get(1).s), assumpLside.get(0), assumpLside.get(2));
 			
 			// Exact match between conditions
-			if (cond.getDisposition() == Term.Disp.TOT && assign.equals(cond.toStatement())) return true;
+			if (cond.getDisposition() == Term.Disp.TOT) {
+				if (assign.equals(new Statement(new Link(cond.get(1).s), cond.get(0), cond.get(2)))) return true;
+			}
 			
 			// Partial match between conditions
 			if (assign.link.equals(Op.eq) && isexist) {
-				return assign.lside.equals(cond) && Type.matchtypes(assign.rside, cond, source);
+				if (assign.lside.equalsString(cond.s) && Type.matchtypes(assign.rside, cond, source)) {
+					return true;
+				}
 			}
 			// TODO i dont want to always have to write x = 4 ==> x > 3 ==> ... ==> f(x) > 0 ==> Exists x | f(x) > 0
 		}
 		return false;
 	}
+	
+	/* Can be a nested statement to prove; from the form "\true \eq (x=0)" or "\true \eq \exists x \suchthat (x > 0) */
+	private Justification validateTrivialImplication(Term t1, Term t2, Link link) {
+		t1.flatten();
+		if (link.equals(Op.equiv) && t1.equalsString("\\true")) {
+			Term.Disp disp = t2.getDisposition();
+			//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
+			//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
+			if (disp == Term.Disp.QTT) {
+				return validateExistentialProposition((Operator) (t2.get(0)), t2.get(1), t2.get(2));
+			}
+			if (disp == Term.Disp.TOT) {
+				Term left = t2.get(0);
+				String lk = t2.get(1).s;
+				Term right = t2.get(2);
+				if (Link.isLink(lk)) {
+					return validateStatementSpecificDifference(new Statement(new Link(lk), left, right));
+				}
+			}			
+		}
+		return null;
+	}
+	
 
-
+	private Justification validateStatementSpecificDifference(Statement diff) {
+	
+		// Trivial proposition
+		Justification solution;
+		solution = validateTrivialImplication(diff.lside, diff.rside, diff.link);
+		if (solution != null) return solution;
+		solution = validateTrivialImplication(diff.rside, diff.lside, diff.link);
+		if (solution != null) return solution;
+		
+		// Function evaluation
+		solution = SolveFunctionEvaluation(diff);
+		if (solution != null) return solution;
+		
+		// Using assumptions
+		for (Assump a: assumptions) {
+			if (a.st.equals(diff)) {
+				return new Justification(a);
+			}
+		}
+		
+		// Using math
+		try {
+			Term matht = new Term();
+			matht.addTerm(diff.lside);
+			matht.addTerm(Op.getOperator(diff.link.link));
+			matht.addTerm(diff.rside);
+			
+			if (solveMath(matht).equalsString("\\true")) {
+				return new Justification("SolvingMath");
+			}
+		} catch (Exception e) {}
+		
+		
+		// Applying previous theorems
+		for (Theorem th: source.loadedTheorems) {
+			if (matchTheorem(th, diff)) {
+				return new Justification(th);
+			}
+		}	
+		
+		return null;
+	}
+	
 	private Justification SolveFunctionEvaluation (Statement diff) {
 		for (Statement st: new Statement[]{diff, diff.switchSides()}) {
 			if (st.lside.getDisposition() == Term.Disp.FC) {
-			Function fnc = (Function) source.getVariable(st.lside.get(0).s);
+				Function fnc = (Function) source.getVariable(st.lside.get(0).s);
 				Collection col = (Collection) st.lside.get(1);
 				if (fnc.domain.isElement(col, source)) {
 					Term eval = fnc.getEvaluation(col, assumptions);
@@ -324,68 +343,48 @@ public class Demonstration extends Utils {
 		return null;
 	}
 	
-	private Justification tryKnownAssumptions (Statement diff) {
-		for (Assump a: assumptions) {
-			if (a.st.equals(diff)) return new Justification(a);
-		}
-		return null;
-	}
-	
-	private Justification tryUsingMath (Statement diff) {
-		try {
-			Term matht = new Term();
-			matht.addTerm(diff.lside);
-			matht.addTerm(Op.getOperator(diff.link.link));
-			matht.addTerm(diff.rside);
-			if (solveMath(matht).equalsString("\\true")) return new Justification("SolvingMath");
-		} catch (Exception ignored) {}
-		return null;
-	}
-	
-	private Justification tryPreviousTheorems (Statement diff) throws ExceptionTypeUnknown {
-		for (Theorem th: source.loadedTheorems) {
-			if (matchTheorem(th, diff)) return new Justification(th);
-		}	
-		return null;
-	}
-	
-	
-	/** ----------------------------------------------------------------------------------
-	 *  Core of matching theorems 
-	 *  ----------------------------------------------------------------------------------
-	 */
-	private boolean matchTheorem (Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
+	private boolean matchTheorem (Theorem th, Statement prop) {
 		if (!Link.isSufficient(th.statement.link, prop.link)) return false;
 		if (matchTheoremUnilateral(th, prop)) return true;
-		return Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides());
+		if (Link.isCommutative(prop.link) && matchTheoremUnilateral(th, prop.switchSides())) return true;
+		return false;
 	}
 	
-	/* We first find permutations from the left side, make sure the types match. */
-	private boolean matchTheoremUnilateral(Theorem th, Statement prop) throws Type.ExceptionTypeUnknown {
+	@SuppressWarnings("unused")
+	private void _debug(Theorem thm, String thmname, String str) {
+		if (printPriority==1 && thm.name.equals(thmname)) {
+			System.out.println(str);
+		}
+	}
+	
+	/*
+	 * We first find permutations from the left side, make sure the types match.
+	 */
+	private boolean matchTheoremUnilateral(Theorem th, Statement prop) {
 		//for (Term tt: perms) System.out.println("- " + tt.toString());
-		ArrayList<Term> pmleft = prop.lside.getPermutations();
-		ArrayList<Term> pmright = prop.rside.getPermutations();
+		Permutations pmleft = Term.permute(prop.lside);
+		Permutations pmright = Term.permute(prop.rside);
 		
 		// TODO think about 'is \true gonna yield an empty validperm?'
 		
-		_debug(th, ":thm - " + debugthm + ": size pmleft = " + pmleft.size());
-		ValidPermutations validleftperms = extractValidPerms(pmleft, th, th.statement.lside);
+		_debug(th, debugthm, ":thm - " + debugthm + ": size pmleft = " + pmleft.vs.size());
+		ValidPermutations validleftperms = extractValidPerms(pmleft.vs, th, th.statement.lside);
 		if (validleftperms.isEmpty()) return false;
-		_debug(th, ":leftperms:");
-		for (UniquePerm pleft: validleftperms) _debug(th, pleft.sts.toString());
+		_debug(th, debugthm, ":leftperms:");
+		for (UniquePerm pleft: validleftperms) _debug(th, debugthm, pleft.sts.toString());
 		
-		ValidPermutations validrightperms = extractValidPerms(pmright, th, th.statement.rside);
+		ValidPermutations validrightperms = extractValidPerms(pmright.vs, th, th.statement.rside);
 		if (validrightperms.isEmpty()) return false;
-		_debug(th, ":rightperms:");
-		for (UniquePerm pright: validrightperms) _debug(th, pright.sts.toString());
+		_debug(th, debugthm, ":rightperms:");
+		for (UniquePerm pright: validrightperms) _debug(th, debugthm, pright.sts.toString());
 		
 		for (UniquePerm pleft: validleftperms) {
 		for (UniquePerm pright: validrightperms) {
-			_debug(th, ":assertingsubs:");
+			_debug(th, debugthm, ":assertingsubs:");
 			if (assertValidSubstitutions(pleft.sts, pright.sts)) {
 				return true;
 			}
-			_debug(th, ":!!didntmatch:\n" + pleft.sts.toString() + "\n" + pright.sts.toString());
+			_debug(th, debugthm, ":!!didntmatch:\n" + pleft.sts.toString() + "\n" + pright.sts.toString());
 		}
 		}
 		
@@ -396,14 +395,16 @@ public class Demonstration extends Utils {
 	private boolean assertValidSubstitutions(ArrayList<Statement> grpA, ArrayList<Statement> grpB) {
 		for (Statement stA: grpA) {
 		for (Statement stB: grpB) {
-			if (stA.lside.equals(stB.lside) && !stA.rside.equals(stB.rside)) return false;
+			if (stA.lside.equals(stB.lside) && !stA.rside.equals(stB.rside)) {
+				return false;
+			}
 		}
 		}
 		return true;
 	}	
 	
 	// TODO assert that a thm cant have an undeclared variable ever
-	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) throws Type.ExceptionTypeUnknown {
+	private ValidPermutations extractValidPerms (ArrayList<Term> perms, Theorem th, Term thside) {
 		ValidPermutations validperms = new ValidPermutations();
 		for (Term propPermutation: perms) { 
 			
@@ -411,33 +412,32 @@ public class Demonstration extends Utils {
 			try {
 				// extractDiffArray already checks for surjectivity
 				ArrayList<Statement> substitutions = Term.extractDiffArray(thside, propPermutation);
-				// System.out.println("thside=" + thside.toString() + " propPermutation=" + propPermutation.toString());
-				// substitutions = orderSubstitutions(substitutions);
+				substitutions = orderSubstitutions(substitutions);
 				
 				// checking here for types - trueSubs ignores substitutions of non-variables (e.g. \true, 4)
 				// Case for 3 = 3, for example
-				ArrayList<Statement> trueSubs = new ArrayList<>();
+				ArrayList<Statement> trueSubs = new ArrayList<Statement>();
 				for (Statement st: substitutions) {
 					Variable v = th.getVariable(st.lside.s);
 					if (v == null) {
 						if (!st.lside.equals(st.rside)) {
-							_debug(th, ":invalid nonequal nonvariable: " + st.toString());
+							_debug(th, debugthm, ":invalid nonequal nonvariable: " + st.toString());
 							throw new ExceptionTheoremNotApplicable();
 						}
 					} else if (!matchTheoremTypes(v, st.rside)) throw new ExceptionTheoremNotApplicable();
 					else trueSubs.add(st);
 				}
 				validperms.add(propPermutation, trueSubs);
-			} catch (ExceptionTheoremNotApplicable ignored) {}
+			} catch (ExceptionTheoremNotApplicable e) {}
 		}
 		return validperms;
 	}
 	
 
-	private static class ValidPermutations implements Iterable<UniquePerm>{
+	private class ValidPermutations implements Iterable<UniquePerm>{
 		ArrayList<UniquePerm> perms;
 		public ValidPermutations () {
-			perms = new ArrayList<>();
+			perms = new ArrayList<UniquePerm>();
 		}
 		public void add(Term propperm, ArrayList<Statement> subs) {
 			perms.add(new UniquePerm(propperm, subs));
@@ -451,7 +451,7 @@ public class Demonstration extends Utils {
 	}
 	
 	// TODO remove t if not actually needed... after running lots of tests.
-	private static class UniquePerm {
+	private class UniquePerm {
 		@SuppressWarnings("unused")
 		Term t;
 		ArrayList<Statement> sts;
@@ -460,17 +460,30 @@ public class Demonstration extends Utils {
 			this.sts = sts;
 		}
 	}
-
+	
+	
+	/* FORGOT WHAT THAT DID... 
+	private Term reduceTheoremVariables(Term t, ArrayList<Statement> subs) {
+		if (t.isShallow()) return t;
+		for (int i=subs.size()-1; i>0; i--) {
+			for (int j=i-1; j>=0; j--) {
+				Term ta = subs.get(j).rside;
+				Term tb = subs.get(i).rside;
+				if (ta.equals(tb)) t = substitute(t, subs.get(i).lside, subs.get(j).lside);
+			}
+		}
+		return t;
+	}
+	*/
+	
 	/* v is the theorem type, t corresponds to the demonstration type */
-	private boolean matchTheoremTypes(Variable v, Term t) throws Type.ExceptionTypeUnknown {
+	private boolean matchTheoremTypes(Variable v, Term t) {
 		//System.out.println(" :term: " + t.toString() + " - " + t.getDisposition());
-		return Type.matchtypes(v.type, t.getType(source));
+		return Type.matchtypes(v.type, Type.getType(t, source));
 	}
 	
 	/*	Prioritizes largest substitutions before more shallow ones  */
-	/*
 	private ArrayList<Statement> orderSubstitutions(ArrayList<Statement> former) {
-		System.out.println("ordersubs entry: " + former.toString());
 		ArrayList<Statement> result = new ArrayList<Statement>();
 		int nbshallow = 0;
 		int resultsize = 0;
@@ -482,8 +495,8 @@ public class Demonstration extends Utils {
 			else {
 				boolean found = false;
 				int pos = resultsize - nbshallow;
-				while (pos --> 0 && !found) {
-					if (!Term.substitute(result.get(pos).rside, st.rside, new Term()).equals(result.get(pos).rside)) {  // TODO capital what?
+				while (0 < pos-- && !found) {
+					if (!substitute(result.get(pos).rside, st.rside, new Term()).equals(result.get(pos).rside)) {
 						result.add(pos+1, st);
 						resultsize++;
 						found = true;
@@ -492,13 +505,32 @@ public class Demonstration extends Utils {
 				if (!found) result.add(resultsize++ - nbshallow, st);
 			}	
 		}
-		System.out.println("ordersubs exit: " + result.toString() + " resultsize=" + resultsize + " nbshallow=" + nbshallow);
 		return result;
 	}
-	*/
 	
 	
-	private Term solveMath(Term t) {
+	static private Term substitute(Term from, Term key, Term into) {
+		Term result = new Term();
+		if (from.isShallow()) {
+			if (key.isShallow() && from.equals(key)) return into;
+			else return from;
+		}
+		if (from.equals(key)) return into;
+		if (from.getDisposition() != Disp.C) {
+			for (Term x: from.v) result.addTerm(substitute(x, key, into));
+			return result;
+		} else {
+			Collection coll = (Collection) from;
+			Collection res = new Collection();
+			for (Term x: coll.items) res.addTerm(substitute(x, key, into));
+			return res;
+		}
+		
+		
+	}
+	
+	
+	private Term solveMath(Term t) throws ExceptionBooleanCasting, ExceptionCantReduceQuantifier {
 		
 		if (t == null) return null;
 		Term.Disp disp = t.getDisposition();
@@ -515,7 +547,9 @@ public class Demonstration extends Utils {
 		if (disp == Term.Disp.QTT) {
 			return solveQuantifierOperator(t.get(2));
 		}
+
 		return null;
+		
 	}
 	
 	
@@ -537,19 +571,14 @@ public class Demonstration extends Utils {
 	
 	private Term solveUnaryOperator(Operator op, Term term) {
 		if (!term.isShallow()) return null;
-		String result;
 		
-		result = BooleanLogic.applyUnaryLogic(op, term.s);
-		if (result != null) return new Term(result);
-		
-		result = RealNumbers.applyUnaryLogic(op, term.s);
-		if (result != null) return new Term(result);
-		
-		return null;
+		String result = BooleanLogic.applyUnaryLogic(op, term.s);
+		if (result == null) return null;
+		return new Term(result);
 	}
-
-	/** Solve trivial quantifier operator, e.g. for all x: false. */
+	
 	private Term solveQuantifierOperator (Term term) {
+		term.flatten();
 		if (term.equalsString("\\true")) return term;
 		if (term.equalsString("\\false")) return term;
 		return null;
@@ -609,6 +638,7 @@ public class Demonstration extends Utils {
 		
 		Statement hypothesis;
 		Demonstration nested;
+		boolean valid;
 		
 		public Cases() {
 			//hypothesis = new ArrayList<Statement>();
@@ -618,7 +648,7 @@ public class Demonstration extends Utils {
 			//valid = true;
 		}
 		
-		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid, TermSynthaxException {
+		public void parseCase(ArrayString arr) throws ExceptionCaseNonvalid {			
 			ArrayString[] split = arr.splitArrayBy("{", 1);
 			ArrayString hypo = split[0];
 			ArrayString subbody = split[1];
@@ -654,14 +684,12 @@ public class Demonstration extends Utils {
 			return null;
 		}*/
 		
-		// TODO
-		/*
+		// TODO 
 		public void compilePartition() {
 			
-		}/*
+		}
 		
 		/* Answers to whether the partition is complete of partial - used to determine the assumption that follows from the cases */
-		/*
 		public boolean isPartitionComplete() {
 			return false;/*
 					
@@ -672,8 +700,8 @@ public class Demonstration extends Utils {
 				return NaturalNumbers.validatePartition(casevar, hypothesis);
 			}
 			printout(3, "Couldnt validate partition. " + set);
-			return null;
-		}*/
+			return null;*/
+		}
 		
 		/*
 		 *   Find commun statements proven in every case in order to make a general statement, given a partition of cases
@@ -706,25 +734,28 @@ public class Demonstration extends Utils {
 			}
 			return result;
 		}*/
-		/*
 		public ArrayList<Assump> enumerateCommunStatements() {
-			ArrayList<Assump> result = new ArrayList<>();
+			ArrayList<Assump> result = new ArrayList<Assump>();
 			for (Assump x: nested.assumptions) {
 				result.add(x);
 			}
 			return result;
-		}*/
+		}
+	}
+
+	
+	static public void printout(String text) {
+		printout(1, text);
 	}
 	
-	//static private class ExceptionCantSolveMath extends Exception {}
-	//static private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
-	static public class ExceptionCaseNonvalid extends Exception {}
-
-
-	abstract static public class ExceptionComprehension extends GenException { public String errorType() { return "Comprehension";}}
-	static public class ExceptionComprehensionInQuantifier extends ExceptionComprehension {
-		Term t;
-		 ExceptionComprehensionInQuantifier (Term _t) { t = _t; }
-		public String errorMessage() { return "In quantifier " + t.toString() + ", condition wasn't comprenhended."; }
+	static public void printout(int priority, String text) {
+		if (printPriority > priority) return;
+		if (priority == 3) System.out.println("[FATAL]" + text);
+		else System.out.println(text);
 	}
+	
+	private class ExceptionCantSolveMath extends Exception {}
+	private class ExceptionCantReduceQuantifier extends ExceptionCantSolveMath {}
+	
+	public class ExceptionCaseNonvalid extends Exception {}
 }

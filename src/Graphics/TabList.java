@@ -74,7 +74,8 @@ public class TabList extends JComponent {
 			bottextarea.initializeText();
 		} else {
 			for (Tab t: tabs) {
-				t.active = t.id == id;
+				if (t.id == id)  t.active = true;
+				else t.active = false;
 			}
 			activetab = id;
 			clearMouseHover();
@@ -86,7 +87,7 @@ public class TabList extends JComponent {
 				} 
 				bottextarea.drawTheorem(activethm);
 	
-			} catch (BadLocationException ignored) {}
+			} catch (BadLocationException e) {}
 		}
 		
 	}

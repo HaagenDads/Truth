@@ -8,10 +8,9 @@ import Elements.ArrayString;
 
 public class Body {
 	
-	ArrayList<Sequence> seqarray;
+	ArrayList<Sequence> body;
 	
 	public Body (String fulltext) {
-		fulltext = fulltext.replace('\u00A0', ' '); // NO-BREAK SPACE is cancelled forever
 		ArrayString texttokens = StringOperations.split(fulltext, new char[]{' ', '\n', '\t'});
 		init(texttokens);
 	}
@@ -21,12 +20,12 @@ public class Body {
 	}
 	
 	private void init (ArrayString texttokens) {
-		seqarray = new ArrayList<>();
+		body = new ArrayList<Sequence>();
 		try {
 			ArrayList<ArrayString> lines = splitSequences(texttokens);
 			for (ArrayString as: lines) {
-				as = as.addSpacing();
-				seqarray.add(splitPrecedence(as));
+				as = as.sepwithComma();
+				body.add(splitPrecedence(as));
 			}
 		} catch (ExceptionSequenceParsing e) { System.out.println(e.printError()); }
 	}
@@ -45,15 +44,32 @@ public class Body {
 	}
 	
 	private ArrayList<ArrayString> splitSequences (ArrayString texttokens) throws ExceptionSequenceParsing {
-		ArrayList<ArrayString> result = new ArrayList<>();
+		ArrayList<ArrayString> result = new ArrayList<ArrayString>();
 		ArrayString buffer = new ArrayString();
 		
 		String x;
 		Iterator<String> it = texttokens.iterator();
 		while (it.hasNext()) {
 			x = it.next();
-			if (! (x==null || x.equals(""))) {
+			if (! (x==null || x=="")) {
 				x = x.trim();
+				
+				/*
+				if (x.equals("\\case")) {  // sub body must begin with the startcase token
+					int caselevel = 1;
+					buffer = new ArrayString(x);
+					do {
+						x = it.next();
+						buffer.add(x);
+						if (x.equals("\\startcase")) caselevel++;
+						else if (x.equals("\\endcase") && --caselevel == 0) {
+							result.add(buffer);
+							buffer = new ArrayString();
+							break;
+						}
+					} while (it.hasNext());
+					if (caselevel > 0) throw new ExceptionCouldntCloseCases();
+				}*/
 				
 				if (x.equals("{")) {
 					int bracketlevel = 1;
@@ -87,13 +103,13 @@ public class Body {
 	
 	static abstract public class ExceptionSequenceParsing extends Exception {
 		abstract String printError ();
-	}
+	};
 	/*
 	static public class ExceptionCouldntCloseCases extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close cases while parsing. Missing an '\\endcase' token."; }
 	};*/
 	static public class ExceptionCouldntCloseDefinitionBrackets extends ExceptionSequenceParsing {
 		String printError() { return "Couldn't close definition brackets while parsing. Missing a '}' token."; }
-	}
+	};
 	
 }

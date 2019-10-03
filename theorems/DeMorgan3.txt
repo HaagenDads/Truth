@@ -1,9 +1,11 @@
 Theorem Name:DeMorgan3 Package:Logic{
-\let p1, p2, p3 \in \boolean;
-\state \not (p1 \and p2 \and p3) \eq \not p1 \or \not p2 \or \not p3;
+\let p1 \in \boolean;
+\let p2 \in \boolean;
+\let p3 \in \boolean;
+\state \not (p1 \and (p2 \and p3)) \eq (\not p1) \or (\not p2 \or \not p3);
 }
 Demonstration { 
-    \not (p1 \and p2 \and p3) \eq 
-    \not p1 \or (\not (p2 \and p3)) \eq
-    \not p1 \or \not p2 \or \not p3;
+    \not (p1 \and (p2 \and p3)) \eq 
+    (\not p1) \or (\not (p2 \and p3)) \eq
+    (\not p1) \or ((\not p2) \or (\not p3));
 }
