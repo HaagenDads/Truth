@@ -38,7 +38,7 @@ public class Term extends Utils {
 		type = null;
 	}
 	
-	public static Term makeNewTerm (String s) {
+	private static Term makeNewTerm(String s) {
 		Operator op = Op.getOperator(s);
 		if (op == null) return new Term(s);
 		else return op;
@@ -65,13 +65,15 @@ public class Term extends Utils {
 	}
 	
 	public Term get(int i) {
-		try {
-			return v[i];
-		} catch (Exception e) {
+		if (i >= size) {
+			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + Arrays.toString(v));
+			throw new IndexOutOfBoundsException();
+		} else if (size == 0) {
 			if (v == null) System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from empty term ");
 			System.out.println("[[[ FATAL ]]] Tried to get index " + i + " from length " + size + " in term: " + Arrays.toString(v));
 			throw new IndexOutOfBoundsException();
 		}
+		return v[i];
 	}
 
 	public Statement toStatement() {
@@ -187,10 +189,22 @@ public class Term extends Utils {
 		Disp disp = getDisposition();
 		if (disp == Disp.F) return s;
 		if (disp == Disp.C) return toString();
-		if (disp == Disp.QTT) return get(0).s + get(1).toString() + ": " + adjustParenthesis(get(2));
+
+		StringBuilder output = new StringBuilder();
+		if (disp == Disp.QTT) {
+			output.append(get(0).s).append(get(1)).append(": ");
+			if (get(2).disp == Disp.TOT && get(2).get(1).equals(Op.equiv)) {
+				int pos = -1;
+				if (get(2).get(0).equals(TKlib.True)) pos = 2;
+				else if (get(2).get(2).equals(TKlib.True)) pos = 0;
+
+				if (pos != -1) output.append(adjustParenthesis(get(2).get(pos))); return output.toString();
+			}
+			return output.append(adjustParenthesis(get(2))).toString();
+		}
 		if (disp == Disp.FC) return get(0).s + get(1).toString();
 		
-		StringBuilder output = new StringBuilder();
+
 		if (disp == Disp.ERR) output.append("[disp error (size=").append(size).append(")] ");
 		
 		if (disp == Disp.OT && v[0] == Op.minus) return "-" + v[1].toString();
@@ -204,7 +218,7 @@ public class Term extends Utils {
 		for (Term x: v) {
 			Disp innerdisp = x.getDisposition();
 			if (innerdisp == Disp.F) output.append(x.s).append(" ");
-			else if (innerdisp == Disp.C) output.append(x.toString()).append(" ");
+			else if (innerdisp == Disp.C) output.append(x).append(" ");
 			else if (innerdisp == Disp.OT) {
 				output.append(x.get(0).s).append(" ");
 				Term secondterm = x.get(1);
@@ -214,9 +228,9 @@ public class Term extends Utils {
 				output.append(adjustParenthesis(secondterm)).append(" ");
 			}
 			else if (innerdisp == Disp.FC) {
-				output.append(x.get(0).s).append(x.get(1).toString()).append(" ");
+				output.append(x.get(0).s).append(x.get(1)).append(" ");
 			}
-			else output.append("(").append(x.toString()).append(") ");
+			else output.append("(").append(x).append(") ");
 		}
 		return removeLastSpace(output.toString());
 	}
@@ -271,13 +285,13 @@ public class Term extends Utils {
 		}
 	}
 	
-	static private Term glueTerms(Term t1, Term t2) {
+	private static Term glueTerms(Term t1, Term t2) {
 		Term output = new Term();
 		output.addTerm(t1);
 		output.addTerm(t2);
 		return output;
 	}
-	static private Term glueTerms(Term t1, Term t2, Term t3) {
+	static public Term glueTerms(Term t1, Term t2, Term t3) {
 		Term output = new Term();
 		output.addTerm(t1);
 		output.addTerm(t2);
@@ -385,10 +399,15 @@ public class Term extends Utils {
 		for (int i=0; i<followsPos; i++) condition.addTerm(output.pop());
 		output.pop(); // removal of the ":" term
 		while (!output.isEmpty()) proposition.addTerm(output.pop());
-					
+
 		quantterm.addTerm(quantop);
 		quantterm.addTerm(parseTerms(condition));
-		quantterm.addTerm(parseTerms(proposition));
+
+		proposition = parseTerms(proposition);
+		if (proposition.getDisposition() != Disp.TOT ||
+			!proposition.get(1).equals(Op.equiv)) proposition = glueTerms(proposition, Op.equiv, TKlib.True);
+
+		quantterm.addTerm(proposition);
 		output.addFirst(quantterm);
 	}
 	

@@ -101,17 +101,17 @@ public class Demonstration extends Utils {
 			// Special case where the conclusion is that T => p. Since (T -> p) => (p <-> T), we would like
 			// the link to reflect this reality.
 			if (conclusion.equals(Op.then)) {
-				if (firstexp.equalsString("\\true")) takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
+				if (firstexp.equals(TKlib.True)) takeaway = new Statement(new Link(Op.equiv), t2, firstexp);
 			}
 
 			// If conclusion was "true <==> a > 0", the summary should be a > 0.
 			if ((conclusion.equals(Op.then) || conclusion.equals(Op.equiv))
-				&& firstexp.equalsString("\\true") && t2.getDisposition() == Disp.TOT && ((Operator) t2.get(1)).isComparing())
+				&& firstexp.equals(TKlib.True) && t2.getDisposition() == Disp.TOT && ((Operator) t2.get(1)).isComparing())
 			{
 				takeaway = new Statement(new Link((Operator) t2.get(1)), t2.get(0), t2.get(2));
 			}
 			if (conclusion.equals(Op.equiv)
-				 && t2.equalsString("\\true") && firstexp.getDisposition() == Disp.TOT && ((Operator) firstexp.get(1)).isComparing())
+				 && t2.equals(TKlib.True) && firstexp.getDisposition() == Disp.TOT && ((Operator) firstexp.get(1)).isComparing())
 			{
 				takeaway = new Statement(new Link((Operator) firstexp.get(1)), firstexp.get(0), firstexp.get(2));
 			}
@@ -141,13 +141,28 @@ public class Demonstration extends Utils {
 		//if (cases.validatePartition().equals("true")) {
 		Assumptions nestedasmp = cases.nested.assumptions;
 		for (int i=assumptions.size()+1; i<nestedasmp.size(); i++) {
+
 			Assump a = nestedasmp.get(i);
-			Term qtt = new Term();
-			qtt.addTerm(Term.makeNewTerm("\\forall")); qtt.addTerm(cases.hypothesis.toTerm()); qtt.addTerm(a.st.toTerm());
-			a.st = new Statement(new Link(Op.equiv), new Term("\\true"), qtt);
-			System.out.println(": new statement!!!: " + a.st.toString());
-			assumptions.acceptAssumptionFromDemonstrationThroughCases(a);
+
+			Variable casevar = source.getVariable(cases.hypothesis.lside.s);
+			if (casevar != null) {
+				Assump aclone = a.copy();
+				Term qtt = Term.glueTerms(Op.exists, casevar.toTerm(), aclone.st.toTerm());
+				aclone.st = new Statement(new Link(Op.equiv), TKlib.True, qtt);
+				assumptions.acceptAssumptionFromDemonstrationThroughCases(aclone);
+			}
+
+			for (Operator op: new Operator[]{Op.exists, Op.forall}) {
+				Assump aclone = a.copy();
+				Term qtt = Term.glueTerms(op, cases.hypothesis.toTerm(), aclone.st.toTerm());
+				aclone.st = new Statement(new Link(Op.equiv), TKlib.True, qtt);
+				assumptions.acceptAssumptionFromDemonstrationThroughCases(aclone);
+			}
+
+
 		}
+
+
 		/*
 		if (cases.isPartitionComplete()) {
 			ArrayList<Assump> bulkResults = new ArrayList<Assump>();
@@ -231,7 +246,7 @@ public class Demonstration extends Utils {
 		for (Statement uniDiff: new Statement[]{diff, diff.switchSides()}) {
 			Term t1 = uniDiff.lside;
 			Term t2 = uniDiff.rside;
-			if (t1.equalsString("\\true") && (link.equals(Op.equiv) || link.equals(Op.equiv))) {
+			if (t1.equals(TKlib.True) && (link.equals(Op.equiv) || link.equals(Op.equiv))) {
 				Term.Disp disp = t2.getDisposition();
 				//if (disp == Term.Disp.F) return null; // Back to checking if: \true <=> x
 				//if (disp == Term.Disp.OT) return null; // Maybe perform math or something like that
@@ -337,7 +352,7 @@ public class Demonstration extends Utils {
 			matht.addTerm(diff.lside);
 			matht.addTerm(Op.getOperator(diff.link.link));
 			matht.addTerm(diff.rside);
-			if (solveMath(matht).equalsString("\\true")) return new Justification("SolvingMath");
+			if (solveMath(matht).equals(TKlib.True)) return new Justification("By solving arithmetics");
 		} catch (Exception ignored) {}
 		return null;
 	}
@@ -550,8 +565,8 @@ public class Demonstration extends Utils {
 
 	/** Solve trivial quantifier operator, e.g. for all x: false. */
 	private Term solveQuantifierOperator (Term term) {
-		if (term.equalsString("\\true")) return term;
-		if (term.equalsString("\\false")) return term;
+		if (term.equals(TKlib.True)) return term;
+		if (term.equals(TKlib.False)) return term;
 		return null;
 	}
 	

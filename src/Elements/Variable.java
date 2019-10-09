@@ -15,7 +15,13 @@ public class Variable {
 	public String toHeader() {
 		return " be in " + type + "\n";
 	}
-	
+
+	public Term toTerm() {
+		Term result = new Term(name);
+		result.type = type;
+		return result;
+	}
+
 	public boolean equals (Variable other) {
 		return (name.equals(other.name) && type.equals(other.type));
 	}

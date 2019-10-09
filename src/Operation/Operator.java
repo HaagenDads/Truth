@@ -25,7 +25,7 @@ public class Operator extends Term {
 	}
 	
 	
-	private boolean isPartOfList(Operator[] opSet) {
+	public boolean isPartOfList(Operator[] opSet) {
 		for (Operator op: opSet) {
 			if (equals(op)) return true;
 		}

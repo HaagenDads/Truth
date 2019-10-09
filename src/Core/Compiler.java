@@ -3,6 +3,7 @@ package Core;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.Scanner;
 import java.util.Stack;
 
@@ -188,9 +189,14 @@ public class Compiler extends Utils {
 			char c = chars[i];
 			if (c == '(' || c == '{' ||  c == '[') {
 				stk.push(c);
-			} else if (c == ')' && stk.pop() != '(') throw new ErrorInParenthesisException(i);
-			else if (c == ']' && stk.pop() != '[') throw new ErrorInParenthesisException(i);
-			else if (c == '}' && stk.pop() != '{') throw new ErrorInParenthesisException(i);
+			}
+			else {
+				try {
+					if (c == ')' && stk.pop() != '(') throw new ErrorInParenthesisException(i);
+					else if (c == ']' && stk.pop() != '[') throw new ErrorInParenthesisException(i);
+					else if (c == '}' && stk.pop() != '{') throw new ErrorInParenthesisException(i);
+				} catch (EmptyStackException e){ throw new ErrorInParenthesisException(i); }
+			}
 		}
 	}
 

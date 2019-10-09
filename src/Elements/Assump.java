@@ -11,8 +11,7 @@ public class Assump {
 	}
 	
 	public Assump copy() {
-		Assump clone = new Assump(st.copy(), IndexStamp);
-		return clone;
+		return new Assump(st.copy(), IndexStamp);
 	}
 	
 	public boolean equals (Assump other) {
